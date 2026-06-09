@@ -8,7 +8,7 @@
       "args": [
         "-f", "${workspaceFolder}/scripts/jlink-swd.cfg",
         "-f", "${workspaceFolder}/scripts/flash_openocd.cfg",
-        "-c", "program ${workspaceFolder}/build/Debug/C8_GCC.elf verify reset exit"
+        "-c", "program {${workspaceFolder}/build/Debug/C8_GCC.elf} verify reset exit"
       ],
       "group": {
         "kind": "build",
@@ -25,7 +25,7 @@
       "args": [
         "-f", "${workspaceFolder}/scripts/jlink-swd.cfg",
         "-f", "${workspaceFolder}/scripts/flash_openocd.cfg",
-        "-c", "program ${workspaceFolder}/build/Release/C8_GCC.elf verify reset exit"
+        "-c", "program {${workspaceFolder}/build/Release/C8_GCC.elf} verify reset exit"
       ],
       "group": {
         "kind": "build",

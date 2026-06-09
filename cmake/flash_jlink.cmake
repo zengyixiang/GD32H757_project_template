@@ -6,8 +6,9 @@ function(gd32_add_flash_targets firmware_target)
         COMMAND openocd
                 -f "${FLASH_JLINK_CFG}"
                 -f "${FLASH_OPENOCD_CFG}"
-                -c "program $<TARGET_FILE:${firmware_target}> verify reset exit"
+                -c "program {$<TARGET_FILE:${firmware_target}>} verify reset exit"
         DEPENDS ${firmware_target}
         COMMENT "Flashing ${firmware_target} with OpenOCD"
+        VERBATIM
     )
 endfunction()
