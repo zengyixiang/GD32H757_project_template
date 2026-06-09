@@ -1,2 +1,3 @@
-Put documentation examples here, such as sample HTML pages, config snippets,
-or small reference files that explain how to use the project.
+这里放文档示例文件，例如示例网页、配置片段，或用于说明工程用法的小型参考文件。
+
+这些示例只用于阅读和说明，不作为默认固件源码参与编译。

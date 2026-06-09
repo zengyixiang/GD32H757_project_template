@@ -1,2 +1,3 @@
-Put documentation-only images and attachments here.
-These files are for docs and should not be compiled into firmware.
+这里放只服务于文档的图片和附件。
+
+这些文件只用于说明文档，不参与固件编译，也不应被资源转换脚本打包进固件。
