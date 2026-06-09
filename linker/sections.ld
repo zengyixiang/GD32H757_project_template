@@ -1,0 +1,1 @@
+/* Shared section fragments can be placed here when multiple linker scripts are used. */

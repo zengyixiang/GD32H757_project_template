@@ -1,0 +1,39 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "OpenOCD: Flash Debug",
+      "type": "shell",
+      "command": "openocd",
+      "args": [
+        "-f", "${workspaceFolder}/scripts/jlink-swd.cfg",
+        "-f", "${workspaceFolder}/scripts/flash_openocd.cfg",
+        "-c", "program ${workspaceFolder}/build/Debug/C8_GCC.elf verify reset exit"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always"
+      }
+    },
+    {
+      "label": "OpenOCD: Flash Release",
+      "type": "shell",
+      "command": "openocd",
+      "args": [
+        "-f", "${workspaceFolder}/scripts/jlink-swd.cfg",
+        "-f", "${workspaceFolder}/scripts/flash_openocd.cfg",
+        "-c", "program ${workspaceFolder}/build/Release/C8_GCC.elf verify reset exit"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": false
+      },
+      "presentation": {
+        "reveal": "always"
+      }
+    }
+  ]
+}

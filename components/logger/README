@@ -1,0 +1,99 @@
+使用方法：
+    DEBUG_RAW(fmt,...)      //打印无任何头信息的原始调试信息
+    DEBUG_E(fmt,...)        //打印错误级别调试信息
+    DEBUG_E_HEX(data, len)  //打印错误级别十六进制调试信息
+    DEBUG_W(fmt,...)        //打印警告级别调试信息
+    DEBUG_W_HEX(data, len)  //打印警告级别十六进制调试信息
+    DEBUG_I(fmt,...)        //打印信息级别调试信息
+    DEBUG_I_HEX(data, len)  //打印信息级别十六进制调试信息
+    DEBUG_D(fmt,...)        //打印调试级别调试信息
+    DEBUG_D_HEX(data, len)  //打印调试级别十六进制调试信息
+
+main.c中示例代码：
+    #define DEBUG_PRINTF 1          //打印总开关，0 关闭，1 打开
+    #define DEBUG_LEVEL LVL_DEBUG   //打印等级
+    #include "debug.h"
+
+    void print_c(char *str, debug_printf_len_t size) {
+        HAL_UART_Transmit(&huart1,(uint8_t*)str,size,100);
+    }
+
+    debug_critical_t enter_critical(void)
+    {
+        taskENTER_CRITICAL();
+        return 0;
+    }
+    void exit_critical(debug_critical_t r)
+    {
+        (void)r;
+        taskEXIT_CRITICAL();
+    }
+
+    debug_time_t get_time_ms(void) {
+        struct timespec ts;
+        clock_gettime(CLOCK_MONOTONIC, &ts); 
+        return (debug_time_t)ts.tv_sec * 1000ULL + ts.tv_nsec / 1000000ULL;
+    }
+
+    unsigned char data[] = {0xDE, 0xAD, 0xBE, 0xEF,0xDE, 0xAD, 0xBE, 0xEF,0xDE, 0xAD, 0xBE, 0xEF,0xDE, 0xAD, 0xBE, 0xEF};
+    int main() {
+        debug_init(print_c,enter_critical,exit_critical,get_time_ms);
+
+        DEBUG_RAW("This is a raw debug message without any header message.\r\n");
+
+        DEBUG_D("This is a debug message with number: %d %f 1", 42,13.147);
+        DEBUG_D_HEX(data, sizeof(data) + 20);
+        DEBUG_I("This is an info message with number: %d", 42);
+        DEBUG_I_HEX(data, sizeof(data));
+        DEBUG_W("This is a warning message with number: %d", 42);
+        DEBUG_W_HEX(data, sizeof(data));
+        DEBUG_E("This is an error message with number: %u", (unsigned int)get_time_ms());
+        DEBUG_E_HEX(data, sizeof(data));
+
+        while(1)
+        {
+            debug_log_flush();
+        }
+    }
+
+常用配置：
+    #define DEBUG_PRINTF 0      //关闭所有调试输出
+    #define DEBUG_USE_LIBC 1    //使用工具链自带 libc: vsnprintf、memcpy、memset、strlen、strcpy、strrchr
+    #define DEBUG_FORCE_INLINE 1 //GCC/Clang 下强制内联小 helper，优先速度
+    #define DEBUG_USE_COLOR 0    //关闭 ANSI 颜色码，减少串口输出字节和 FLASH 字符串
+    #define DEBUG_PRINT_VERSION 0 //debug_init 不打印版本信息
+    #define DEBUG_ENABLE_FLOAT 0 //关闭自研 formatter 的 %f/%e/%g/%F 支持
+    #define DEBUG_FLUSH_MAX_PER_CALL 1 //每次 debug_log_flush 最多输出 1 条，0 表示全部输出
+
+    注意：DEBUG_USE_LIBC 会影响 debug.c 的编译，需要在工程编译选项中定义，
+    例如 GCC/Keil 中添加 DEBUG_USE_LIBC=1，或 CMake 使用：
+        cmake -S debug -B debug/build -DDEBUG_USE_LIBC=ON
+
+    单片机上如果串口慢、RTOS 任务多，建议将 DEBUG_USE_COLOR 设为 0，
+    并按任务调度节奏设置 DEBUG_FLUSH_MAX_PER_CALL 为 1 或 2。
+
+类型配置：
+    #define DEBUG_U32_USE_UNSIGNED_LONG 1  //当 SDK 的 uint32_t 实际是 unsigned long 时使用
+
+    //也可以直接指定完整类型：
+    #define DEBUG_U8_TYPE unsigned char
+    #define DEBUG_U16_TYPE unsigned short int
+    #define DEBUG_U32_TYPE unsigned long
+    #define DEBUG_CRITICAL_TYPE DEBUG_U32_TYPE
+    #define DEBUG_TIME_TYPE DEBUG_U32_TYPE
+    #define DEBUG_PRINTF_LEN_TYPE int
+
+    GD32/部分 ARM SDK 如果 debug_init(print, enter_critical, exit_critical, get_tick)
+    报函数指针类型 warning，通常在工程编译宏中添加 DEBUG_U32_USE_UNSIGNED_LONG=1 即可。
+
+运行结果：
+    ****** DEBUG_VERSION = 1.0.4 ******
+    This is a raw debug message without any header message.
+    (26722445)[D:main.c:47]:This is a debug message with number: 42 13.147 1
+    (26722445)[D:main.c:48]:HEX(36):DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF 00 00 00 00 00 00 00 00 00 00 00....
+    (26722445)[I:main.c:49]:This is an info message with number: 42
+    (26722445)[I:main.c:50]:HEX(16):DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF 
+    (26722445)[W:main.c:51]:This is a warning message with number: 42
+    (26722445)[W:main.c:52]:HEX(16):DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF 
+    (26722445)[E:main.c:53]:This is an error message with number: 26722445
+    (26722445)[E:main.c:54]:HEX(16):DE AD BE EF DE AD BE EF DE AD BE EF DE AD BE EF

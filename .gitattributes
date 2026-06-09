@@ -1,0 +1,4 @@
+*.zip  binary
+*.hex  binary
+*.bin  binary
+*.elf   binary
