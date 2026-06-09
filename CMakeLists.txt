@@ -17,7 +17,6 @@ message("Build type: " ${CMAKE_BUILD_TYPE})
 
 add_executable(${CMAKE_PROJECT_NAME})
 
-include(cmake/gd32h757.cmake)
 include(cmake/common_flags.cmake)
 include(cmake/flash_jlink.cmake)
 

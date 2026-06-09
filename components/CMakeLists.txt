@@ -29,6 +29,4 @@ target_compile_definitions(components_lib PUBLIC
     DEBUG_PRINT_VERSION=1
     DEBUG_ENABLE_FLOAT=1
     DEBUG_FLUSH_MAX_PER_CALL=0
-    $<$<CONFIG:Debug>:DEBUG_LEVEL=LVL_DEBUG>
-    $<$<CONFIG:Release>:DEBUG_LEVEL=LVL_WARNING>
 )

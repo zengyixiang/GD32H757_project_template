@@ -1,3 +1,8 @@
+set(GD32_COMPILE_DEFINITIONS
+    GD32H7XX
+    USE_STDPERIPH_DRIVER
+)
+
 add_library(cmsis_core INTERFACE)
 target_include_directories(cmsis_core INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/cmsis/Core/Include

@@ -62,6 +62,7 @@ drivers
 | 路径 | 作用 | 放什么 |
 | --- | --- | --- |
 | `cmake/` | CMake 工程配置 | 工具链、芯片参数、公共 flags、烧录配置 |
+| `assets/` | 原始资源文件 | 音频、视频、HTML/CSS/JS、UI 图片、字体、图标等未转换资源 |
 | `board/` | 多板卡选择入口 | `PROJECT_BOARD` 选择具体板卡，并导出统一 `project_board` target |
 | `board/gd32h757_eval/` | GD32H757 Eval 板适配 | 这块板子的时钟、引脚、LED、按键、ADC、UART、SDRAM |
 | `board/my_product_v1/` | 自定义产品板示例 | 示例产品板的 LED、UART、I2C、ADC、显示、触摸映射 |
@@ -77,7 +78,7 @@ drivers
 | `config/` | 配置头文件 | `FreeRTOSConfig.h`、`lv_conf.h`、`ffconf.h`、`lwipopts.h`、项目配置 |
 | `scripts/` | 构建/烧录/调试脚本 | OpenOCD、J-Link、GDB、PowerShell 构建脚本 |
 | `tools/` | 辅助工具 | 资源转换、bin 转数组等脚本 |
-| `docs/` | 文档 | 架构、构建、调试说明 |
+| `docs/` | 文档 | 架构、构建、调试说明、文档图片和示例 |
 | `build/` | 构建输出 | CMake 生成文件和 `.elf/.hex/.bin`，不提交 |
 
 ## CMake 组织
@@ -87,11 +88,22 @@ drivers
 | `CMakeLists.txt` | 顶层工程入口，创建最终 `C8_GCC.elf` 并链接各层 target |
 | `CMakePresets.json` | Debug/Release preset，记录 generator、build 目录、toolchain 文件 |
 | `cmake/arm-none-eabi-gcc.cmake` | ARM GCC 交叉编译工具链 |
-| `cmake/gd32h757.cmake` | 芯片型号、核心、公共宏 |
 | `cmake/common_flags.cmake` | Debug/Release 公共编译定义 |
 | `cmake/flash_jlink.cmake` | 烧录脚本路径变量和 `flash_openocd` target |
 
 `CMakePresets.json` 是 CMake 官方推荐的现代配置方式之一。很多老项目没有使用，是因为创建时间较早、已有 IDE 脚本或团队习惯不同。
+
+`cmake/common_flags.cmake` 当前被顶层 `CMakeLists.txt` 通过 `include(cmake/common_flags.cmake)` 引入，用来按构建类型自动添加公共编译宏：Debug 配置定义 `DEBUG`，Release 配置定义 `NDEBUG`。如果以后有全工程通用的 warning 选项、优化开关或诊断宏，也可以集中放在这里。
+
+`cmake/flash_jlink.cmake` 当前也被顶层 `CMakeLists.txt` 引入，它定义了 `gd32_add_flash_targets()` 函数。顶层最后调用 `gd32_add_flash_targets(${CMAKE_PROJECT_NAME})` 后，CMake 会生成一个 `flash_openocd` target。固件构建完成后，可以这样烧录：
+
+```powershell
+cmake --build --preset Debug --target flash_openocd
+```
+
+这个 target 内部会调用 `openocd`，并使用 `scripts/jlink-swd.cfg` 和 `scripts/flash_openocd.cfg`。
+
+原来的 `cmake/gd32h757.cmake` 已删除。它里面真正被使用的只有 `GD32H7XX` 和 `USE_STDPERIPH_DRIVER` 两个编译宏，现在已经移动到 `drivers/CMakeLists.txt`，其余芯片名/内核/FPU 变量没有被使用，保留文件反而会误导。
 
 `config/project_config.h` 里的 `PROJECT_USE_FREERTOS` 用来选择 OSAL 后端：
 
@@ -100,7 +112,7 @@ drivers
 | `0` | 使用裸机 SysTick、主循环轮询、PRIMASK 临界区 |
 | `1` | 使用 FreeRTOS 后端；接入真实 FreeRTOS 后在 `osal_freertos.c` 中对接 `xTaskCreate`、`vTaskDelay`、`vTaskStartScheduler` |
 
-这个宏属于工程配置，不放在 preset 里。工程结构定下来后通常不会频繁切换，只有移植或验证裸机/RTOS 两套运行方式时才改它。`project_config.h` 里用了 `#ifndef`，所以临时验证时也可以从编译命令传入 `-DPROJECT_USE_FREERTOS=1` 覆盖默认值。
+这个宏属于工程配置，不放在 preset 里，也不从 CMake 命令行覆盖。具体工程是否使用 RTOS 只由 `config/project_config.h` 决定；需要切换裸机/RTOS 时，直接修改该配置头文件。
 
 ## Board 层
 
@@ -307,3 +319,9 @@ App、components、debug 适配层优先调用 OSAL，不直接依赖裸机或 F
 | 中断入口 | `startup/gd32h7xx_it.c` |
 | 链接脚本 | `linker/` |
 | 烧录脚本 | `scripts/` |
+| 原始音频资源 | `assets/media/audio/` |
+| 原始视频资源 | `assets/media/video/` |
+| 原始 HTML/CSS/JS 资源 | `assets/web/` |
+| 原始 UI 图片、字体、图标 | `assets/ui/images/`、`assets/ui/fonts/`、`assets/ui/icons/` |
+| 文档图片和附件 | `docs/assets/` |
+| 文档示例文件 | `docs/examples/` |

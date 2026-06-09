@@ -1,3 +1,5 @@
+#define DEBUG_LEVEL LVL_INFO
+
 #include "app_init.h"
 
 #include "app_debug.h"

@@ -1,3 +1,5 @@
+#define DEBUG_LEVEL LVL_DEBUG
+
 #include "app_task.h"
 
 #include "comm_service.h"
