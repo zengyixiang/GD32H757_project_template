@@ -14,6 +14,5 @@
 
 void board_early_init(void);
 void board_init(void);
-void board_tick(void);
 
 #endif

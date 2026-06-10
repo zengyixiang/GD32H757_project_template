@@ -26,7 +26,3 @@ void board_init(void)
     board_eeprom_init();
     board_sensor_init();
 }
-
-void board_tick(void)
-{
-}

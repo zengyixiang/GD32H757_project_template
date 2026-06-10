@@ -27,6 +27,3 @@ void board_init(void)
     board_sensor_init();
 }
 
-void board_tick(void)
-{
-}
