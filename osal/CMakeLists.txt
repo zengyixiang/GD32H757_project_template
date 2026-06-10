@@ -12,4 +12,5 @@ target_include_directories(osal_lib PUBLIC
 )
 target_link_libraries(osal_lib PRIVATE
     drivers_lib
+    freertos_kernel_stub
 )

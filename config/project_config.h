@@ -5,6 +5,6 @@
 #define PROJECT_BOARD_NAME "gd32h757_eval"
 #endif
 
-#define PROJECT_USE_FREERTOS 0
+#define PROJECT_USE_FREERTOS 1
 
 #endif

@@ -35,7 +35,7 @@ set(CMAKE_CXX_FLAGS_RELEASE "-O3 -g0")
 
 set(CMAKE_CXX_FLAGS "${CMAKE_C_FLAGS} -fno-rtti -fno-exceptions -fno-threadsafe-statics")
 
-set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/linker/gd32h7xx_xM_flash.ld" CACHE FILEPATH "Linker script")
+set(LINKER_SCRIPT "${CMAKE_SOURCE_DIR}/drivers/cmsis/GD/GD32H7xx/Source/GCC/Ld/gd32h7xx_xM_flash.ld" CACHE FILEPATH "Linker script")
 
 set(CMAKE_EXE_LINKER_FLAGS "${TARGET_FLAGS}")
 set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -T \"${LINKER_SCRIPT}\"")

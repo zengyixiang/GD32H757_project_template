@@ -1,7 +1,17 @@
-add_library(freertos_kernel_stub STATIC)
-target_sources(freertos_kernel_stub PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/freertos_kernel.c
+set(FREERTOS_KERNEL_PATH "${CMAKE_CURRENT_SOURCE_DIR}/FreeRTOS-Kernel")
+
+set(FREERTOS_PORT "GCC_ARM_CM7" CACHE STRING "FreeRTOS port name" FORCE)
+set(FREERTOS_HEAP "4" CACHE STRING "FreeRTOS heap implementation" FORCE)
+
+add_library(freertos_config INTERFACE)
+target_include_directories(freertos_config SYSTEM INTERFACE
+    ${CMAKE_SOURCE_DIR}/config
 )
-target_include_directories(freertos_kernel_stub PUBLIC
-    ${CMAKE_CURRENT_SOURCE_DIR}
+
+add_subdirectory(${FREERTOS_KERNEL_PATH} FreeRTOS-Kernel)
+
+add_library(freertos_kernel_stub INTERFACE)
+target_link_libraries(freertos_kernel_stub INTERFACE
+    freertos_kernel
+    freertos_config
 )

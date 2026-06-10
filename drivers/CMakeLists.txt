@@ -6,8 +6,12 @@ set(GD32_COMPILE_DEFINITIONS
 add_library(cmsis_core INTERFACE)
 target_include_directories(cmsis_core INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/cmsis
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmsis/GD/GD32H7xx/Include
 )
-
+target_sources(cmsis_core INTERFACE
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmsis/GD/GD32H7xx/Source/system_gd32h7xx.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/cmsis/GD/GD32H7xx/Source/GCC/newlib/syscalls.c
+)
 add_library(gd32_device INTERFACE)
 target_include_directories(gd32_device INTERFACE
     ${CMAKE_CURRENT_SOURCE_DIR}/cmsis/GD/GD32H7xx/Include
