@@ -2,11 +2,11 @@
     \file    gd32h7xx_spi.h
     \brief   definitions for the SPI
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -39,7 +39,7 @@ OF SUCH DAMAGE.
 
 /* SPIx(x=0,1,2,3,4,5) definitions */
 #define SPI0                            (SPI_BASE + 0x0000F800U)
-#define SPI1                            SPI_BASE
+#define SPI1                            (SPI_BASE)
 #define SPI2                            (SPI_BASE + 0x00000400U)
 #define SPI3                            (SPI_BASE + 0x0000FC00U)
 #define SPI4                            (SPI_BASE + 0x00011800U)
@@ -183,7 +183,6 @@ OF SUCH DAMAGE.
 /* SPI_QCTL(only for SPI3/4) */
 #define SPI_QCTL_QMOD                   BIT(0)                                  /*!< quad-SPI mode enable */
 #define SPI_QCTL_QRD                    BIT(1)                                  /*!< quad-SPI mode read select */
-#define SPI_QCTL_IO23_DRV               BIT(2)                                  /*!< drive SPI_IO2 and SPI_IO3 enable */
 
 /* SPI_RXDLYCK */
 #define SPI_RXDLYCK_SRXD                BITS(0,4)                               /*!< slave mode receive clock delay units*/
@@ -450,7 +449,7 @@ typedef struct
 
 /* I2S standard */
 #define I2SCTL_I2SSTD(regval)           (BITS(4,5) & ((uint32_t)(regval) << 4))
-#define I2S_STD_PHILLIPS                I2SCTL_I2SSTD(0)                        /*!< I2S phillips standard */
+#define I2S_STD_PHILIPS                 I2SCTL_I2SSTD(0)                        /*!< I2S philips standard */
 #define I2S_STD_MSB                     I2SCTL_I2SSTD(1)                        /*!< I2S MSB standard */
 #define I2S_STD_LSB                     I2SCTL_I2SSTD(2)                        /*!< I2S LSB standard */
 #define I2S_STD_PCMSHORT                I2SCTL_I2SSTD(3)                        /*!< I2S PCM short standard */
@@ -635,10 +634,6 @@ void spi_quad_disable(uint32_t spi_periph);
 void spi_quad_write_enable(uint32_t spi_periph);
 /* enable quad wire SPI read */
 void spi_quad_read_enable(uint32_t spi_periph);
-/* enable quad wire SPI_IO2 and SPI_IO3 pin output */
-void spi_quad_io23_output_enable(uint32_t spi_periph);
-/* disable quad wire SPI_IO2 and SPI_IO3 pin output */
-void spi_quad_io23_output_disable(uint32_t spi_periph);
 
 /* SPI underrun functions */
 /* slave transmitter underrun detected operation */

@@ -2,11 +2,11 @@
     \file    gd32h7xx_tmu.c
     \brief   TMU driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -59,7 +59,6 @@ void tmu_struct_para_init(tmu_parameter_struct* init_struct)
 {
     /* set the struct with the default values */
     init_struct->mode               = TMU_MODE_COS;
-    init_struct->iterations_number  = TMU_ITERATION_STEPS_20;
     init_struct->scale              = TMU_SCALING_FACTOR_1;
     init_struct->dma_read           = TMU_READ_DMA_DISABLE;
     init_struct->dma_write          = TMU_WRITE_DMA_DISABLE;
@@ -74,7 +73,6 @@ void tmu_struct_para_init(tmu_parameter_struct* init_struct)
     \param[in]  init_struct: pointer to init parameter struct
                   mode: TMU_MODE_COS,TMU_MODE_SIN,TMU_MODE_ATAN2,TMU_MODE_MODULUS,TMU_MODE_ATAN,
                         TMU_MODE_COSH,TMU_MODE_SINH,TMU_MODE_ATANH,TMU_MODE_LN,TMU_MODE_SQRT
-                  iterations_number: TMU_ITERATION_STEPS_x(x=4,8,12,..24)
                   scale: TMU_SCALING_FACTOR_x(x=1,2,4,8,16,32,64,128)
                   dma_read: TMU_READ_DMA_DISABLE, TMU_READ_DMA_ENABLE
                   dma_write: TMU_WRITE_DMA_DISABLE, TMU_WRITE_DMA_ENABLE
@@ -87,8 +85,8 @@ void tmu_struct_para_init(tmu_parameter_struct* init_struct)
 */
 void tmu_init(tmu_parameter_struct* init_struct)
 {
-    uint32_t reg = 0U;
-    reg |= ( init_struct->mode | init_struct->iterations_number | init_struct->scale |\
+        uint32_t reg = 0x50U;
+    reg |= ( init_struct->mode | init_struct->scale |\
              init_struct->dma_read | init_struct->dma_write | init_struct->read_times |\
              init_struct->write_times | init_struct->output_width | init_struct->input_width);
     TMU_CS = reg;
@@ -217,6 +215,7 @@ void tmu_one_q31_read(uint32_t* p)
 void tmu_two_q31_read(uint32_t* p1, uint32_t* p2)
 {
     *p1 = TMU_ODATA;
+    __DSB();
     *p2 = TMU_ODATA;
 }
 
@@ -233,4 +232,25 @@ void tmu_two_q15_read(uint16_t* p1, uint16_t* p2)
     data = TMU_ODATA;
     *p1 = (uint16_t)data;
     *p2 = (uint16_t)(data >> 16U);
+}
+
+/*!
+    \brief      get TMU flag 
+    \param[in]  flag: the TMU flags
+                one or more parameters can be selected which are shown as below:
+      \arg        TMU_FLAG_END: end of TMU operation flag
+    \param[out] none
+    \retval     FlagStatus: SET or RESET
+*/
+FlagStatus tmu_flag_get(uint32_t flag)
+{
+    FlagStatus ret_sta = RESET;
+
+    if(TMU_CS & flag) {
+        ret_sta = SET;
+    } else {
+        ret_sta = RESET;
+    }
+
+    return ret_sta;
 }

@@ -2,11 +2,11 @@
     \file    gd32h7xx_enet.h
     \brief   definitions for the ENET
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -42,64 +42,64 @@ OF SUCH DAMAGE.
 #define ENET1                            (ENET_BASE + 0x00002000U)
 
 /* registers definitions */
-#define ENET_MAC_CFG(enetx)              REG32((enetx) + 0x00000000U)                 /*!< ethernet MAC configuration register */
-#define ENET_MAC_FRMF(enetx)             REG32((enetx) + 0x00000004U)                 /*!< ethernet MAC frame filter register */
-#define ENET_MAC_HLH(enetx)              REG32((enetx) + 0x00000008U)                 /*!< ethernet MAC hash list high register */
-#define ENET_MAC_HLL(enetx)              REG32((enetx) + 0x0000000CU)                 /*!< ethernet MAC hash list low register */
-#define ENET_MAC_PHY_CTL(enetx)          REG32((enetx) + 0x00000010U)                 /*!< ethernet MAC PHY control register */
-#define ENET_MAC_PHY_DATA(enetx)         REG32((enetx) + 0x00000014U)                 /*!< ethernet MAC PHY data register */
-#define ENET_MAC_FCTL(enetx)             REG32((enetx) + 0x00000018U)                 /*!< ethernet MAC flow control register */
-#define ENET_MAC_VLT(enetx)              REG32((enetx) + 0x0000001CU)                 /*!< ethernet MAC VLAN tag register */
-#define ENET_MAC_RWFF(enetx)             REG32((enetx) + 0x00000028U)                 /*!< ethernet MAC remote wakeup frame filter register */
-#define ENET_MAC_WUM(enetx)              REG32((enetx) + 0x0000002CU)                 /*!< ethernet MAC wakeup management register */
-#define ENET_MAC_DBG(enetx)              REG32((enetx) + 0x00000034U)                 /*!< ethernet MAC debug register */
-#define ENET_MAC_INTF(enetx)             REG32((enetx) + 0x00000038U)                 /*!< ethernet MAC interrupt flag register */
-#define ENET_MAC_INTMSK(enetx)           REG32((enetx) + 0x0000003CU)                 /*!< ethernet MAC interrupt mask register */
-#define ENET_MAC_ADDR0H(enetx)           REG32((enetx) + 0x00000040U)                 /*!< ethernet MAC address 0 high register */
-#define ENET_MAC_ADDR0L(enetx)           REG32((enetx) + 0x00000044U)                 /*!< ethernet MAC address 0 low register */
-#define ENET_MAC_ADDR1H(enetx)           REG32((enetx) + 0x00000048U)                 /*!< ethernet MAC address 1 high register */
-#define ENET_MAC_ADDR1L(enetx)           REG32((enetx) + 0x0000004CU)                 /*!< ethernet MAC address 1 low register */
-#define ENET_MAC_ADDT2H(enetx)           REG32((enetx) + 0x00000050U)                 /*!< ethernet MAC address 2 high register */
-#define ENET_MAC_ADDR2L(enetx)           REG32((enetx) + 0x00000054U)                 /*!< ethernet MAC address 2 low register */
-#define ENET_MAC_ADDR3H(enetx)           REG32((enetx) + 0x00000058U)                 /*!< ethernet MAC address 3 high register */
-#define ENET_MAC_ADDR3L(enetx)           REG32((enetx) + 0x0000005CU)                 /*!< ethernet MAC address 3 low register */
-#define ENET_MAC_FCTH(enetx)             REG32((enetx) + 0x00001080U)                 /*!< ethernet MAC flow control threshold register */
-#define ENET_MSC_CTL(enetx)              REG32((enetx) + 0x00000100U)                 /*!< ethernet MSC control register */
-#define ENET_MSC_RINTF(enetx)            REG32((enetx) + 0x00000104U)                 /*!< ethernet MSC receive interrupt flag register */
-#define ENET_MSC_TINTF(enetx)            REG32((enetx) + 0x00000108U)                 /*!< ethernet MSC transmit interrupt flag register */
-#define ENET_MSC_RINTMSK(enetx)          REG32((enetx) + 0x0000010CU)                 /*!< ethernet MSC receive interrupt mask register */
-#define ENET_MSC_TINTMSK(enetx)          REG32((enetx) + 0x00000110U)                 /*!< ethernet MSC transmit interrupt mask register */
-#define ENET_MSC_SCCNT(enetx)            REG32((enetx) + 0x0000014CU)                 /*!< ethernet MSC transmitted good frames after a single collision counter register */
-#define ENET_MSC_MSCCNT(enetx)           REG32((enetx) + 0x00000150U)                 /*!< ethernet MSC transmitted good frames after more than a single collision counter register */
-#define ENET_MSC_TGFCNT(enetx)           REG32((enetx) + 0x00000168U)                 /*!< ethernet MSC transmitted good frames counter register */
-#define ENET_MSC_RFCECNT(enetx)          REG32((enetx) + 0x00000194U)                 /*!< ethernet MSC received frames with CRC error counter register */
-#define ENET_MSC_RFAECNT(enetx)          REG32((enetx) + 0x00000198U)                 /*!< ethernet MSC received frames with alignment error counter register */
-#define ENET_MSC_RGUFCNT(enetx)          REG32((enetx) + 0x000001C4U)                 /*!< ethernet MSC received good unicast frames counter register */
-#define ENET_PTP_TSCTL(enetx)            REG32((enetx) + 0x00000700U)                 /*!< ethernet PTP time stamp control register */
-#define ENET_PTP_SSINC(enetx)            REG32((enetx) + 0x00000704U)                 /*!< ethernet PTP subsecond increment register */
-#define ENET_PTP_TSH(enetx)              REG32((enetx) + 0x00000708U)                 /*!< ethernet PTP time stamp high register */
-#define ENET_PTP_TSL(enetx)              REG32((enetx) + 0x0000070CU)                 /*!< ethernet PTP time stamp low register */
-#define ENET_PTP_TSUH(enetx)             REG32((enetx) + 0x00000710U)                 /*!< ethernet PTP time stamp update high register */
-#define ENET_PTP_TSUL(enetx)             REG32((enetx) + 0x00000714U)                 /*!< ethernet PTP time stamp update low register */
-#define ENET_PTP_TSADDEND(enetx)         REG32((enetx) + 0x00000718U)                 /*!< ethernet PTP time stamp addend register */
-#define ENET_PTP_ETH(enetx)              REG32((enetx) + 0x0000071CU)                 /*!< ethernet PTP expected time high register */
-#define ENET_PTP_ETL(enetx)              REG32((enetx) + 0x00000720U)                 /*!< ethernet PTP expected time low register */
-#define ENET_PTP_TSF(enetx)              REG32((enetx) + 0x00000728U)                 /*!< ethernet PTP time stamp flag register */
-#define ENET_PTP_PPSCTL(enetx)           REG32((enetx) + 0x0000072CU)                 /*!< ethernet PTP PPS control register */
-#define ENET_DMA_BCTL(enetx)             REG32((enetx) + 0x00001000U)                 /*!< ethernet DMA bus control register */
-#define ENET_DMA_TPEN(enetx)             REG32((enetx) + 0x00001004U)                 /*!< ethernet DMA transmit poll enable register */
-#define ENET_DMA_RPEN(enetx)             REG32((enetx) + 0x00001008U)                 /*!< ethernet DMA receive poll enable register */
-#define ENET_DMA_RDTADDR(enetx)          REG32((enetx) + 0x0000100CU)                 /*!< ethernet DMA receive descriptor table address register */
-#define ENET_DMA_TDTADDR(enetx)          REG32((enetx) + 0x00001010U)                 /*!< ethernet DMA transmit descriptor table address register */
-#define ENET_DMA_STAT(enetx)             REG32((enetx) + 0x00001014U)                 /*!< ethernet DMA status register */
-#define ENET_DMA_CTL(enetx)              REG32((enetx) + 0x00001018U)                 /*!< ethernet DMA control register */
-#define ENET_DMA_INTEN(enetx)            REG32((enetx) + 0x0000101CU)                 /*!< ethernet DMA interrupt enable register */
-#define ENET_DMA_MFBOCNT(enetx)          REG32((enetx) + 0x00001020U)                 /*!< ethernet DMA missed frame and buffer overflow counter register */
-#define ENET_DMA_RSWDC(enetx)            REG32((enetx) + 0x00001024U)                 /*!< ethernet DMA receive state watchdog counter register */
-#define ENET_DMA_CTDADDR(enetx)          REG32((enetx) + 0x00001048U)                 /*!< ethernet DMA current transmit descriptor address register */
-#define ENET_DMA_CRDADDR(enetx)          REG32((enetx) + 0x0000104CU)                 /*!< ethernet DMA current receive descriptor address register */
-#define ENET_DMA_CTBADDR(enetx)          REG32((enetx) + 0x00001050U)                 /*!< ethernet DMA current transmit buffer address register */
-#define ENET_DMA_CRBADDR(enetx)          REG32((enetx) + 0x00001054U)                 /*!< ethernet DMA current receive buffer address register */
+#define ENET_MAC_CFG(enetx)              REG32((enetx) + 0x00000000U)           /*!< ethernet MAC configuration register */
+#define ENET_MAC_FRMF(enetx)             REG32((enetx) + 0x00000004U)           /*!< ethernet MAC frame filter register */
+#define ENET_MAC_HLH(enetx)              REG32((enetx) + 0x00000008U)           /*!< ethernet MAC hash list high register */
+#define ENET_MAC_HLL(enetx)              REG32((enetx) + 0x0000000CU)           /*!< ethernet MAC hash list low register */
+#define ENET_MAC_PHY_CTL(enetx)          REG32((enetx) + 0x00000010U)           /*!< ethernet MAC PHY control register */
+#define ENET_MAC_PHY_DATA(enetx)         REG32((enetx) + 0x00000014U)           /*!< ethernet MAC PHY data register */
+#define ENET_MAC_FCTL(enetx)             REG32((enetx) + 0x00000018U)           /*!< ethernet MAC flow control register */
+#define ENET_MAC_VLT(enetx)              REG32((enetx) + 0x0000001CU)           /*!< ethernet MAC VLAN tag register */
+#define ENET_MAC_RWFF(enetx)             REG32((enetx) + 0x00000028U)           /*!< ethernet MAC remote wakeup frame filter register */
+#define ENET_MAC_WUM(enetx)              REG32((enetx) + 0x0000002CU)           /*!< ethernet MAC wakeup management register */
+#define ENET_MAC_DBG(enetx)              REG32((enetx) + 0x00000034U)           /*!< ethernet MAC debug register */
+#define ENET_MAC_INTF(enetx)             REG32((enetx) + 0x00000038U)           /*!< ethernet MAC interrupt flag register */
+#define ENET_MAC_INTMSK(enetx)           REG32((enetx) + 0x0000003CU)           /*!< ethernet MAC interrupt mask register */
+#define ENET_MAC_ADDR0H(enetx)           REG32((enetx) + 0x00000040U)           /*!< ethernet MAC address 0 high register */
+#define ENET_MAC_ADDR0L(enetx)           REG32((enetx) + 0x00000044U)           /*!< ethernet MAC address 0 low register */
+#define ENET_MAC_ADDR1H(enetx)           REG32((enetx) + 0x00000048U)           /*!< ethernet MAC address 1 high register */
+#define ENET_MAC_ADDR1L(enetx)           REG32((enetx) + 0x0000004CU)           /*!< ethernet MAC address 1 low register */
+#define ENET_MAC_ADDR2H(enetx)           REG32((enetx) + 0x00000050U)           /*!< ethernet MAC address 2 high register */
+#define ENET_MAC_ADDR2L(enetx)           REG32((enetx) + 0x00000054U)           /*!< ethernet MAC address 2 low register */
+#define ENET_MAC_ADDR3H(enetx)           REG32((enetx) + 0x00000058U)           /*!< ethernet MAC address 3 high register */
+#define ENET_MAC_ADDR3L(enetx)           REG32((enetx) + 0x0000005CU)           /*!< ethernet MAC address 3 low register */
+#define ENET_MAC_FCTH(enetx)             REG32((enetx) + 0x00001080U)           /*!< ethernet MAC flow control threshold register */
+#define ENET_MSC_CTL(enetx)              REG32((enetx) + 0x00000100U)           /*!< ethernet MSC control register */
+#define ENET_MSC_RINTF(enetx)            REG32((enetx) + 0x00000104U)           /*!< ethernet MSC receive interrupt flag register */
+#define ENET_MSC_TINTF(enetx)            REG32((enetx) + 0x00000108U)           /*!< ethernet MSC transmit interrupt flag register */
+#define ENET_MSC_RINTMSK(enetx)          REG32((enetx) + 0x0000010CU)           /*!< ethernet MSC receive interrupt mask register */
+#define ENET_MSC_TINTMSK(enetx)          REG32((enetx) + 0x00000110U)           /*!< ethernet MSC transmit interrupt mask register */
+#define ENET_MSC_SCCNT(enetx)            REG32((enetx) + 0x0000014CU)           /*!< ethernet MSC transmitted good frames after a single collision counter register */
+#define ENET_MSC_MSCCNT(enetx)           REG32((enetx) + 0x00000150U)           /*!< ethernet MSC transmitted good frames after more than a single collision counter register */
+#define ENET_MSC_TGFCNT(enetx)           REG32((enetx) + 0x00000168U)           /*!< ethernet MSC transmitted good frames counter register */
+#define ENET_MSC_RFCECNT(enetx)          REG32((enetx) + 0x00000194U)           /*!< ethernet MSC received frames with CRC error counter register */
+#define ENET_MSC_RFAECNT(enetx)          REG32((enetx) + 0x00000198U)           /*!< ethernet MSC received frames with alignment error counter register */
+#define ENET_MSC_RGUFCNT(enetx)          REG32((enetx) + 0x000001C4U)           /*!< ethernet MSC received good unicast frames counter register */
+#define ENET_PTP_TSCTL(enetx)            REG32((enetx) + 0x00000700U)           /*!< ethernet PTP time stamp control register */
+#define ENET_PTP_SSINC(enetx)            REG32((enetx) + 0x00000704U)           /*!< ethernet PTP subsecond increment register */
+#define ENET_PTP_TSH(enetx)              REG32((enetx) + 0x00000708U)           /*!< ethernet PTP time stamp high register */
+#define ENET_PTP_TSL(enetx)              REG32((enetx) + 0x0000070CU)           /*!< ethernet PTP time stamp low register */
+#define ENET_PTP_TSUH(enetx)             REG32((enetx) + 0x00000710U)           /*!< ethernet PTP time stamp update high register */
+#define ENET_PTP_TSUL(enetx)             REG32((enetx) + 0x00000714U)           /*!< ethernet PTP time stamp update low register */
+#define ENET_PTP_TSADDEND(enetx)         REG32((enetx) + 0x00000718U)           /*!< ethernet PTP time stamp addend register */
+#define ENET_PTP_ETH(enetx)              REG32((enetx) + 0x0000071CU)           /*!< ethernet PTP expected time high register */
+#define ENET_PTP_ETL(enetx)              REG32((enetx) + 0x00000720U)           /*!< ethernet PTP expected time low register */
+#define ENET_PTP_TSF(enetx)              REG32((enetx) + 0x00000728U)           /*!< ethernet PTP time stamp flag register */
+#define ENET_PTP_PPSCTL(enetx)           REG32((enetx) + 0x0000072CU)           /*!< ethernet PTP PPS control register */
+#define ENET_DMA_BCTL(enetx)             REG32((enetx) + 0x00001000U)           /*!< ethernet DMA bus control register */
+#define ENET_DMA_TPEN(enetx)             REG32((enetx) + 0x00001004U)           /*!< ethernet DMA transmit poll enable register */
+#define ENET_DMA_RPEN(enetx)             REG32((enetx) + 0x00001008U)           /*!< ethernet DMA receive poll enable register */
+#define ENET_DMA_RDTADDR(enetx)          REG32((enetx) + 0x0000100CU)           /*!< ethernet DMA receive descriptor table address register */
+#define ENET_DMA_TDTADDR(enetx)          REG32((enetx) + 0x00001010U)           /*!< ethernet DMA transmit descriptor table address register */
+#define ENET_DMA_STAT(enetx)             REG32((enetx) + 0x00001014U)           /*!< ethernet DMA status register */
+#define ENET_DMA_CTL(enetx)              REG32((enetx) + 0x00001018U)           /*!< ethernet DMA control register */
+#define ENET_DMA_INTEN(enetx)            REG32((enetx) + 0x0000101CU)           /*!< ethernet DMA interrupt enable register */
+#define ENET_DMA_MFBOCNT(enetx)          REG32((enetx) + 0x00001020U)           /*!< ethernet DMA missed frame and buffer overflow counter register */
+#define ENET_DMA_RSWDC(enetx)            REG32((enetx) + 0x00001024U)           /*!< ethernet DMA receive state watchdog counter register */
+#define ENET_DMA_CTDADDR(enetx)          REG32((enetx) + 0x00001048U)           /*!< ethernet DMA current transmit descriptor address register */
+#define ENET_DMA_CRDADDR(enetx)          REG32((enetx) + 0x0000104CU)           /*!< ethernet DMA current receive descriptor address register */
+#define ENET_DMA_CTBADDR(enetx)          REG32((enetx) + 0x00001050U)           /*!< ethernet DMA current transmit buffer address register */
+#define ENET_DMA_CRBADDR(enetx)          REG32((enetx) + 0x00001054U)           /*!< ethernet DMA current receive buffer address register */
 
 /* bits definitions */
 /* ENET_MAC_CFG */
@@ -470,9 +470,11 @@ OF SUCH DAMAGE.
 /* ENET DMA Tx descriptor TDES3 */
 #define ENET_TDES3_TB2AP                 BITS(0,31)                             /*!< transmit buffer 2 address pointer (or next descriptor address) / transmit frame timestamp high 32-bit value */
 
-//#define SELECT_DESCRIPTORS_ENHANCED_MODE
+#ifndef SELECT_DESCRIPTORS_ENHANCED_MODE
+#define SELECT_DESCRIPTORS_ENHANCED_MODE    0U
+#endif
 
-#ifdef SELECT_DESCRIPTORS_ENHANCED_MODE
+#if SELECT_DESCRIPTORS_ENHANCED_MODE
 /* ENET DMA Tx descriptor TDES6 */
 #define ENET_TDES6_TTSL                  BITS(0,31)                             /*!< transmit frame timestamp low 32-bit value */
 
@@ -516,7 +518,7 @@ OF SUCH DAMAGE.
 /* ENET DMA Rx descriptor RDES3 */
 #define ENET_RDES3_RB2AP                 BITS(0,31)                             /*!< receive buffer 2 address pointer (next descriptor address)/receive frame timestamp high 32-bit value */
 
-#ifdef SELECT_DESCRIPTORS_ENHANCED_MODE
+#if SELECT_DESCRIPTORS_ENHANCED_MODE
 /* ENET DMA Rx descriptor RDES4 */
 #define ENET_RDES4_IPPLDT                BITS(0,2)                              /*!< IP frame payload type */
 #define ENET_RDES4_IPHERR                BIT(3)                                 /*!< IP frame header error */
@@ -775,7 +777,6 @@ typedef enum {
 
 /* phy mode and mac loopback configurations */
 typedef enum {
-    ENET_AUTO_NEGOTIATION           = 0x01U,                                        /*!< PHY auto negotiation */
     ENET_100M_FULLDUPLEX            = (ENET_MAC_CFG_SPD | ENET_MAC_CFG_DPM),        /*!< 100Mbit/s, full-duplex */
     ENET_100M_HALFDUPLEX            = ENET_MAC_CFG_SPD,                             /*!< 100Mbit/s, half-duplex */
     ENET_10M_FULLDUPLEX             = ENET_MAC_CFG_DPM,                             /*!< 10Mbit/s, full-duplex */
@@ -876,7 +877,7 @@ typedef struct {
     uint32_t buffer1_addr;                                                          /*!< buffer1 address pointer/timestamp low */
     uint32_t buffer2_next_desc_addr;                                                /*!< buffer2 or next descriptor address pointer/timestamp high */
 
-#ifdef SELECT_DESCRIPTORS_ENHANCED_MODE
+#if SELECT_DESCRIPTORS_ENHANCED_MODE
     uint32_t extended_status;                                                       /*!< extended status */
     uint32_t reserved;                                                              /*!< reserved */
     uint32_t timestamp_low;                                                         /*!< timestamp low */
@@ -992,10 +993,10 @@ typedef struct {
 #define ENET_MDC_HCLK_DIV62                       MAC_PHY_CTL_CLR(1)                            /*!< HCLK:100-150 MHz; MDC clock= HCLK/62 */
 #define ENET_MDC_HCLK_DIV16                       MAC_PHY_CTL_CLR(2)                            /*!< HCLK:20-35 MHz; MDC clock= HCLK/16 */
 #define ENET_MDC_HCLK_DIV26                       MAC_PHY_CTL_CLR(3)                            /*!< HCLK:35-60 MHz; MDC clock= HCLK/26 */
-#define ENET_MDC_HCLK_DIV102                      MAC_PHY_CTL_CLR(4)                            /*!< HCLK:150-180 MHz; MDC clock= HCLK/102 */
+#define ENET_MDC_HCLK_DIV102                      MAC_PHY_CTL_CLR(4)                            /*!< HCLK:150-250 MHz; MDC clock= HCLK/102 */
 #define ENET_MDC_HCLK_DIV124                      MAC_PHY_CTL_CLR(5)                            /*!< HCLK:250-300 MHz; MDC clock= HCLK/124 */
 #define ENET_MDC_HCLK_DIV142                      MAC_PHY_CTL_CLR(6)                            /*!< HCLK:300-350 MHz; MDC clock= HCLK/142 */
-#define ENET_MDC_HCLK_DIV162                      MAC_PHY_CTL_CLR(7)
+
 
 #define MAC_PHY_CTL_PR(regval)                    (BITS(6,10) & ((uint32_t)(regval) << 6U))     /*!< write value to ENET_MAC_PHY_CTL_PR bit field */
 
@@ -1313,8 +1314,8 @@ typedef struct {
 #define RDES4_IPPLDT(regval)                      (BITS(0,2) & ((uint32_t)(regval) << 0U))      /*!< write value to ENET DMA RDES4 IPPLDT bit field */
 #define GET_RDES4_IPPLDT(regval)                  GET_BITS((regval), 0U, 2U)                    /*!< get value of ENET DMA RDES4 IPPLDT bit field */
 
-#define RDES4_PTPMT(regval)                       (BITS(8,11) & ((uint32_t)(regval) << 8U))      /*!< write value to ENET DMA RDES4 PTPMT bit field */
-#define GET_RDES4_PTPMT(regval)                   GET_BITS((regval), 8U, 11U)                    /*!< get value of ENET DMA RDES4 PTPMT bit field */
+#define RDES4_PTPMT(regval)                       (BITS(8,11) & ((uint32_t)(regval) << 8U))     /*!< write value to ENET DMA RDES4 PTPMT bit field */
+#define GET_RDES4_PTPMT(regval)                   GET_BITS((regval), 8U, 11U)                   /*!< get value of ENET DMA RDES4 PTPMT bit field */
 
 /* ENET register mask value */
 #define MAC_CFG_MASK                              ((uint32_t)0xFD30810FU)                       /*!< ENET_MAC_CFG register mask */
@@ -1323,12 +1324,12 @@ typedef struct {
 #define DMA_BCTL_MASK                             ((uint32_t)0xF800007DU)                       /*!< ENET_DMA_BCTL register mask */
 #define ENET_MSC_PRESET_MASK                      (~(ENET_MSC_CTL_PMC | ENET_MSC_CTL_AFHPM))    /*!< ENET_MSC_CTL preset mask */
 
-#ifdef SELECT_DESCRIPTORS_ENHANCED_MODE
-#define ETH_DMATXDESC_SIZE                        0x00000020U                                         /*!< TxDMA enhanced descriptor size */
-#define ETH_DMARXDESC_SIZE                        0x00000020U                                         /*!< RxDMA enhanced descriptor size */
+#if SELECT_DESCRIPTORS_ENHANCED_MODE
+#define ETH_DMATXDESC_SIZE                        0x00000020U                                   /*!< TxDMA enhanced descriptor size */
+#define ETH_DMARXDESC_SIZE                        0x00000020U                                   /*!< RxDMA enhanced descriptor size */
 #else
-#define ETH_DMATXDESC_SIZE                        0x00000010U                                         /*!< TxDMA descriptor size */
-#define ETH_DMARXDESC_SIZE                        0x00000010U                                         /*!< RxDMA descriptor size */
+#define ETH_DMATXDESC_SIZE                        0x00000010U                                   /*!< TxDMA descriptor size */
+#define ETH_DMARXDESC_SIZE                        0x00000010U                                   /*!< RxDMA descriptor size */
 #endif /* SELECT_DESCRIPTORS_ENHANCED_MODE */
 
 
@@ -1384,16 +1385,10 @@ typedef enum {
 #define ENET_TXBUF_SIZE                  ENET_MAX_FRAME_SIZE                    /*!< ethernet transmit buffer size */
 #endif
 
-/* #define SELECT_DESCRIPTORS_ENHANCED_MODE */
-
-/* #define USE_DELAY */
-
 #ifndef _PHY_H_
 #define DP83848                          0U
 #define LAN8700                          1U
 #define PHY_TYPE                         DP83848
-
-#define PHY_ADDRESS                      ((uint16_t)1U)                         /*!< phy address determined by the hardware */
 
 /* PHY read write timeouts */
 #define PHY_READ_TO                      ((uint32_t)0x0004FFFFU)                /*!< PHY read timeout */
@@ -1408,30 +1403,30 @@ typedef enum {
 #define PHY_REG_BSR                      1U                                     /*!< tranceiver basic status register */
 
 /* PHY basic control register */
-#define PHY_RESET                        ((uint16_t)0x8000U)                     /*!< PHY reset */
-#define PHY_LOOPBACK                     ((uint16_t)0x4000U)                     /*!< enable phy loop-back mode */
-#define PHY_FULLDUPLEX_100M              ((uint16_t)0x2100U)                     /*!< configure speed to 100 Mbit/s and the full-duplex mode */
-#define PHY_HALFDUPLEX_100M              ((uint16_t)0x2000U)                     /*!< configure speed to 100 Mbit/s and the half-duplex mode */
-#define PHY_FULLDUPLEX_10M               ((uint16_t)0x0100U)                     /*!< configure speed to 10 Mbit/s and the full-duplex mode */
-#define PHY_HALFDUPLEX_10M               ((uint16_t)0x0000U)                     /*!< configure speed to 10 Mbit/s and the half-duplex mode */
-#define PHY_AUTONEGOTIATION              ((uint16_t)0x1000U)                     /*!< enable auto-negotiation function */
-#define PHY_RESTART_AUTONEGOTIATION      ((uint16_t)0x0200U)                     /*!< restart auto-negotiation function */
-#define PHY_POWERDOWN                    ((uint16_t)0x0800U)                     /*!< enable the power down mode */
-#define PHY_ISOLATE                      ((uint16_t)0x0400U)                     /*!< isolate PHY from MII */
+#define PHY_RESET                        ((uint16_t)0x8000U)                    /*!< PHY reset */
+#define PHY_LOOPBACK                     ((uint16_t)0x4000U)                    /*!< enable phy loop-back mode */
+#define PHY_FULLDUPLEX_100M              ((uint16_t)0x2100U)                    /*!< configure speed to 100 Mbit/s and the full-duplex mode */
+#define PHY_HALFDUPLEX_100M              ((uint16_t)0x2000U)                    /*!< configure speed to 100 Mbit/s and the half-duplex mode */
+#define PHY_FULLDUPLEX_10M               ((uint16_t)0x0100U)                    /*!< configure speed to 10 Mbit/s and the full-duplex mode */
+#define PHY_HALFDUPLEX_10M               ((uint16_t)0x0000U)                    /*!< configure speed to 10 Mbit/s and the half-duplex mode */
+#define PHY_AUTONEGOTIATION              ((uint16_t)0x1000U)                    /*!< enable auto-negotiation function */
+#define PHY_RESTART_AUTONEGOTIATION      ((uint16_t)0x0200U)                    /*!< restart auto-negotiation function */
+#define PHY_POWERDOWN                    ((uint16_t)0x0800U)                    /*!< enable the power down mode */
+#define PHY_ISOLATE                      ((uint16_t)0x0400U)                    /*!< isolate PHY from MII */
 
 /* PHY basic status register */
-#define PHY_AUTONEGO_COMPLETE            ((uint16_t)0x0020U)                     /*!< auto-negotioation process completed */
-#define PHY_LINKED_STATUS                ((uint16_t)0x0004U)                     /*!< valid link established */
-#define PHY_JABBER_DETECTION             ((uint16_t)0x0002U)                     /*!< jabber condition detected */
+#define PHY_AUTONEGO_COMPLETE            ((uint16_t)0x0020U)                    /*!< auto-negotioation process completed */
+#define PHY_LINKED_STATUS                ((uint16_t)0x0004U)                    /*!< valid link established */
+#define PHY_JABBER_DETECTION             ((uint16_t)0x0002U)                    /*!< jabber condition detected */
 
 #if(PHY_TYPE == LAN8700)
-#define PHY_SR                           31U                                     /*!< tranceiver status register */
-#define PHY_SPEED_STATUS                 ((uint16_t)0x0004U)                     /*!< configured information of speed: 10Mbit/s */
-#define PHY_DUPLEX_STATUS                ((uint16_t)0x0010U)                     /*!< configured information of duplex: full-duplex */
+#define PHY_SR                           31U                                    /*!< tranceiver status register */
+#define PHY_SPEED_STATUS                 ((uint16_t)0x0004U)                    /*!< configured information of speed: 10Mbit/s */
+#define PHY_DUPLEX_STATUS                ((uint16_t)0x0010U)                    /*!< configured information of duplex: full-duplex */
 #elif(PHY_TYPE == DP83848)
-#define PHY_SR                           16U                                     /*!< tranceiver status register */
-#define PHY_SPEED_STATUS                 ((uint16_t)0x0002U)                     /*!< configured information of speed: 10Mbit/s */
-#define PHY_DUPLEX_STATUS                ((uint16_t)0x0004U)                     /*!< configured information of duplex: full-duplex */
+#define PHY_SR                           16U                                    /*!< tranceiver status register */
+#define PHY_SPEED_STATUS                 ((uint16_t)0x0002U)                    /*!< configured information of speed: 10Mbit/s */
+#define PHY_DUPLEX_STATUS                ((uint16_t)0x0004U)                    /*!< configured information of duplex: full-duplex */
 #endif /* PHY_TYPE */
 
 #endif /* _PHY_H_ */
@@ -1440,6 +1435,8 @@ typedef enum {
 /* main function */
 /* deinitialize the ENET, and reset structure parameters for ENET initialization */
 void enet_deinit(uint32_t enet_periph);
+/* reset the ENET initpara struct, call it before using enet_initpara_config() */
+void enet_initpara_reset(void);
 /* configure the parameters which are usually less cared for initialization */
 void enet_initpara_config(enet_option_enum option, uint32_t para);
 /* initialize ENET peripheral with generally concerned parameters and the less cared parameters */
@@ -1481,7 +1478,7 @@ void enet_rx_enable(uint32_t enet_periph);
 /* ENET Rx function disable (include MAC and DMA module) */
 void enet_rx_disable(uint32_t enet_periph);
 /* put registers value into the application buffer */
-void enet_registers_get(uint32_t enet_periph, enet_registers_type_enum type, uint32_t *preg, uint32_t num);
+void enet_registers_get(uint32_t enet_periph, enet_registers_type_enum type, uint32_t preg[], uint32_t num);
 /* get the enet debug status from the debug register */
 uint32_t enet_debug_status_get(uint32_t enet_periph, uint32_t mac_debug);
 /* enable the MAC address filter */
@@ -1495,17 +1492,17 @@ ErrStatus enet_phy_config(uint32_t enet_periph);
 /* write to/read from a PHY register */
 ErrStatus enet_phy_write_read(uint32_t enet_periph, enet_phydirection_enum direction, uint16_t phy_address, uint16_t phy_reg, uint16_t *pvalue);
 /* enable the loopback function of phy chip */
-ErrStatus enet_phyloopback_enable(uint32_t enet_periph);
+ErrStatus enet_phyloopback_enable(uint32_t enet_periph, uint16_t phy_address);
 /* disable the loopback function of phy chip */
-ErrStatus enet_phyloopback_disable(uint32_t enet_periph);
+ErrStatus enet_phyloopback_disable(uint32_t enet_periph, uint16_t phy_address);
 /* enable ENET forward feature */
 void enet_forward_feature_enable(uint32_t enet_periph, uint32_t feature);
 /* disable ENET forward feature */
 void enet_forward_feature_disable(uint32_t enet_periph, uint32_t feature);
-/* enable ENET fliter feature */
-void enet_fliter_feature_enable(uint32_t enet_periph, uint32_t feature);
-/* disable ENET fliter feature */
-void enet_fliter_feature_disable(uint32_t enet_periph, uint32_t feature);
+/* enable ENET filter feature */
+void enet_filter_feature_enable(uint32_t enet_periph, uint32_t feature);
+/* disable ENET filter feature */
+void enet_filter_feature_disable(uint32_t enet_periph, uint32_t feature);
 
 /* flow control function */
 /* generate the pause frame, ENET will send pause frame after enable transmit flow control */
@@ -1557,7 +1554,7 @@ void enet_dma_feature_disable(uint32_t enet_periph, uint32_t feature);
 
 
 /* special enhanced mode function */
-#ifdef SELECT_DESCRIPTORS_ENHANCED_MODE
+#if SELECT_DESCRIPTORS_ENHANCED_MODE
 /* get the bit of extended status flag in ENET DMA descriptor */
 uint32_t enet_rx_desc_enhanced_status_get(enet_descriptors_struct *desc, uint32_t desc_status);
 /* configure descriptor to work in enhanced mode */
@@ -1580,9 +1577,9 @@ ErrStatus enet_ptpframe_transmit_enhanced_mode(uint32_t enet_periph, uint8_t buf
 /* configure descriptor to work in normal mode */
 void enet_desc_select_normal_mode(uint32_t enet_periph);
 /* initialize the dma Tx/Rx descriptors's parameters in normal chain mode with ptp function */
-void enet_ptp_normal_descriptors_chain_init(uint32_t enet_periph, enet_dmadirection_enum direction, enet_descriptors_struct *desc_ptptab);
+void enet_ptp_normal_descriptors_chain_init(uint32_t enet_periph, enet_dmadirection_enum direction, enet_descriptors_struct desc_ptptab[]);
 /* initialize the dma Tx/Rx descriptors's parameters in normal ring mode with ptp function */
-void enet_ptp_normal_descriptors_ring_init(uint32_t enet_periph, enet_dmadirection_enum direction, enet_descriptors_struct *desc_ptptab);
+void enet_ptp_normal_descriptors_ring_init(uint32_t enet_periph, enet_dmadirection_enum direction, enet_descriptors_struct desc_ptptab[]);
 /* receive a packet data with timestamp values to application buffer, when the DMA is in normal mode */
 ErrStatus enet_ptpframe_receive_normal_mode(uint32_t enet_periph, uint8_t buffer[], uint32_t bufsize, uint32_t timestamp[]);
 /* handle current received frame but without data copy to application buffer in PTP normal mode */
@@ -1617,10 +1614,6 @@ void enet_msc_counters_preset_config(uint32_t enet_periph, enet_msc_preset_enum 
 uint32_t enet_msc_counters_get(uint32_t enet_periph, enet_msc_counter_enum counter);
 
 /* PTP function */
-/* change subsecond to nanosecond */
-uint32_t enet_ptp_subsecond_2_nanosecond(uint32_t subsecond);
-/* change nanosecond to subsecond */
-uint32_t enet_ptp_nanosecond_2_subsecond(uint32_t nanosecond);
 /* enable the PTP features */
 void enet_ptp_feature_enable(uint32_t enet_periph, uint32_t feature);
 /* disable the PTP features */
@@ -1649,17 +1642,6 @@ void enet_ptp_coarsecorrection_systime_update(uint32_t enet_periph, enet_ptp_sys
 void enet_ptp_finecorrection_settime(uint32_t enet_periph, enet_ptp_systime_struct *systime_struct);
 /* get the ptp flag status */
 FlagStatus enet_ptp_flag_get(uint32_t enet_periph, uint32_t flag);
-
-/* internal function */
-/* reset the ENET initpara struct, call it before using enet_initpara_config() */
-void enet_initpara_reset(void);
-#ifdef USE_DELAY
-/* user can provide more timing precise _ENET_DELAY_ function */
-#define _ENET_DELAY_                              delay_ms
-#else
-/* default _ENET_DELAY_ function with less precise timing */
-#define _ENET_DELAY_                              enet_delay
-#endif
 
 /* get the ENET MAC/MSC/PTP/DMA status flag */
 FlagStatus enet_flag_get(uint32_t enet_periph, enet_flag_enum enet_flag);

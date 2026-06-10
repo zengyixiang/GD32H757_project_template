@@ -2,11 +2,11 @@
     \file    gd32h7xx_can.c
     \brief   CAN driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -80,6 +80,7 @@ void can_deinit(uint32_t can_periph)
 ErrStatus can_software_reset(uint32_t can_periph)
 {
     uint32_t timeout = CAN_DELAY;
+    ErrStatus status = ERROR;
 
     /* reset internal state machines and CAN registers */
     CAN_CTL0(can_periph) |= CAN_CTL0_SWRST;
@@ -88,9 +89,11 @@ ErrStatus can_software_reset(uint32_t can_periph)
         timeout--;
     }
     if(CAN_CTL0(can_periph) & CAN_CTL0_SWRST) {
-        return ERROR;
+        status = ERROR;
+    } else {
+        status = SUCCESS;
     }
-    return SUCCESS;
+    return status;
 }
 
 /*!
@@ -128,6 +131,7 @@ ErrStatus can_software_reset(uint32_t can_periph)
 ErrStatus can_init(uint32_t can_periph, can_parameter_struct *can_parameter_init)
 {
     uint32_t i;
+    ErrStatus status = ERROR;
     uint32_t *canram = (uint32_t *)(CAN_RAM(can_periph));
 
     /* clear CAN RAM */
@@ -141,71 +145,71 @@ ErrStatus can_init(uint32_t can_periph, can_parameter_struct *can_parameter_init
 
     /* reset internal state machines and CAN registers */
     if(ERROR == can_software_reset(can_periph)) {
-        return ERROR;
-    }
+        status = ERROR;
+    } else {
+        /* reset CAN_INTEN */
+        CAN_INTEN(can_periph) = 0U;
+        /* reset CAN_STAT */
+        CAN_STAT(can_periph) = (uint32_t)0xFFFFFFFFU;
+        CAN_TIMER(can_periph);
+        while(CAN_STAT(can_periph) & CAN_STAT_MS5_RFNE) {
+            CAN_STAT(can_periph) = CAN_STAT_MS5_RFNE;
+        }
 
-    /* reset CAN_INTEN */
-    CAN_INTEN(can_periph) = 0U;
-    /* reset CAN_STAT */
-    CAN_STAT(can_periph) = (uint32_t)0xFFFFFFFFU;
-    CAN_TIMER(can_periph);
-    while(CAN_STAT(can_periph) & CAN_STAT_MS5_RFNE) {
-        CAN_STAT(can_periph) = CAN_STAT_MS5_RFNE;
-    }
+        /* clear register bits */
+        CAN_CTL0(can_periph) &= ~(CAN_CTL0_RFEN | CAN_CTL0_FDEN | CAN_CTL0_SRDIS | CAN_CTL0_LAPRIOEN | CAN_CTL0_MST | CAN_CTL0_RPFQEN | CAN_CTL0_MSZ);
+        CAN_CTL2(can_periph) &= ~(CAN_CTL2_ITSRC | CAN_CTL2_IDERTR_RMF | CAN_CTL2_RRFRMS | CAN_CTL2_RFO | CAN_CTL2_EFDIS | CAN_CTL2_PREEN);
+        CAN_CTL1(can_periph) &= ~CAN_CTL1_MTO;
+        CAN_BT(can_periph) &= ~(CAN_BT_BAUDPSC | CAN_BT_SJW | CAN_BT_PTS | CAN_BT_PBS1 | CAN_BT_PBS2);
 
-    /* clear register bits */
-    CAN_CTL0(can_periph) &= ~(CAN_CTL0_RFEN | CAN_CTL0_FDEN | CAN_CTL0_SRDIS | CAN_CTL0_LAPRIOEN | CAN_CTL0_MST | CAN_CTL0_RPFQEN | CAN_CTL0_MSZ);
-    CAN_CTL2(can_periph) &= ~(CAN_CTL2_ITSRC | CAN_CTL2_IDERTR_RMF | CAN_CTL2_RRFRMS | CAN_CTL2_RFO | CAN_CTL2_EFDIS | CAN_CTL2_PREEN);
-    CAN_CTL1(can_periph) &= ~CAN_CTL1_MTO;
-    CAN_BT(can_periph) &= ~(CAN_BT_BAUDPSC | CAN_BT_SJW | CAN_BT_PTS | CAN_BT_PBS1 | CAN_BT_PBS2);
+        /* set self reception */
+        if((uint8_t)DISABLE == can_parameter_init->self_reception) {
+            CAN_CTL0(can_periph) |= CAN_CTL0_SRDIS;
+        }
+        /* enable local arbitration priority */
+        if((uint8_t)ENABLE == can_parameter_init->local_priority_enable) {
+            CAN_CTL0(can_periph) |= CAN_CTL0_LAPRIOEN;
+        }
+        /* set rx private filters and mailbox queue */
+        if((uint8_t)ENABLE == can_parameter_init->rx_private_filter_queue_enable) {
+            CAN_CTL0(can_periph) |= CAN_CTL0_RPFQEN;
+        }
+        /* configure edge filtering */
+        if((uint32_t)DISABLE == can_parameter_init->edge_filter_enable) {
+            CAN_CTL2(can_periph) |= CAN_CTL2_EFDIS;
+        }
+        /* configure protocol exception */
+        if((uint32_t)ENABLE == can_parameter_init->protocol_exception_enable) {
+            CAN_CTL2(can_periph) |= CAN_CTL2_PREEN;
+        }
+        /* set mailbox stop transmission */
+        if((uint8_t)ENABLE == can_parameter_init->mb_tx_abort_enable) {
+            CAN_CTL0(can_periph) |= CAN_CTL0_MST;
+        }
 
-    /* set self reception */
-    if((uint8_t)DISABLE == can_parameter_init->self_reception) {
-        CAN_CTL0(can_periph) |= CAN_CTL0_SRDIS;
+        /* set internal counter source */
+        CAN_CTL2(can_periph) |= can_parameter_init->internal_counter_source;
+        /* set mailbox arbitration process order */
+        CAN_CTL1(can_periph) |= can_parameter_init->mb_tx_order;
+        /* set IDE and RTR field filter type */
+        CAN_CTL2(can_periph) |= can_parameter_init->mb_rx_ide_rtr_type;
+        /* configure remote request frame */
+        CAN_CTL2(can_periph) |= can_parameter_init->mb_remote_frame;
+        /* set mailbox public filter */
+        CAN_RMPUBF(can_periph) = can_parameter_init->mb_public_filter;
+        /* configure receive filter order */
+        CAN_CTL2(can_periph) |= can_parameter_init->rx_filter_order;
+        /* set memory size */
+        CAN_CTL0(can_periph) |= can_parameter_init->memory_size;
+        /* set time segment */
+        CAN_BT(can_periph) |= (uint32_t)(BT_BAUDPSC(can_parameter_init->prescaler - 1U) |
+                                         BT_SJW((uint32_t)can_parameter_init->resync_jump_width - 1U) |
+                                         BT_PTS((uint32_t)can_parameter_init->prop_time_segment - 1U) |
+                                         BT_PBS1((uint32_t)can_parameter_init->time_segment_1 - 1U) |
+                                         BT_PBS2((uint32_t)can_parameter_init->time_segment_2 - 1U));
+        status = SUCCESS;
     }
-    /* enable local arbitration priority */
-    if((uint8_t)ENABLE == can_parameter_init->local_priority_enable) {
-        CAN_CTL0(can_periph) |= CAN_CTL0_LAPRIOEN;
-    }
-    /* set rx private filters and mailbox queue */
-    if((uint8_t)ENABLE == can_parameter_init->rx_private_filter_queue_enable) {
-        CAN_CTL0(can_periph) |= CAN_CTL0_RPFQEN;
-    }
-    /* configure edge filtering */
-    if((uint32_t)DISABLE == can_parameter_init->edge_filter_enable) {
-        CAN_CTL2(can_periph) |= CAN_CTL2_EFDIS;
-    }
-    /* configure protocol exception */
-    if((uint32_t)ENABLE == can_parameter_init->protocol_exception_enable) {
-        CAN_CTL2(can_periph) |= CAN_CTL2_PREEN;
-    }
-    /* set mailbox stop transmission */
-    if((uint8_t)ENABLE == can_parameter_init->mb_tx_abort_enable) {
-        CAN_CTL0(can_periph) |= CAN_CTL0_MST;
-    }
-
-    /* set internal counter source */
-    CAN_CTL2(can_periph) |= can_parameter_init->internal_counter_source;
-    /* set mailbox arbitration process order */
-    CAN_CTL1(can_periph) |= can_parameter_init->mb_tx_order;
-    /* set IDE and RTR field filter type */
-    CAN_CTL2(can_periph) |= can_parameter_init->mb_rx_ide_rtr_type;
-    /* configure remote request frame */
-    CAN_CTL2(can_periph) |= can_parameter_init->mb_remote_frame;
-    /* set mailbox public filter */
-    CAN_RMPUBF(can_periph) = can_parameter_init->mb_public_filter;
-    /* configure receive filter order */
-    CAN_CTL2(can_periph) |= can_parameter_init->rx_filter_order;
-    /* set memory size */
-    CAN_CTL0(can_periph) |= can_parameter_init->memory_size;
-    /* set time segment */
-    CAN_BT(can_periph) |= (uint32_t)(BT_BAUDPSC(can_parameter_init->prescaler - 1U) |
-                                     BT_SJW((uint32_t)can_parameter_init->resync_jump_width - 1U) |
-                                     BT_PTS((uint32_t)can_parameter_init->prop_time_segment - 1U) |
-                                     BT_PBS1((uint32_t)can_parameter_init->time_segment_1 - 1U) |
-                                     BT_PBS2((uint32_t)can_parameter_init->time_segment_2 - 1U));
-
-    return SUCCESS;
+    return status;
 }
 
 /*!
@@ -376,7 +380,7 @@ void can_private_filter_config(uint32_t can_periph, uint32_t index, uint32_t fil
 ErrStatus can_operation_mode_enter(uint32_t can_periph, can_operation_modes_enum mode)
 {
     uint32_t timeout;
-    ErrStatus ret = SUCCESS;
+    ErrStatus status = SUCCESS;
 
     /* enter INACTIVE mode */
     /* exit can_disable mode */
@@ -391,59 +395,60 @@ ErrStatus can_operation_mode_enter(uint32_t can_periph, can_operation_modes_enum
         timeout--;
     }
     if((CAN_CTL0_NRDY | CAN_CTL0_INAS) != (CAN_CTL0(can_periph) & (CAN_CTL0_NRDY | CAN_CTL0_INAS))) {
-        return ERROR;
-    }
+        status = ERROR;
+    } else {
+        /* configure the modes */
+        switch(mode) {
+        case CAN_NORMAL_MODE:
+            CAN_CTL1(can_periph) &= ~(CAN_CTL1_LSCMOD | CAN_CTL1_MMOD);
+            break;
+        case CAN_MONITOR_MODE:
+            CAN_CTL1(can_periph) &= ~CAN_CTL1_LSCMOD;
+            CAN_CTL1(can_periph) |= CAN_CTL1_MMOD;
+            break;
+        case CAN_LOOPBACK_SILENT_MODE:
+            CAN_CTL1(can_periph) &= ~CAN_CTL1_MMOD;
+            CAN_CTL0(can_periph) &= ~CAN_CTL0_SRDIS;
+            CAN_FDCTL(can_periph) &= ~CAN_FDCTL_TDCEN;
+            CAN_CTL1(can_periph) |= CAN_CTL1_LSCMOD;
+            break;
+        case CAN_INACTIVE_MODE:
+            break;
+        case CAN_DISABLE_MODE:
+            CAN_CTL0(can_periph) |= CAN_CTL0_CANDIS;
+            break;
+        case CAN_PN_MODE:
+            CAN_CTL0(can_periph) |= (CAN_CTL0_PNEN | CAN_CTL0_PNMOD);
+            break;
+        default:
+            break;
+        }
 
-    /* configure the modes */
-    switch(mode) {
-    case CAN_NORMAL_MODE:
-        CAN_CTL1(can_periph) &= ~(CAN_CTL1_LSCMOD | CAN_CTL1_MMOD);
-        break;
-    case CAN_MONITOR_MODE:
-        CAN_CTL1(can_periph) &= ~CAN_CTL1_LSCMOD;
-        CAN_CTL1(can_periph) |= CAN_CTL1_MMOD;
-        break;
-    case CAN_LOOPBACK_SILENT_MODE:
-        CAN_CTL1(can_periph) &= ~CAN_CTL1_MMOD;
-        CAN_CTL0(can_periph) &= ~CAN_CTL0_SRDIS;
-        CAN_FDCTL(can_periph) &= ~CAN_FDCTL_TDCEN;
-        CAN_CTL1(can_periph) |= CAN_CTL1_LSCMOD;
-        break;
-    case CAN_INACTIVE_MODE:
-        break;
-    case CAN_DISABLE_MODE:
-        CAN_CTL0(can_periph) |= CAN_CTL0_CANDIS;
-        break;
-    case CAN_PN_MODE:
-        CAN_CTL0(can_periph) |= (CAN_CTL0_PNEN | CAN_CTL0_PNMOD);
-        break;
-    default:
-        break;
-    }
-
-    /* exit INACTIVE mode */
-    if(CAN_INACTIVE_MODE != mode) {
-        /* exit inactive mode */
-        CAN_CTL0(can_periph) &= ~(CAN_CTL0_HALT | CAN_CTL0_INAMOD);
-        timeout = CAN_DELAY;
-        while((CAN_CTL0(can_periph) & CAN_CTL0_INAS) && (timeout)) {
-            timeout--;
+        /* exit INACTIVE mode */
+        if(CAN_INACTIVE_MODE != mode) {
+            /* exit inactive mode */
+            CAN_CTL0(can_periph) &= ~(CAN_CTL0_HALT | CAN_CTL0_INAMOD);
+            timeout = CAN_DELAY;
+            while((CAN_CTL0(can_periph) & CAN_CTL0_INAS) && (timeout)) {
+                timeout--;
+            }
+            if(CAN_CTL0(can_periph) & CAN_CTL0_INAS) {
+                status = ERROR;
+            }
         }
-        if(CAN_CTL0(can_periph) & CAN_CTL0_INAS) {
-            return ERROR;
+        if(SUCCESS == status){
+            if(CAN_PN_MODE == mode) {
+                timeout = CAN_DELAY;
+                while((0U == (CAN_CTL0(can_periph) & CAN_CTL0_PNS)) && (timeout)) {
+                    timeout--;
+                }
+                if(0U == (CAN_CTL0(can_periph) & CAN_CTL0_PNS)) {
+                    status = ERROR;
+                }
+            }
         }
     }
-
-    if(CAN_PN_MODE == mode) {
-        timeout = CAN_DELAY;
-        while((0U == (CAN_CTL0(can_periph) & CAN_CTL0_PNS)) && (timeout)) {
-            timeout--;
-        }
-        if(0U == (CAN_CTL0(can_periph) & CAN_CTL0_PNS)) {
-            return ERROR;
-        }
-    }
-    return ret;
+    return status;
 }
 
 /*!
@@ -489,6 +494,7 @@ can_operation_modes_enum can_operation_mode_get(uint32_t can_periph)
 */
 ErrStatus can_inactive_mode_exit(uint32_t can_periph)
 {
+    ErrStatus status;
     uint32_t timeout;
 
     /* exit inactive mode */
@@ -498,21 +504,22 @@ ErrStatus can_inactive_mode_exit(uint32_t can_periph)
         timeout--;
     }
     if(CAN_CTL0(can_periph) & CAN_CTL0_INAS) {
-        return ERROR;
+        status = ERROR;
     } else {
-        return SUCCESS;
+        status = SUCCESS;
     }
+    return status;
 }
 
 /*!
     \brief      exit Pretended Networking mode
     \param[in]  can_periph: CANx(x=0,1,2)
-    \param[in]  none
     \param[out] none
     \retval     ERROR or SUCCESS
 */
 ErrStatus can_pn_mode_exit(uint32_t can_periph)
 {
+    ErrStatus status;
     uint32_t timeout;
 
     CAN_CTL0(can_periph) &= ~(CAN_CTL0_PNEN | CAN_CTL0_PNMOD);
@@ -521,10 +528,12 @@ ErrStatus can_pn_mode_exit(uint32_t can_periph)
         timeout--;
     }
     if(CAN_CTL0(can_periph) & CAN_CTL0_PNS) {
-        return ERROR;
+        status = ERROR;
     } else {
-        return SUCCESS;
+        status = SUCCESS;
     }
+
+    return status;
 }
 
 /*!
@@ -1027,6 +1036,7 @@ void can_mailbox_transmit_inactive(uint32_t can_periph, uint32_t index)
 */
 ErrStatus can_mailbox_receive_data_read(uint32_t can_periph, uint32_t index, can_mailbox_descriptor_struct *mdpara)
 {
+    ErrStatus status = ERROR;
     uint32_t i;
     uint32_t cnt;
     uint32_t timeout;
@@ -1039,38 +1049,39 @@ ErrStatus can_mailbox_receive_data_read(uint32_t can_periph, uint32_t index, can
         timeout--;
     }
     if(mdes[0] & MDES0_CODE(CAN_MB_RX_STATUS_BUSY)) {
-        return ERROR;
-    }
-
-    /* get mailbox descriptor 0 */
-    mdaddr[0] = mdes[0];
-    mdaddr[1] = mdes[1];
-    mdpara->data_bytes = can_payload_size_compute(mdaddr[0]);
-    cnt = (mdpara->data_bytes + 3U) / 4U;
-    mdaddr = mdpara->data;
-    mdes += 2U;
-    for(i = 0U; i < cnt; i++) {
-        mdaddr[i] = mdes[i];
-    }
-
-    /* clear mailbox status */
-    CAN_STAT(can_periph) = STAT_MS(index);
-    /* unlock mailbox */
-    CAN_TIMER(can_periph);
-
-    /* get mailbox ID */
-    if(mdpara->ide) {
-        mdpara->id = GET_MDES1_ID_EXD(mdpara->id);
+        status = ERROR;
     } else {
-        mdpara->id = GET_MDES1_ID_STD(mdpara->id);
+        /* get mailbox descriptor 0 */
+        mdaddr[0] = mdes[0];
+        mdaddr[1] = mdes[1];
+        mdpara->data_bytes = can_payload_size_compute(mdaddr[0]);
+        cnt = (mdpara->data_bytes + 3U) / 4U;
+        mdaddr = mdpara->data;
+        mdes += 2U;
+        for(i = 0U; i < cnt; i++) {
+            mdaddr[i] = mdes[i];
+        }
+
+        /* clear mailbox status */
+        CAN_STAT(can_periph) = STAT_MS(index);
+        /* unlock mailbox */
+        CAN_TIMER(can_periph);
+
+        /* get mailbox ID */
+        if(mdpara->ide) {
+            mdpara->id = GET_MDES1_ID_EXD(mdpara->id);
+        } else {
+            mdpara->id = GET_MDES1_ID_STD(mdpara->id);
+        }
+
+        /* get mailbox data */
+        if(mdpara->data_bytes) {
+            can_data_to_little_endian_swap(mdpara->data, mdpara->data, mdpara->data_bytes);
+        }
+        status = SUCCESS;
     }
 
-    /* get mailbox data */
-    if(mdpara->data_bytes) {
-        can_data_to_little_endian_swap(mdpara->data, mdpara->data, mdpara->data_bytes);
-    }
-
-    return SUCCESS;
+    return status;
 }
 
 /*!
@@ -1151,6 +1162,7 @@ uint32_t can_mailbox_code_get(uint32_t can_periph, uint32_t index)
                   fd_data_phase_tx_errcnt: 0-255
                   rx_errcnt: 0-255
                   tx_errcnt: 0-255
+    \param[out] none
     \retval     none
 */
 void can_error_counter_config(uint32_t can_periph, can_error_counter_struct *errcnt_struct)
@@ -1615,11 +1627,14 @@ void can_bsp_mode_config(uint32_t can_periph, uint32_t sampling_mode)
 */
 FlagStatus can_flag_get(uint32_t can_periph, can_flag_enum flag)
 {
+    FlagStatus status;
+
     if(CAN_REG_VAL(can_periph, flag) & BIT(CAN_BIT_POS(flag))) {
-        return SET;
+        status = SET;
     } else {
-        return RESET;
+        status = RESET;
     }
+    return status;
 }
 
 /*!
@@ -1674,7 +1689,7 @@ void can_flag_clear(uint32_t can_periph, can_flag_enum flag)
 ErrStatus can_interrupt_enable(uint32_t can_periph, can_interrupt_enum interrupt)
 {
     can_operation_modes_enum mode = CAN_NORMAL_MODE;
-    ErrStatus ret = SUCCESS;
+    ErrStatus status = SUCCESS;
 
     /* enable receive or transmit warning error interrupt should enable error warning in CTL0 register  */
     if((CAN_INT_RX_WARNING == interrupt) || (CAN_INT_TX_WARNING == interrupt)) {
@@ -1683,16 +1698,16 @@ ErrStatus can_interrupt_enable(uint32_t can_periph, can_interrupt_enum interrupt
         if(CAN_INACTIVE_MODE == mode){
             CAN_CTL0(can_periph) |= CAN_CTL0_WERREN;
         }else{
-            ret = can_operation_mode_enter(can_periph, CAN_INACTIVE_MODE);
-            if(SUCCESS == ret){
+            status = can_operation_mode_enter(can_periph, CAN_INACTIVE_MODE);
+            if(SUCCESS == status){
                 CAN_CTL0(can_periph) |= CAN_CTL0_WERREN;
-                ret = can_operation_mode_enter(can_periph, mode);
+                status = can_operation_mode_enter(can_periph, mode);
             }
         }
     }
 
     CAN_REG_VAL(can_periph, interrupt) |= BIT(CAN_BIT_POS(interrupt));
-    return ret;
+    return status;
 }
 
 /*!
@@ -1718,7 +1733,7 @@ ErrStatus can_interrupt_enable(uint32_t can_periph, can_interrupt_enum interrupt
 ErrStatus can_interrupt_disable(uint32_t can_periph, can_interrupt_enum interrupt)
 {
     can_operation_modes_enum mode = CAN_NORMAL_MODE;
-    ErrStatus ret = SUCCESS;
+    ErrStatus status = SUCCESS;
 
     /* disable receive or transmit warning error interrupt should enable error warning in CTL0 register  */
     if((0U == (CAN_CTL0(can_periph) & CAN_CTL0_WERREN)) && ((CAN_INT_RX_WARNING == interrupt) || (CAN_INT_TX_WARNING == interrupt))) {
@@ -1727,16 +1742,16 @@ ErrStatus can_interrupt_disable(uint32_t can_periph, can_interrupt_enum interrup
         if(CAN_INACTIVE_MODE == mode){
             CAN_CTL0(can_periph) |= CAN_CTL0_WERREN;
         }else{
-            ret = can_operation_mode_enter(can_periph, CAN_INACTIVE_MODE);
-            if(SUCCESS == ret){
+            status = can_operation_mode_enter(can_periph, CAN_INACTIVE_MODE);
+            if(SUCCESS == status){
                 CAN_CTL0(can_periph) |= CAN_CTL0_WERREN;
-                ret = can_operation_mode_enter(can_periph, mode);
+                status = can_operation_mode_enter(can_periph, mode);
             }
         }
     }
 
     CAN_REG_VAL(can_periph, interrupt) &= ~BIT(CAN_BIT_POS(interrupt));
-    return ret;
+    return status;
 }
 
 /*!
@@ -1761,11 +1776,14 @@ ErrStatus can_interrupt_disable(uint32_t can_periph, can_interrupt_enum interrup
 */
 FlagStatus can_interrupt_flag_get(uint32_t can_periph, can_interrupt_flag_enum int_flag)
 {
+    FlagStatus status;
+ 
     if(CAN_REG_VAL(can_periph, int_flag) & BIT(CAN_BIT_POS(int_flag))) {
-        return SET;
+        status = SET;
     } else {
-        return RESET;
+        status = RESET;
     }
+    return status;
 }
 
 /*!

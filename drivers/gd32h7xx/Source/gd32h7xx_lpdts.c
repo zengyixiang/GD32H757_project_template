@@ -2,11 +2,11 @@
     \file    gd32h7xx_lpdts.c
     \brief   LPDTS driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -41,7 +41,8 @@ OF SUCH DAMAGE.
 /* engineering value offset macro */
 #define LPDTS_SDATA_VAL_OFFSET     ((uint32_t)16U)
 /* the T0 temperature macro */
-#define LPDTS_T0_TMP_VAL           ((uint32_t)25U)
+#define LPDTS_T0_TMP_VAL0          (25)
+#define LPDTS_T0_TMP_VAL1          (-40)
 
 /*!
     \brief      reset the LPDTS registers
@@ -187,45 +188,44 @@ void lpdts_ref_clock_source_config(uint32_t source)
     \brief      get temperature from LPDTS
     \param[in]  none
     \param[out] none
-    \retval     temperature: temperature in deg C
+    \retval     ErrStatus: SUCCESS or ERROR
 */
-int32_t lpdts_temperature_get(void)
+ErrStatus lpdts_temperature_get(int32_t* temperature)
 {
     uint32_t freq;
     uint32_t count;
-    uint32_t t0;
+    int32_t t0 = 0;
+    uint32_t val;
     uint32_t t0_freq;
     uint32_t ramp_coeff;
     uint32_t reg_cfg;
-    int32_t temperature;
-
+    ErrStatus ret = SUCCESS;
     /* get the total number of samples */
     count = (LPDTS_DATA & LPDTS_DATA_COVAL);
     /* get LPDTS_CFG configuration */
     reg_cfg = LPDTS_CFG;
 
-    /* get the module frequency on Hz */
     if((reg_cfg & LPDTS_CFG_REFSEL) == LPDTS_CFG_REFSEL) {
-        freq = (LXTAL_VALUE * count) / (2U * ((reg_cfg & LPDTS_CFG_SPT) >> LPDTS_CFG_SPT_OFFSET));
+        freq = (LXTAL_VALUE * count) / ((reg_cfg & LPDTS_CFG_SPT) >> 15U); /* On Hz */
     } else {
-        freq = (2U * rcu_clock_freq_get(CK_APB1) / count) * ((reg_cfg & LPDTS_CFG_SPT) >> LPDTS_CFG_SPT_OFFSET);
+        freq = (2U * rcu_clock_freq_get(CK_APB1) / count) * ((reg_cfg & LPDTS_CFG_SPT) >> 16U) ; /* On Hz */
     }
-
     /* read factory settings */
-    t0 = (LPDTS_SDATA & LPDTS_SDATA_VAL) >> LPDTS_SDATA_VAL_OFFSET;
-    if(t0 == 0U) {
-        t0 = LPDTS_T0_TMP_VAL;
+    val = (LPDTS_SDATA & LPDTS_SDATA_VAL) >> 16U;
+    if(val == 0U) {
+        t0 = 25; /* 25 deg C */
+    } else if(val == 1U){
+        t0 = -40; /* -40 deg C */
+    } else {
+        ret = ERROR;
     }
-
-    /* get the T0 frequency on Hz */
-    t0_freq = (LPDTS_SDATA & LPDTS_SDATA_FREQ) * 100U;
-    /* get the ramp coefficient for the temperature sensor on deg C/Hz */
-    ramp_coeff = LPDTS_RDATA & LPDTS_RDATA_RCVAL;
-
+    
+    t0_freq = (LPDTS_SDATA & LPDTS_SDATA_FREQ) * 100U; /* Hz */
+    ramp_coeff = LPDTS_RDATA & LPDTS_RDATA_RCVAL; /* HZ/deg C */
     /* figure out the temperature deg C */
-    temperature = (int32_t)t0 + (((int32_t)freq - (int32_t)t0_freq) / (int32_t)ramp_coeff);
-
-    return temperature;
+    *temperature = t0 + (((int32_t)freq - (int32_t)t0_freq) / (int32_t)ramp_coeff);
+    
+    return ret;
 }
 
 /*!

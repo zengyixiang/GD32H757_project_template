@@ -2,11 +2,11 @@
     \file    gd32h7xx_mdma.h
     \brief   definitions for the MDMA
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -169,7 +169,7 @@ typedef struct {
     uint32_t source_inc;                                                                                    /*!< specifies the source increment mode */
     uint32_t dest_inc;                                                                                      /*!< specifies the destination increment mode */
     uint32_t source_data_size;                                                                              /*!< specifies the source data size */
-    uint32_t dest_data_dize;                                                                                /*!< specifies the destination data size */
+    uint32_t dest_data_size;                                                                                /*!< specifies the destination data size */
     uint32_t data_alignment;                                                                                /*!< specifies the source to destination memory data packing/padding mode */
     uint32_t buff_trans_len;                                                                                /*!< specifies the buffer transfer length (number of bytes) */
     uint32_t source_burst;                                                                                  /*!< specifies the burst transfer configuration for the source memory transfers */
@@ -279,50 +279,50 @@ typedef enum {
 #define MDMA_PRIORITY_ULTRA_HIGH                    CHCTL0_PRIO(3)                                          /*!< priority level: very high */
 
 /* MDMA endianness */
-#define MDMA_LITTLE_ENDIANNESS                      ((uint32_t)0x00000000U)                                 /*!< little endianness preserve */
+#define MDMA_LITTLE_ENDIANNESS                      ((uint32_t)0x00000000U)                                 /*!< little endianness */
 #define MDMA_BYTE_ENDIANNESS_EXCHANGE               ((uint32_t)MDMA_CHXCTL0_BES)                            /*!< exchange the order of the bytes in a half-word */
 #define MDMA_HALFWORD_ENDIANNESS_EXCHANGE           ((uint32_t)MDMA_CHXCTL0_HWES)                           /*!< exchange the order of the half-words in a word */
 #define MDMA_WORD_ENDIANNESS_EXCHANGE               ((uint32_t)MDMA_CHXCTL0_WES)                            /*!< exchange the order of the words in a double word */
 
-/* MDMA source adress increment mode */
-#define CHCFG_SIMOD(regval)                         (BITS(0,1) & ((uint32_t)(regval) << 0U))                /*!< source increment mode */
+/* MDMA source address increased/decreased mode */
+#define CHCFG_SIMOD(regval)                         (BITS(0,1) & ((uint32_t)(regval) << 0U))                /*!< source increased/decreased mode */
 #define CHCFG_SIOS(regval)                          (BITS(8,9) & ((uint32_t)(regval) << 8U))                /*!< offset size of source increment */
 #define MDMA_SOURCE_INCREASE_DISABLE                CHCFG_SIMOD(0)                                          /*!< no increment */
-#define MDMA_SOURCE_INCREASE_8BIT                   (CHCFG_SIMOD(2) | CHCFG_SIOS(0))                        /*!< source address pointer is incremented by a byte (8 bits) */
-#define MDMA_SOURCE_INCREASE_16BIT                  (CHCFG_SIMOD(2) | CHCFG_SIOS(1))                        /*!< source address pointer is incremented by a half word (16 bits) */
-#define MDMA_SOURCE_INCREASE_32BIT                  (CHCFG_SIMOD(2) | CHCFG_SIOS(2))                        /*!< source address pointer is incremented by a word (32 bits) */
-#define MDMA_SOURCE_INCREASE_64BIT                  (CHCFG_SIMOD(2) | CHCFG_SIOS(3))                        /*!< source address pointer is incremented by a double word (64 bits) */
-#define MDMA_SOURCE_DECREASE_8BIT                   (CHCFG_SIMOD(3) | CHCFG_SIOS(0))                        /*!< source address pointer is decremented by a byte (8 bits) */
-#define MDMA_SOURCE_DECREASE_16BIT                  (CHCFG_SIMOD(3) | CHCFG_SIOS(1))                        /*!< source address pointer is decremented by a half word (16 bits) */
-#define MDMA_SOURCE_DECREASE_32BIT                  (CHCFG_SIMOD(3) | CHCFG_SIOS(2))                        /*!< source address pointer is decremented by a word (32 bits) */
-#define MDMA_SOURCE_DECREASE_64BIT                  (CHCFG_SIMOD(3) | CHCFG_SIOS(3))                        /*!< source address pointer is decremented by a double word (64 bits) */
+#define MDMA_SOURCE_INCREASE_8BIT                   (CHCFG_SIMOD(2) | CHCFG_SIOS(0))                        /*!< source address is increased by 8-bit */
+#define MDMA_SOURCE_INCREASE_16BIT                  (CHCFG_SIMOD(2) | CHCFG_SIOS(1))                        /*!< source address is increased by 16-bit */
+#define MDMA_SOURCE_INCREASE_32BIT                  (CHCFG_SIMOD(2) | CHCFG_SIOS(2))                        /*!< source address is increased by 32-bit */
+#define MDMA_SOURCE_INCREASE_64BIT                  (CHCFG_SIMOD(2) | CHCFG_SIOS(3))                        /*!< source address is increased by 64-bit */
+#define MDMA_SOURCE_DECREASE_8BIT                   (CHCFG_SIMOD(3) | CHCFG_SIOS(0))                        /*!< source address is decreased by 8-bit */
+#define MDMA_SOURCE_DECREASE_16BIT                  (CHCFG_SIMOD(3) | CHCFG_SIOS(1))                        /*!< source address is decreased by 16-bit */
+#define MDMA_SOURCE_DECREASE_32BIT                  (CHCFG_SIMOD(3) | CHCFG_SIOS(2))                        /*!< source address is decreased by 32-bit */
+#define MDMA_SOURCE_DECREASE_64BIT                  (CHCFG_SIMOD(3) | CHCFG_SIOS(3))                        /*!< source address is decreased by 64-bit */
 
-/* MDMA destination adress increment mode*/
-#define CHCFG_DIMOD(regval)                         (BITS(2,3) & ((uint32_t)(regval) << 2U))                /*!< destination increment mode */
+/* MDMA destination addess increased/decreased mode*/
+#define CHCFG_DIMOD(regval)                         (BITS(2,3) & ((uint32_t)(regval) << 2U))                /*!< destination increased/decreased mode */
 #define CHCFG_DIOS(regval)                          (BITS(10,11) & ((uint32_t)(regval) << 10U))             /*!< offset size of destination increment */
 #define MDMA_DESTINATION_INCREASE_DISABLE           CHCFG_DIMOD(0)                                          /*!< no increment */
-#define MDMA_DESTINATION_INCREASE_8BIT              (CHCFG_DIMOD(2) | CHCFG_DIOS(0))                        /*!< destination address pointer is incremented by a byte (8 bits) */
-#define MDMA_DESTINATION_INCREASE_16BIT             (CHCFG_DIMOD(2) | CHCFG_DIOS(1))                        /*!< destination address pointer is incremented by a half word (16 bits) */
-#define MDMA_DESTINATION_INCREASE_32BIT             (CHCFG_DIMOD(2) | CHCFG_DIOS(2))                        /*!< destination address pointer is incremented by a word (32 bits) */
-#define MDMA_DESTINATION_INCREASE_64BIT             (CHCFG_DIMOD(2) | CHCFG_DIOS(3))                        /*!< destination address pointer is incremented by a double word (64 bits) */
-#define MDMA_DESTINATION_DECREASE_8BIT              (CHCFG_DIMOD(3) | CHCFG_DIOS(0))                        /*!< destination address pointer is decremented by a byte (8 bits) */
-#define MDMA_DESTINATION_DECREASE_16BIT             (CHCFG_DIMOD(3) | CHCFG_DIOS(1))                        /*!< destination address pointer is decremented by a half word (16 bits) */
-#define MDMA_DESTINATION_DECREASE_32BIT             (CHCFG_DIMOD(3) | CHCFG_DIOS(2))                        /*!< destination address pointer is decremented by a word (32 bits) */
-#define MDMA_DESTINATION_DECREASE_64BIT             (CHCFG_DIMOD(3) | CHCFG_DIOS(3))                        /*!< destination address pointer is decremented by a double word (64 bits) */
+#define MDMA_DESTINATION_INCREASE_8BIT              (CHCFG_DIMOD(2) | CHCFG_DIOS(0))                        /*!< destination address is increased by 8-bit */
+#define MDMA_DESTINATION_INCREASE_16BIT             (CHCFG_DIMOD(2) | CHCFG_DIOS(1))                        /*!< destination address is increased by 16-bit */
+#define MDMA_DESTINATION_INCREASE_32BIT             (CHCFG_DIMOD(2) | CHCFG_DIOS(2))                        /*!< destination address is increased by 32-bit */
+#define MDMA_DESTINATION_INCREASE_64BIT             (CHCFG_DIMOD(2) | CHCFG_DIOS(3))                        /*!< destination address is increased by 64-bit */
+#define MDMA_DESTINATION_DECREASE_8BIT              (CHCFG_DIMOD(3) | CHCFG_DIOS(0))                        /*!< destination address is decreased by 8-bit */
+#define MDMA_DESTINATION_DECREASE_16BIT             (CHCFG_DIMOD(3) | CHCFG_DIOS(1))                        /*!< destination address is decreased by 16-bit */
+#define MDMA_DESTINATION_DECREASE_32BIT             (CHCFG_DIMOD(3) | CHCFG_DIOS(2))                        /*!< destination address is decreased by 32-bit */
+#define MDMA_DESTINATION_DECREASE_64BIT             (CHCFG_DIMOD(3) | CHCFG_DIOS(3))                        /*!< destination address is decreased by 64-bit */
 
 /* MDMA source data size */
 #define CHCFG_SWIDTH(regval)                        (BITS(4,5) & ((uint32_t)(regval) << 4U))                /*!< data size of source */
-#define MDMA_SOURCE_DATASIZE_8BIT                   CHCFG_SWIDTH(0)                                         /*!< source data size is byte */
-#define MDMA_SOURCE_DATASIZE_16BIT                  CHCFG_SWIDTH(1)                                         /*!< source data size is half word */
-#define MDMA_SOURCE_DATASIZE_32BIT                  CHCFG_SWIDTH(2)                                         /*!< source data size is word */
-#define MDMA_SOURCE_DATASIZE_64BIT                  CHCFG_SWIDTH(3)                                         /*!< source data size is double word */
+#define MDMA_SOURCE_DATASIZE_8BIT                   CHCFG_SWIDTH(0)                                         /*!< data size of source is 8-bit */
+#define MDMA_SOURCE_DATASIZE_16BIT                  CHCFG_SWIDTH(1)                                         /*!< data size of source is 16-bit */
+#define MDMA_SOURCE_DATASIZE_32BIT                  CHCFG_SWIDTH(2)                                         /*!< data size of source is 32-bit */
+#define MDMA_SOURCE_DATASIZE_64BIT                  CHCFG_SWIDTH(3)                                         /*!< data size of source is 64-bit */
 
 /* MDMA destination data size */
 #define CHCFG_DWIDTH(regval)                        (BITS(6,7) & ((uint32_t)(regval) << 6U))                /*!< data size of destination */
-#define MDMA_DESTINATION_DATASIZE_8BIT              CHCFG_DWIDTH(0)                                         /*!< destination data size is byte */
-#define MDMA_DESTINATION_DATASIZE_16BIT             CHCFG_DWIDTH(1)                                         /*!< destination data size is half word */
-#define MDMA_DESTINATION_DATASIZE_32BIT             CHCFG_DWIDTH(2)                                         /*!< destination data size is word */
-#define MDMA_DESTINATION_DATASIZE_64BIT             CHCFG_DWIDTH(3)                                         /*!< destination data size is double word */
+#define MDMA_DESTINATION_DATASIZE_8BIT              CHCFG_DWIDTH(0)                                         /*!< data size of destination is 8-bit */
+#define MDMA_DESTINATION_DATASIZE_16BIT             CHCFG_DWIDTH(1)                                         /*!< data size of destination is 16-bit */
+#define MDMA_DESTINATION_DATASIZE_32BIT             CHCFG_DWIDTH(2)                                         /*!< data size of destination is 32-bit */
+#define MDMA_DESTINATION_DATASIZE_64BIT             CHCFG_DWIDTH(3)                                         /*!< data size of destination is 64-bit */
 
 /* MDMA data alignment */
 #define CHCFG_PAMOD(regval)                         (BITS(26,27) & ((uint32_t)(regval) << 26U))             /*!< padding and alignement mode */
@@ -333,25 +333,25 @@ typedef enum {
 
 /* MDMA source burst */
 #define CHCFG_SBURST(regval)                        (BITS(12,14) & ((uint32_t)(regval) << 12U))             /*!< transfer burst type of source */
-#define MDMA_SOURCE_BURST_SINGLE                    CHCFG_SBURST(0)                                         /*!< single transfer */
-#define MDMA_SOURCE_BURST_2BEATS                    CHCFG_SBURST(1)                                         /*!< burst 2 beats */
-#define MDMA_SOURCE_BURST_4BEATS                    CHCFG_SBURST(2)                                         /*!< burst 4 beats */
-#define MDMA_SOURCE_BURST_8BEATS                    CHCFG_SBURST(3)                                         /*!< burst 8 beats */
-#define MDMA_SOURCE_BURST_16BEATS                   CHCFG_SBURST(4)                                         /*!< burst 16 beats */
-#define MDMA_SOURCE_BURST_32BEATS                   CHCFG_SBURST(5)                                         /*!< burst 32 beats */
-#define MDMA_SOURCE_BURST_64BEATS                   CHCFG_SBURST(6)                                         /*!< burst 64 beats */
-#define MDMA_SOURCE_BURST_128BEATS                  CHCFG_SBURST(7)                                         /*!< burst 128 beats */
+#define MDMA_SOURCE_BURST_SINGLE                    CHCFG_SBURST(0)                                         /*!< single burst */
+#define MDMA_SOURCE_BURST_2BEATS                    CHCFG_SBURST(1)                                         /*!< 2-beat incrementing burst */
+#define MDMA_SOURCE_BURST_4BEATS                    CHCFG_SBURST(2)                                         /*!< 4-beat incrementing burst */
+#define MDMA_SOURCE_BURST_8BEATS                    CHCFG_SBURST(3)                                         /*!< 8-beat incrementing burst */
+#define MDMA_SOURCE_BURST_16BEATS                   CHCFG_SBURST(4)                                         /*!< 16-beat incrementing burst */
+#define MDMA_SOURCE_BURST_32BEATS                   CHCFG_SBURST(5)                                         /*!< 32-beat incrementing burst */
+#define MDMA_SOURCE_BURST_64BEATS                   CHCFG_SBURST(6)                                         /*!< 64-beat incrementing burst */
+#define MDMA_SOURCE_BURST_128BEATS                  CHCFG_SBURST(7)                                         /*!< 128-beat incrementing burst */
 
 /* MDMA destination burst */
 #define CHCFG_DBURST(regval)                        (BITS(15,17) & ((uint32_t)(regval) << 15U))             /*!< transfer burst type of destination */
-#define MDMA_DESTINATION_BURST_SINGLE               CHCFG_DBURST(0)                                         /*!< single transfer */
-#define MDMA_DESTINATION_BURST_2BEATS               CHCFG_DBURST(1)                                         /*!< burst 2 beats */
-#define MDMA_DESTINATION_BURST_4BEATS               CHCFG_DBURST(2)                                         /*!< burst 4 beats */
-#define MDMA_DESTINATION_BURST_8BEATS               CHCFG_DBURST(3)                                         /*!< burst 8 beats */
-#define MDMA_DESTINATION_BURST_16BEATS              CHCFG_DBURST(4)                                         /*!< burst 16 beats */
-#define MDMA_DESTINATION_BURST_32BEATS              CHCFG_DBURST(5)                                         /*!< burst 32 beats */
-#define MDMA_DESTINATION_BURST_64BEATS              CHCFG_DBURST(6)                                         /*!< burst 64 beats */
-#define MDMA_DESTINATION_BURST_128BEATS             CHCFG_DBURST(7)                                         /*!< burst 128 beats */
+#define MDMA_DESTINATION_BURST_SINGLE               CHCFG_DBURST(0)                                         /*!< single burst */
+#define MDMA_DESTINATION_BURST_2BEATS               CHCFG_DBURST(1)                                         /*!< 2-beat incrementing burst */
+#define MDMA_DESTINATION_BURST_4BEATS               CHCFG_DBURST(2)                                         /*!< 4-beat incrementing burst */
+#define MDMA_DESTINATION_BURST_8BEATS               CHCFG_DBURST(3)                                         /*!< 8-beat incrementing burst */
+#define MDMA_DESTINATION_BURST_16BEATS              CHCFG_DBURST(4)                                         /*!< 16-beat incrementing burst */
+#define MDMA_DESTINATION_BURST_32BEATS              CHCFG_DBURST(5)                                         /*!< 32-beat incrementing burst */
+#define MDMA_DESTINATION_BURST_64BEATS              CHCFG_DBURST(6)                                         /*!< 64-beat incrementing burst */
+#define MDMA_DESTINATION_BURST_128BEATS             CHCFG_DBURST(7)                                         /*!< 128-beat incrementing burst */
 
 /* source bus select */
 #define MDMA_SOURCE_AXI                             ((uint32_t)0x00000000U)                                 /*!< source bus of channel x is the system bus or AXI bus */

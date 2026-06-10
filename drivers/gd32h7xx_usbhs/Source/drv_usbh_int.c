@@ -2,11 +2,11 @@
     \file    drv_usbh_int.c
     \brief   USB host mode interrupt handler file
 
-    \version 2025-01-24, V1.4.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2025, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -289,7 +289,11 @@ static uint32_t usbh_int_pipe_in(usb_core_driver *udev, uint32_t pp_num)
         switch(ep_type) {
         case USB_EPTYPE_CTRL:
         case USB_EPTYPE_BULK:
-            usb_pp_halt(udev, (uint8_t)pp_num, HCHINTF_NAK, PIPE_XF);
+            if(USB_USE_DMA == udev->bp.transfer_mode) {
+                udev->regs.pr[pp_num]->HCHINTEN |= HCHINTEN_CHIE;
+            } else {
+                usb_pp_halt(udev, (uint8_t)pp_num, HCHINTF_NAK, PIPE_XF);
+            }
 
             pp->data_toggle_in ^= 1U;
             break;
@@ -418,7 +422,6 @@ static uint32_t usbh_int_pipe_out(usb_core_driver *udev, uint32_t pp_num)
         } else {
             pp_reg->HCHINTF = HCHINTF_NAK;
         }
-        usb_pp_halt(udev, (uint8_t)pp_num, HCHINTF_NAK, PIPE_NAK);
     } else if(intr_pp & HCHINTF_USBER) {
         pp->err_count++;
         usb_pp_halt(udev, (uint8_t)pp_num, HCHINTF_USBER, PIPE_TRACERR);

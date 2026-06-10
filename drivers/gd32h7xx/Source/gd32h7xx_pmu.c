@@ -2,11 +2,11 @@
     \file    gd32h7xx_pmu.c
     \brief   PMU driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -100,7 +100,7 @@ void pmu_lvd_disable(void)
 
 /*!
     \brief      select analog voltage detector threshold
-    \param[in]  avdt_n:
+    \param[in]  vavdt_n:
                 only one parameter can be selected which is shown as below:
       \arg        PMU_VAVDVC_0: voltage threshold of analog voltage detector is 1.7V
       \arg        PMU_VAVDVC_1: voltage threshold of analog voltage detector is 2.1V
@@ -109,14 +109,14 @@ void pmu_lvd_disable(void)
     \param[out] none
     \retval     none
 */
-void pmu_avd_select(uint32_t avdt_n)
+void pmu_vavd_select(uint32_t vavdt_n)
 {
     uint32_t temp;
     temp = PMU_CTL0;
     /* clear VAVDVC bits */
     temp &= ~PMU_CTL0_VAVDVC;
-    /* set VAVDVC bits according to avdt_n */
-    temp |= avdt_n;
+    /* set VAVDVC bits according to vavdt_n */
+    temp |= vavdt_n;
     PMU_CTL0 = temp;
 }
 
@@ -126,7 +126,7 @@ void pmu_avd_select(uint32_t avdt_n)
     \param[out] none
     \retval     none
 */
-void pmu_avd_enable(void)
+void pmu_vavd_enable(void)
 {
     PMU_CTL0 |= PMU_CTL0_VAVDEN;
 }
@@ -137,35 +137,35 @@ void pmu_avd_enable(void)
     \param[out] none
     \retval     none
 */
-void pmu_avd_disable(void)
+void pmu_vavd_disable(void)
 {
     PMU_CTL0 &= ~PMU_CTL0_VAVDEN;
 }
 
 /*!
-    \brief      enable PMU V0.9V core voltage detector
+    \brief      enable PMU Vcore core voltage detector
     \param[in]  none
     \param[out] none
     \retval     none
 */
-void pmu_cvd_enable(void)
+void pmu_vovd_enable(void)
 {
     PMU_CTL0 |= PMU_CTL0_VOVDEN;
 }
 
 /*!
-    \brief      disable PMU V0.9V core voltage detector
+    \brief      disable PMU Vcore core voltage detector
     \param[in]  none
     \param[out] none
     \retval     none
 */
-void pmu_cvd_disable(void)
+void pmu_vovd_disable(void)
 {
     PMU_CTL0 &= ~PMU_CTL0_VOVDEN;
 }
 
 /*!
-    \brief      control the V0.9V core voltage level
+    \brief      control the Vcore core voltage level
     \param[in]  ldo_n:
                 only one parameter can be selected which is shown as below:
       \arg        PMU_LDOVS_0: LDO output voltage 0.8V mode
@@ -187,7 +187,7 @@ void pmu_ldo_output_select(uint32_t ldo_n)
 }
 
 /*!
-    \brief      Deep-sleep mode V0.9V core voltage select
+    \brief      Deep-sleep mode Vcore core voltage select
     \param[in]  sldo:
                 only one parameter can be selected which is shown as below:
       \arg        PMU_SLDOVS_0: SLDOVS scale 0.6V
@@ -313,15 +313,9 @@ void pmu_usb_voltage_detector_disable(void)
     \brief      power supply configurations
     \param[in]  smpsmode:
                 only one parameter can be selected which is shown as below:
-      \arg        PMU_LDO_SUPPLY: V0.9V domains are suppplied from the LDO
-      \arg        PMU_DIRECT_SMPS_SUPPLY: V0.9V domains are suppplied from the SMPS only
-      \arg        PMU_SMPS_1V8_SUPPLIES_LDO: the SMPS 1.8V output supplies the LDO which supplies the V0.9V domains
-      \arg        PMU_SMPS_2V5_SUPPLIES_LDO: the SMPS 2.5V output supplies the LDO which supplies the V0.9V domains
-      \arg        PMU_SMPS_1V8_SUPPLIES_EXT_AND_LDO: the SMPS 1.8V output supplies an external circuits and the LDO. The V0.9V domains are suppplied from the LDO
-      \arg        PMU_SMPS_2V5_SUPPLIES_EXT_AND_LDO: the SMPS 2.5V output supplies an external circuits and the LDO. The V0.9V domains are suppplied from the LDO
-      \arg        PMU_SMPS_1V8_SUPPLIES_EXT: the SMPS 1.8V output supplies an external source which supplies the V0.9V domains
-      \arg        PMU_SMPS_2V5_SUPPLIES_EXT: the SMPS 2.5V output supplies an external source which supplies the V0.9V domains
-      \arg        PMU_BYPASS: the SMPS disabled and the LDO Bypass. The V0.9V domains are supplied from an external source
+      \arg        PMU_LDO_SUPPLY: Vcore domains are suppplied from the LDO
+      \arg        PMU_DIRECT_SMPS_SUPPLY: Vcore domains are suppplied from the SMPS only
+      \arg        PMU_BYPASS: the SMPS disabled and the LDO Bypass. The Vcore domains are supplied from an external source
     \param[out] none
     \retval     none
 */
@@ -329,20 +323,11 @@ void pmu_smps_ldo_supply_config(uint32_t smpsmode)
 {
     uint32_t temp;
     temp = PMU_CTL2;
-    temp &= ~(PMU_CTL2_DVSVC | PMU_CTL2_DVSCFG | PMU_CTL2_DVSEN | PMU_CTL2_LDOEN | PMU_CTL2_BYPASS);
+    temp &= ~(PMU_CTL2_DVSEN | PMU_CTL2_LDOEN | PMU_CTL2_BYPASS);
     temp |= smpsmode;
     PMU_CTL2 = temp;
 
     while(0U == (PMU_CTL3 & PMU_CTL3_VOVRF)) {
-    }
-
-    /* When the SMPS supplies external circuits verify that DVSRF flag is set */
-    if((smpsmode == PMU_SMPS_1V8_SUPPLIES_EXT_AND_LDO) ||
-            (smpsmode == PMU_SMPS_2V5_SUPPLIES_EXT_AND_LDO)   ||
-            (smpsmode == PMU_SMPS_1V8_SUPPLIES_EXT)           ||
-            (smpsmode == PMU_SMPS_2V5_SUPPLIES_EXT)) {
-        while(0U == (PMU_CTL2 & PMU_CTL2_DVSRF)) {
-        }
     }
 }
 
@@ -364,6 +349,7 @@ void pmu_to_sleepmode(uint8_t sleepmodecmd)
     if(WFI_CMD == sleepmodecmd) {
         __WFI();
     } else {
+        __SEV();
         __WFE();
         __WFE();
     }
@@ -416,13 +402,13 @@ void pmu_to_standbymode(void)
     SCB->SCR |= SCB_SCR_SLEEPDEEP_Msk;
 
     REG32( 0xE000E010U ) &= 0x00010004U;
-    REG32( 0xE000E180U )  = 0xFFFFFFF3U;
-    REG32( 0xE000E184U )  = 0xFFFFFDFFU;
-    REG32( 0xE000E188U )  = 0xFFFFFFFFU;
-    REG32( 0xE000E18CU )  = 0xFFFFFFFFU;
-    REG32( 0xE000E190U )  = 0xFFFFFFFFU;
-    REG32( 0xE000E194U )  = 0xFFFFFFFFU;
-
+    REG32( 0xE000E180U )  = 0xFF87FFFFU;
+    REG32( 0xE000E184U )  = 0x7FFFFBFFU;
+    REG32( 0xE000E188U )  = 0x9FFFFFF0U;
+    REG32( 0xE000E18CU )  = 0xB577C043U;
+    REG32( 0xE000E190U )  = 0x07C30200U;
+    REG32( 0xE000E194U )  = 0xFFFBFFFEU;
+    REG32( 0xE000E198U )  = 0x01FFFFFFU;
     /* enter standby mode */
     __WFI();
 }

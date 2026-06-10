@@ -2,11 +2,11 @@
     \file    gd32h7xx_fmc.c
     \brief   FMC driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -674,7 +674,7 @@ fmc_state_enum ob_low_power_config(uint32_t ob_fwdgt, uint32_t ob_deepsleep, uin
     \param[in]  ob_dtcm0ecc: DTCM0 ECC function enable bit
                 only one parameter can be selected which is shown as below:
       \arg        OB_DTCM0ECCEN_DISABLE: disabled DTCM0 ECC function
-      \arg        OB_DTCME0CCEN_ENABLE: enabled DTCM0 ECC function
+      \arg        OB_DTCM0ECCEN_ENABLE: enabled DTCM0 ECC function
     \param[in]  ob_dtcm1ecc: DTCM1 ECC function enable bit
                 only one parameter can be selected which is shown as below:
       \arg        OB_DTCM1ECCEN_DISABLE: disabled DTCM1 ECC function
@@ -1201,78 +1201,85 @@ FlagStatus ob_iospeed_optimize_get(void)
 }
 
 /*!
-    \brief      get the option byte TCM shared RAM size
+    \brief      get the option byte ITCM shared RAM size
     \param[in]  none
-    \param[out] itcm_shared_ram_kb_size: ITCM shared RAM size in KB unit
-      \arg        OB_ITCM_SHARED_RAM_0KB: ITCM shared RAM size is 0KB
-      \arg        OB_ITCM_SHARED_RAM_64KB: ITCM shared RAM size is 64KB
-      \arg        OB_ITCM_SHARED_RAM_128KB: ITCM shared RAM size is 128KB
-      \arg        OB_ITCM_SHARED_RAM_256KB: ITCM shared RAM size is 256KB
-      \arg        OB_ITCM_SHARED_RAM_512KB: ITCM shared RAM size is 512KB
-    \param[out] dtcm_shared_ram_kb_size: DTCM shared RAM size in KB unit
-      \arg        OB_DTCM_SHARED_RAM_0KB: DTCM shared RAM size is 0KB
-      \arg        OB_DTCM_SHARED_RAM_64KB: DTCM shared RAM size is 64KB
-      \arg        OB_DTCM_SHARED_RAM_128KB: DTCM shared RAM size is 128KB
-      \arg        OB_DTCM_SHARED_RAM_256KB: DTCM shared RAM size is 256KB
-      \arg        OB_DTCM_SHARED_RAM_512KB: DTCM shared RAM size is 512KB
-    \retval     none
+    \param[out] none
+    \retval     ITCM shared RAM size in KB unit
 */
-void ob_tcm_shared_ram_size_get(uint32_t *itcm_shared_ram_kb_size, uint32_t *dtcm_shared_ram_kb_size)
+uint32_t ob_itcm_shared_ram_size_get(void)
 {
-    uint32_t itcm_size_value, dtcm_size_value;
+    uint32_t itcm_size_value;
+    uint32_t itcm_kb_size;
 
     itcm_size_value = (uint32_t)((uint32_t)FMC_OBSTAT1_EFT & FMC_OBSTAT1_EFT_ITCM_SZ_SHRRAM);
-    dtcm_size_value = (uint32_t)((uint32_t)FMC_OBSTAT1_EFT & FMC_OBSTAT1_EFT_DTCM_SZ_SHRRAM);
 
     switch(itcm_size_value) {
     case OB_ITCM_SHARED_RAM_0KB:
         /* ITCM shared RAM size is 0KB */
-        *itcm_shared_ram_kb_size = 0U;
+        itcm_kb_size = 0U;
         break;
     case OB_ITCM_SHARED_RAM_64KB:
         /* ITCM shared RAM size is 64KB */
-        *itcm_shared_ram_kb_size = 64U;
+        itcm_kb_size = 64U;
         break;
     case OB_ITCM_SHARED_RAM_128KB:
         /* ITCM shared RAM size is 128KB */
-        *itcm_shared_ram_kb_size = 128U;
+        itcm_kb_size = 128U;
         break;
     case OB_ITCM_SHARED_RAM_256KB:
         /* ITCM shared RAM size is 256KB */
-        *itcm_shared_ram_kb_size = 256U;
+        itcm_kb_size = 256U;
         break;
     case OB_ITCM_SHARED_RAM_512KB:
         /* ITCM shared RAM size is 512KB */
-        *itcm_shared_ram_kb_size = 512U;
+        itcm_kb_size = 512U;
         break;
     default:
         break;
     }
 
+    return itcm_kb_size;
+}
+
+/*!
+    \brief      get the option byte DTCM shared RAM size
+    \param[in]  none
+    \param[out] none
+    \retval     DTCM shared RAM size in KB unit
+*/
+uint32_t ob_dtcm_shared_ram_size_get(void)
+{
+    uint32_t dtcm_size_value;
+    uint32_t dtcm_kb_size;
+
+    dtcm_size_value = (uint32_t)((uint32_t)FMC_OBSTAT1_EFT & FMC_OBSTAT1_EFT_DTCM_SZ_SHRRAM);
+
     switch(dtcm_size_value) {
     case OB_DTCM_SHARED_RAM_0KB:
         /* DTCM shared RAM size is 0KB */
-        *dtcm_shared_ram_kb_size = 0U;
+        dtcm_kb_size = 0U;
         break;
     case OB_DTCM_SHARED_RAM_64KB:
         /* DTCM shared RAM size is 64KB */
-        *dtcm_shared_ram_kb_size = 64U;
+        dtcm_kb_size = 64U;
         break;
     case OB_DTCM_SHARED_RAM_128KB:
         /* DTCM shared RAM size is 128KB */
-        *dtcm_shared_ram_kb_size = 128U;
+        dtcm_kb_size = 128U;
         break;
     case OB_DTCM_SHARED_RAM_256KB:
         /* DTCM shared RAM size is 256KB */
-        *dtcm_shared_ram_kb_size = 256U;
+        dtcm_kb_size = 256U;
         break;
     case OB_DTCM_SHARED_RAM_512KB:
         /* DTCM shared RAM size is 512KB */
-        *dtcm_shared_ram_kb_size = 512U;
+        dtcm_kb_size = 512U;
         break;
     default:
         break;
     }
+
+    return dtcm_kb_size;
 }
 
 /*!
@@ -1316,8 +1323,8 @@ uint32_t ob_boot_address_get(uint8_t boot_pin)
     \param[out] dcrp_erase_option: DCRP area erase option
       \arg        OB_DCRP_AREA_ERASE_DISABLE: DCRP area erase disable
       \arg        OB_DCRP_AREA_ERASE_ENABLE: DCRP area erase enable
-    \param[out] dcrp_start_addr: DCRP area start address, contain the first 4K-byte block of the DCRP area.(0 - 0x3BF)
-    \param[out] dcrp_end_addr: DCRP area end address, contain the last 4K-byte block of the DCRP area.(0 - 0x3BF)
+    \param[out] dcrp_area_start_addr: DCRP area start address, contain the first 4K-byte block of the DCRP area.(0 - 0x3BF)
+    \param[out] dcrp_area_end_addr: DCRP area end address, contain the last 4K-byte block of the DCRP area.(0 - 0x3BF)
     \retval     state of DCRP area address
       \arg        INVLD_AREA_ADDRESS: the area address is invalid
       \arg        VLD_AREA_ADDRESS: the area address is valid
@@ -1327,6 +1334,7 @@ uint8_t ob_dcrp_area_get(uint32_t *dcrp_erase_option, uint32_t *dcrp_area_start_
     uint32_t dcrpaddr_reg;
     uint32_t main_flash_size;
     dcrpaddr_reg = FMC_DCRPADDR_EFT;
+    uint8_t reval = VLD_AREA_ADDRESS;
     main_flash_size = REG32(FLASH_DENSITY_ADDRESS) >> FLASH_DENSITY_OFFSET;
 
     /* get DCRP area erase option */
@@ -1337,7 +1345,7 @@ uint8_t ob_dcrp_area_get(uint32_t *dcrp_erase_option, uint32_t *dcrp_area_start_
         /* the whole main flash memory is DCRP area */
         *dcrp_area_start_addr = MAIN_FLASH_BASE_ADDRESS;
         *dcrp_area_end_addr = MAIN_FLASH_BASE_ADDRESS + main_flash_size - 1U;
-        return VLD_AREA_ADDRESS;
+        reval = VLD_AREA_ADDRESS;
     } else if((*dcrp_area_start_addr) < (*dcrp_area_end_addr)) {
         /* get DCRP area start address */
         *dcrp_area_start_addr = (*dcrp_area_start_addr) * DCRP_SIZE_UNIT;
@@ -1345,11 +1353,13 @@ uint8_t ob_dcrp_area_get(uint32_t *dcrp_erase_option, uint32_t *dcrp_area_start_
         /* get DCRP area end address */
         *dcrp_area_end_addr = ((*dcrp_area_end_addr) + 1U) * DCRP_SIZE_UNIT - 1U;
         *dcrp_area_end_addr += MAIN_FLASH_BASE_ADDRESS;
-        return VLD_AREA_ADDRESS;
+        reval = VLD_AREA_ADDRESS;
     } else {
         /* no valid DCRP area */
-        return INVLD_AREA_ADDRESS;
+        reval = INVLD_AREA_ADDRESS;
     }
+
+    return reval;
 }
 
 /*!
@@ -1364,22 +1374,23 @@ uint8_t ob_dcrp_area_get(uint32_t *dcrp_erase_option, uint32_t *dcrp_area_start_
       \arg        INVLD_AREA_ADDRESS: the area address is invalid
       \arg        VLD_AREA_ADDRESS: the area address is valid
 */
-uint8_t ob_secure_area_get(uint32_t *secure_area_option, uint32_t *scr_area_start_addr, uint32_t *scr_area_end_addr)
+uint8_t ob_secure_area_get(uint32_t *secure_erase_option, uint32_t *scr_area_start_addr, uint32_t *scr_area_end_addr)
 {
     uint32_t scraddr_reg;
     uint32_t main_flash_size;
     scraddr_reg = FMC_SCRADDR_EFT;
+    uint8_t reval = VLD_AREA_ADDRESS;
     main_flash_size = REG32(FLASH_DENSITY_ADDRESS) >> FLASH_DENSITY_OFFSET;
 
     /* get secure-access area erase option */
-    *secure_area_option = (uint32_t)(scraddr_reg & FMC_SCRADDR_EFT_SCR_EREN);
+    *secure_erase_option = (uint32_t)(scraddr_reg & FMC_SCRADDR_EFT_SCR_EREN);
     *scr_area_start_addr = ((uint32_t)(scraddr_reg & FMC_SCRADDR_EFT_SCR_AREA_START)) >> SCRADDR_SCR_AREA_START_OFFSET;
     *scr_area_end_addr = ((uint32_t)(scraddr_reg & FMC_SCRADDR_EFT_SCR_AREA_END)) >> SCRADDR_SCR_AREA_END_OFFSET;
     if((*scr_area_start_addr) == (*scr_area_end_addr)) {
         /* the whole main flash memory is secure-access area */
         *scr_area_start_addr = MAIN_FLASH_BASE_ADDRESS;
         *scr_area_end_addr = MAIN_FLASH_BASE_ADDRESS + main_flash_size - 1U;
-        return VLD_AREA_ADDRESS;
+        reval = VLD_AREA_ADDRESS;
     } else if((*scr_area_start_addr) < (*scr_area_end_addr)) {
         /* get secure-access area start address */
         *scr_area_start_addr = (*scr_area_start_addr) * SCR_SIZE_UNIT;
@@ -1387,11 +1398,13 @@ uint8_t ob_secure_area_get(uint32_t *secure_area_option, uint32_t *scr_area_star
         /* get secure-access area end address */
         *scr_area_end_addr = ((*scr_area_end_addr) + 1U) * SCR_SIZE_UNIT - 1U;
         *scr_area_end_addr += MAIN_FLASH_BASE_ADDRESS;
-        return VLD_AREA_ADDRESS;
+        reval = VLD_AREA_ADDRESS;
     } else {
         /* no valid area */
-        return INVLD_AREA_ADDRESS;
+        reval = INVLD_AREA_ADDRESS;
     }
+
+    return reval;
 }
 
 /*!
@@ -1556,11 +1569,15 @@ void fmc_pid_get(uint32_t *pid)
 */
 FlagStatus fmc_flag_get(fmc_flag_enum flag)
 {
+    FlagStatus reval = RESET;
+
     if(RESET != (FMC_REG_VAL(flag) & BIT(FMC_BIT_POS(flag)))) {
-        return SET;
+        reval = SET;
     } else {
-        return RESET;
+        reval = RESET;
     }
+
+    return reval;
 }
 
 /*!
@@ -1626,7 +1643,7 @@ void fmc_interrupt_disable(fmc_interrupt_enum interrupt)
 
 /*!
     \brief      get FMC interrupt flag status
-    \param[in]  flag: FMC interrupt flag
+    \param[in]  int_flag: FMC interrupt flag
                 only one parameter can be selected which is shown as below:
       \arg        FMC_INT_FLAG_END: flash end of operation interrupt flag
       \arg        FMC_INT_FLAG_WPERR: flash erase/program protection error interrupt flag
@@ -1641,6 +1658,7 @@ void fmc_interrupt_disable(fmc_interrupt_enum interrupt)
 */
 FlagStatus fmc_interrupt_flag_get(fmc_interrupt_flag_enum int_flag)
 {
+    FlagStatus reval = RESET;
     uint32_t intenable = 0U, flagstatus = 0U;
     /* get the interrupt enable bit status */
     intenable = (FMC_REG_VAL(int_flag) & BIT(FMC_BIT_POS(int_flag)));
@@ -1648,15 +1666,17 @@ FlagStatus fmc_interrupt_flag_get(fmc_interrupt_flag_enum int_flag)
     flagstatus = (FMC_REG_VAL2(int_flag) & BIT(FMC_BIT_POS2(int_flag)));
 
     if(flagstatus && intenable) {
-        return SET;
+        reval = SET;
     } else {
-        return RESET;
+        reval = RESET;
     }
+
+    return reval;
 }
 
 /*!
     \brief    clear FMC interrupt flag status
-    \param[in]  flag: FMC interrupt flag
+    \param[in]  int_flag: FMC interrupt flag
                 only one parameter can be selected which is shown as below:
       \arg        FMC_INT_FLAG_END: flash end of operation interrupt flag
       \arg        FMC_INT_FLAG_WPERR: flash erase/program protection error interrupt flag

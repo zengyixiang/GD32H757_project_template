@@ -2,11 +2,11 @@
     \file    gd32h7xx_rspdif.c
     \brief   RSPDIF driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -87,7 +87,7 @@ void rspdif_struct_para_init(rspdif_parameter_struct *rspdif_struct)
 
 /*!
     \brief      initialize the RSPDIF parameters
-    \param[in]  rspdif_struct : RSPDIF parameter initialization stucture and the member values are shown as below:
+    \param[in]  rspdif_struct : RSPDIF parameter initialization structure and the member values are shown as below:
                   input_sel          : RSPDIF_INPUT_INx (x = 0 ~ 3)
                   max_retrie         : RSPDIF_MAXRETRIES_NONE, RSPDIF_MAXRETRIES_3, RSPDIF_MAXRETRIES_15, RSPDIF_MAXRETRIES_63
                   wait_activity      : RSPDIF_WAIT_FOR_ACTIVITY_OFF, RSPDIF_WAIT_FOR_ACTIVITY_ON
@@ -265,7 +265,7 @@ void rspdif_control_buffer_dma_disable(void)
 /*!
     \brief      RSPDIF read data
     \param[in]  none
-    \param[out] data_struct: RSPDIF data stucture and the member values are shown as below:
+    \param[out] data_struct: RSPDIF data structure and the member values are shown as below:
                   format         : RSPDIF_DATAFORMAT_LSB, RSPDIF_DATAFORMAT_MSB,RSPDIF_DATAFORMAT_32BITS
                   preamble       : RSPDIF_PREAMBLE_NONE,RSPDIF_PREAMBLE_B,RSPDIF_PREAMBLE_M,RSPDIF_PREAMBLE_W
                   channel_status : 0 or 1

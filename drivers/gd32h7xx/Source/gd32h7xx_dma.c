@@ -2,11 +2,11 @@
     \file    gd32h7xx_dma.c
     \brief   DMA driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -67,7 +67,7 @@ void dma_deinit(uint32_t dma_periph, dma_channel_enum channelx)
     if(channelx < DMA_CH4) {
         DMA_INTC0(dma_periph) |= DMA_FLAG_ADD(DMA_CHINTF_RESET_VALUE, channelx);
     } else {
-        channelx -= (dma_channel_enum)4;
+        channelx = (dma_channel_enum)((uint32_t)channelx - 4U);
         DMA_INTC1(dma_periph) |= DMA_FLAG_ADD(DMA_CHINTF_RESET_VALUE, channelx);
     }
 }
@@ -80,7 +80,7 @@ void dma_deinit(uint32_t dma_periph, dma_channel_enum channelx)
 */
 void dma_single_data_para_struct_init(dma_single_data_parameter_struct *init_struct)
 {
-    /* set the DMA struct with the default values */
+    /* set the DMA structure with the default values */
     init_struct->request             = DMA_REQUEST_M2M;
     init_struct->periph_addr         = 0U;
     init_struct->periph_inc          = DMA_PERIPH_INCREASE_DISABLE;
@@ -153,7 +153,7 @@ void dma_single_data_mode_init(uint32_t dma_periph, dma_channel_enum channelx, d
     /* configure the number of remaining data to be transferred */
     DMA_CHCNT(dma_periph, channelx) = init_struct->number;
 
-    /* configure peripheral and memory transfer width,channel priotity,transfer mode */
+    /* configure peripheral and memory transfer width,channel priority,transfer mode */
     ctl = DMA_CHCTL(dma_periph, channelx);
     ctl &= ~(DMA_CHXCTL_PWIDTH | DMA_CHXCTL_MWIDTH | DMA_CHXCTL_PRIO | DMA_CHXCTL_TM);
     ctl |= (init_struct->periph_memory_width | (init_struct->periph_memory_width << 2U) | init_struct->priority | init_struct->direction);
@@ -197,7 +197,7 @@ void dma_single_data_mode_init(uint32_t dma_periph, dma_channel_enum channelx, d
     \param[in]  channelx: specify which DMA channel is initialized
                 only one parameter can be selected which is shown as below:
       \arg        DMA_CHx(x=0..7)
-    \param[in]  dma_multi_data_parameter_struct: the data needed to initialize DMA multi data mode
+    \param[in]  init_struct: the data needed to initialize DMA multi data mode
                   request: DMA_REQUEST_x x is the type of request
                   periph_addr: peripheral base address
                   periph_width: DMA_PERIPH_WIDTH_8BIT,DMA_PERIPH_WIDTH_16BIT,DMA_PERIPH_WIDTH_32BIT
@@ -231,7 +231,7 @@ void dma_multi_data_mode_init(uint32_t dma_periph, dma_channel_enum channelx, dm
     /* configure the number of remaining data to be transferred */
     DMA_CHCNT(dma_periph, channelx) = init_struct->number;
 
-    /* configure peripheral and memory transfer width,channel priotity,transfer mode,peripheral and memory burst transfer width */
+    /* configure peripheral and memory transfer width,channel priority,transfer mode,peripheral and memory burst transfer width */
     ctl = DMA_CHCTL(dma_periph, channelx);
     ctl &= ~(DMA_CHXCTL_PWIDTH | DMA_CHXCTL_MWIDTH | DMA_CHXCTL_PRIO | DMA_CHXCTL_TM | DMA_CHXCTL_PBURST | DMA_CHXCTL_MBURST);
     ctl |= (init_struct->periph_width | (init_struct->memory_width) | init_struct->priority | init_struct->direction | init_struct->memory_burst_width |
@@ -357,7 +357,7 @@ void dma_priority_config(uint32_t dma_periph, dma_channel_enum channelx, uint32_
     uint32_t ctl;
     /* acquire DMA_CHxCTL register */
     ctl = DMA_CHCTL(dma_periph, channelx);
-    /* assign regiser */
+    /* assign register */
     ctl &= ~DMA_CHXCTL_PRIO;
     ctl |= priority;
     DMA_CHCTL(dma_periph, channelx) = ctl;
@@ -382,7 +382,7 @@ void dma_memory_burst_beats_config(uint32_t dma_periph, dma_channel_enum channel
     uint32_t ctl;
     /* acquire DMA_CHxCTL register */
     ctl = DMA_CHCTL(dma_periph, channelx);
-    /* assign regiser */
+    /* assign register */
     ctl &= ~DMA_CHXCTL_MBURST;
     ctl |= mbeat;
     DMA_CHCTL(dma_periph, channelx) = ctl;
@@ -408,7 +408,7 @@ void dma_periph_burst_beats_config(uint32_t dma_periph, dma_channel_enum channel
     uint32_t ctl;
     /* acquire DMA_CHxCTL register */
     ctl = DMA_CHCTL(dma_periph, channelx);
-    /* assign regiser */
+    /* assign register */
     ctl &= ~DMA_CHXCTL_PBURST;
     ctl |= pbeat;
     DMA_CHCTL(dma_periph, channelx) = ctl;
@@ -433,7 +433,7 @@ void dma_memory_width_config(uint32_t dma_periph, dma_channel_enum channelx, uin
     uint32_t ctl;
     /* acquire DMA_CHxCTL register */
     ctl = DMA_CHCTL(dma_periph, channelx);
-    /* assign regiser */
+    /* assign register */
     ctl &= ~DMA_CHXCTL_MWIDTH;
     ctl |= msize;
     DMA_CHCTL(dma_periph, channelx) = ctl;
@@ -458,7 +458,7 @@ void dma_periph_width_config(uint32_t dma_periph, dma_channel_enum channelx, uin
     uint32_t ctl;
     /* acquire DMA_CHxCTL register */
     ctl = DMA_CHCTL(dma_periph, channelx);
-    /* assign regiser */
+    /* assign register */
     ctl &= ~DMA_CHXCTL_PWIDTH;
     ctl |= psize;
     DMA_CHCTL(dma_periph, channelx) = ctl;
@@ -574,7 +574,7 @@ void dma_channel_disable(uint32_t dma_periph, dma_channel_enum channelx)
     \param[in]  channelx: specify which DMA channel
                 only one parameter can be selected which is shown as below:
       \arg        DMA_CHx(x=0..7)
-    \param[in]  direction: specify the direction of  data transfer
+    \param[in]  direction: specify the direction of data transfer
                 only one parameter can be selected which is shown as below:
       \arg        DMA_PERIPH_TO_MEMORY: read from peripheral and write to memory
       \arg        DMA_MEMORY_TO_PERIPH: read from memory and write to peripheral
@@ -587,7 +587,7 @@ void dma_transfer_direction_config(uint32_t dma_periph, dma_channel_enum channel
     uint32_t ctl;
     /* acquire DMA_CHxCTL register */
     ctl = DMA_CHCTL(dma_periph, channelx);
-    /* assign regiser */
+    /* assign register */
     ctl &= ~DMA_CHXCTL_TM;
     ctl |= direction;
 
@@ -630,11 +630,13 @@ void dma_switch_buffer_mode_config(uint32_t dma_periph, dma_channel_enum channel
 */
 uint32_t dma_using_memory_get(uint32_t dma_periph, dma_channel_enum channelx)
 {
+    uint32_t mem = 0U;
     if((DMA_CHCTL(dma_periph, channelx)) & DMA_CHXCTL_MBS) {
-        return DMA_MEMORY_1;
+        mem = DMA_MEMORY_1;
     } else {
-        return DMA_MEMORY_0;
+        mem = DMA_MEMORY_0;
     }
+    return mem;
 }
 
 /*!
@@ -699,26 +701,28 @@ uint32_t dma_fifo_status_get(uint32_t dma_periph, dma_channel_enum channelx)
       \arg        DMA_FLAG_SDE: single data mode exception flag
       \arg        DMA_FLAG_TAE: transfer access error flag
       \arg        DMA_FLAG_HTF: half transfer finish flag
-      \arg        DMA_FLAG_FTF: full transger finish flag
+      \arg        DMA_FLAG_FTF: full transfer finish flag
     \param[out] none
     \retval     FlagStatus: SET or RESET
 */
 FlagStatus dma_flag_get(uint32_t dma_periph, dma_channel_enum channelx, uint32_t flag)
 {
+    FlagStatus ret = RESET;
     if(channelx < DMA_CH4) {
         if(DMA_INTF0(dma_periph) & DMA_FLAG_ADD(flag, channelx)) {
-            return SET;
+            ret = SET;
         } else {
-            return RESET;
+            ret = RESET;
         }
     } else {
-        channelx -= (dma_channel_enum)4;
+        channelx = (dma_channel_enum)((uint32_t)channelx - 4U);
         if(DMA_INTF1(dma_periph) & DMA_FLAG_ADD(flag, channelx)) {
-            return SET;
+            ret = SET;
         } else {
-            return RESET;
+            ret = RESET;
         }
     }
+    return ret;
 }
 
 /*!
@@ -733,7 +737,7 @@ FlagStatus dma_flag_get(uint32_t dma_periph, dma_channel_enum channelx, uint32_t
       \arg        DMA_FLAG_SDE: single data mode exception flag
       \arg        DMA_FLAG_TAE: transfer access error flag
       \arg        DMA_FLAG_HTF: half transfer finish flag
-      \arg        DMA_FLAG_FTF: full transger finish flag
+      \arg        DMA_FLAG_FTF: full transfer finish flag
     \param[out] none
     \retval     none
 */
@@ -742,7 +746,7 @@ void dma_flag_clear(uint32_t dma_periph, dma_channel_enum channelx, uint32_t fla
     if(channelx < DMA_CH4) {
         DMA_INTC0(dma_periph) |= DMA_FLAG_ADD(flag, channelx);
     } else {
-        channelx -= (dma_channel_enum)4;
+        channelx = (dma_channel_enum)((uint32_t)channelx - 4U);
         DMA_INTC1(dma_periph) |= DMA_FLAG_ADD(flag, channelx);
     }
 }
@@ -753,10 +757,10 @@ void dma_flag_clear(uint32_t dma_periph, dma_channel_enum channelx, uint32_t fla
     \param[in]  channelx: specify which DMA channel
                 only one parameter can be selected which is shown as below:
       \arg        DMA_CHx(x=0..7)
-    \param[in]  interrupt: specify which interrupt to enbale
+    \param[in]  interrupt: specify which interrupt to enable
                 one or more parameters can be selected which are shown as below:
       \arg        DMA_INT_SDE: single data mode exception interrupt
-      \arg        DMA_INT_TAE: tranfer access error interrupt
+      \arg        DMA_INT_TAE: transfer access error interrupt
       \arg        DMA_INT_HTF: half transfer finish interrupt
       \arg        DMA_INT_FTF: full transfer finish interrupt
       \arg        DMA_INT_FEE: FIFO exception interrupt
@@ -779,10 +783,10 @@ void dma_interrupt_enable(uint32_t dma_periph, dma_channel_enum channelx, uint32
     \param[in]  channelx: specify which DMA channel
                 only one parameter can be selected which is shown as below:
       \arg        DMA_CHx(x=0..7)
-    \param[in]  interrupt: specify which interrupt to disbale
+    \param[in]  interrupt: specify which interrupt to disable
                 one or more parameters can be selected which are shown as below:
       \arg        DMA_INT_SDE: single data mode exception interrupt
-      \arg        DMA_INT_TAE: tranfer access error interrupt
+      \arg        DMA_INT_TAE: transfer access error interrupt
       \arg        DMA_INT_HTF: half transfer finish interrupt
       \arg        DMA_INT_FTF: full transfer finish interrupt
       \arg        DMA_INT_FEE: FIFO exception interrupt
@@ -811,13 +815,14 @@ void dma_interrupt_disable(uint32_t dma_periph, dma_channel_enum channelx, uint3
       \arg        DMA_INT_FLAG_SDE: single data mode exception flag
       \arg        DMA_INT_FLAG_TAE: transfer access error flag
       \arg        DMA_INT_FLAG_HTF: half transfer finish flag
-      \arg        DMA_INT_FLAG_FTF: full transger finish flag
+      \arg        DMA_INT_FLAG_FTF: full transfer finish flag
     \param[out] none
     \retval     FlagStatus: SET or RESET
 */
 FlagStatus dma_interrupt_flag_get(uint32_t dma_periph, dma_channel_enum channelx, uint32_t int_flag)
 {
     uint32_t interrupt_enable = 0U, interrupt_flag = 0U;
+    FlagStatus ret = RESET;
 
     dma_channel_enum channel_flag_offset = channelx;
     /* flags for channel0-3 */
@@ -848,7 +853,7 @@ FlagStatus dma_interrupt_flag_get(uint32_t dma_periph, dma_channel_enum channelx
         }
     /* flags for channel4-7 */
     } else {
-        channel_flag_offset -= (dma_channel_enum)4U;
+        channel_flag_offset = (dma_channel_enum)((uint32_t)channel_flag_offset - 4U);
         switch(int_flag) {
         case DMA_INTF_FEEIF:
             interrupt_flag = DMA_INTF1(dma_periph) & DMA_FLAG_ADD(int_flag, channel_flag_offset);
@@ -876,10 +881,11 @@ FlagStatus dma_interrupt_flag_get(uint32_t dma_periph, dma_channel_enum channelx
     }
 
     if(interrupt_flag && interrupt_enable) {
-        return SET;
+        ret = SET;
     } else {
-        return RESET;
+        ret = RESET;
     }
+    return ret;
 }
 
 /*!
@@ -892,9 +898,9 @@ FlagStatus dma_interrupt_flag_get(uint32_t dma_periph, dma_channel_enum channelx
                 only one parameter can be selected which is shown as below:
       \arg        DMA_INT_FLAG_FEE: FIFO error and exception flag
       \arg        DMA_INT_FLAG_SDE: single data mode exception flag
-      \arg        DMA_INT_FLAG_TAE: transfer access error flag
+      \arg        DMA_INT_FLAG_TAE: transfer accesss error flag
       \arg        DMA_INT_FLAG_HTF: half transfer finish flag
-      \arg        DMA_INT_FLAG_FTF: full transger finish flag
+      \arg        DMA_INT_FLAG_FTF: full transfer finish flag
     \param[out] none
     \retval     none
 */
@@ -903,7 +909,7 @@ void dma_interrupt_flag_clear(uint32_t dma_periph, dma_channel_enum channelx, ui
     if(channelx < DMA_CH4) {
         DMA_INTC0(dma_periph) |= DMA_FLAG_ADD(int_flag, channelx);
     } else {
-        channelx -= (dma_channel_enum)4U;
+        channelx = (dma_channel_enum)((uint32_t)channelx - 4U);
         DMA_INTC1(dma_periph) |= DMA_FLAG_ADD(int_flag, channelx);
     }
 }
@@ -1254,7 +1260,6 @@ void dmamux_sync_id_config(dmamux_multiplexer_channel_enum channelx, uint32_t id
       \arg        DMA_REQUEST_TIMER4_CH2: DMAMUX TIMER4 CH2 request
       \arg        DMA_REQUEST_TIMER4_CH3: DMAMUX TIMER4 CH3 request
       \arg        DMA_REQUEST_TIMER4_UP: DMAMUX TIMER4 UP request
-      \arg        DMA_REQUEST_TIMER4_CMT: DMAMUX TIMER4 CMT request
       \arg        DMA_REQUEST_TIMER4_TRG: DMAMUX TIMER4 TRG request
       \arg        DMA_REQUEST_SPI2_RX: DMAMUX SPI2 RX request
       \arg        DMA_REQUEST_SPI2_TX: DMAMUX SPI2 TX request

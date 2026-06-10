@@ -2,11 +2,11 @@
     \file    gd32h7xx_rtdec.h
     \brief   definitions for the RTDEC
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -38,8 +38,8 @@ OF SUCH DAMAGE.
 #include "gd32h7xx.h"
 
 /* RTDEC definitions */
-#define RTDEC0                                          RTDEC_BASE                     /*!<  RTDEC0 bsae address */
-#define RTDEC1                                          (RTDEC_BASE + 0x00000400U)     /*!<  RTDEC1 bsae address */
+#define RTDEC0                                          RTDEC_BASE                     /*!<  RTDEC0 base address */
+#define RTDEC1                                          (RTDEC_BASE + 0x00000400U)     /*!<  RTDEC1 base address */
 #define RTDEC_AREA0                                     ((uint8_t)0x00U)               /*!<  RTDEC area0 */
 #define RTDEC_AREA1                                     ((uint8_t)0x01U)               /*!<  RTDEC area1 */
 #define RTDEC_AREA2                                     ((uint8_t)0x02U)               /*!<  RTDEC area2 */
@@ -76,7 +76,7 @@ OF SUCH DAMAGE.
 #define RTDEC_ARE_EADDR_EADDR          BITS(0, 31)      /*!< area end address bits */
 
 /* RTDEC_AREx_NONCE */
-#define RTDEC_ARE_NONCE_NONCE          BITS(0, 31)      /*!< area random number address bits */
+#define RTDEC_ARE_NONCE_NONCE          BITS(0, 31)      /*!< area random number bits */
 
 /* RTDEC_AREx_KEY */
 #define RTDEC_ARE_KEY_KEY              BITS(0, 31)      /*!< area key bits */

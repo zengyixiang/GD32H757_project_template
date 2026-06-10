@@ -2,11 +2,11 @@
     \file    gd32h7xx_sai.c
     \brief   SAI driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -71,24 +71,24 @@ void sai_deinit(uint32_t sai_periph)
 /*!
     \brief      initialize the parameter of SAI structure with a default value
     \param[in]  none
-    \param[out] sai_init_stuct: the initialization data needed to initialize SAI
+    \param[out] sai_init_struct: the initialization data needed to initialize SAI
     \retval     none
 */
-void sai_struct_para_init(sai_parameter_struct *sai_init_stuct)
+void sai_struct_para_init(sai_parameter_struct *sai_init_struct)
 {
     /* initialize the initpara struct member with the default value */
-    sai_init_stuct->operating_mode         = SAI_MASTER_TRANSMITTER;
-    sai_init_stuct->protocol               = SAI_PROTOCOL_POLYMORPHIC;
-    sai_init_stuct->data_width             = SAI_DATAWIDTH_32BIT;
-    sai_init_stuct->shift_dir              = SAI_SHIFT_MSB;
-    sai_init_stuct->sample_edge            = SAI_SAMPEDGE_FALLING;
-    sai_init_stuct->sync_mode              = SAI_SYNCMODE_ASYNC;
-    sai_init_stuct->output_drive           = SAI_OUTPUT_WITH_SAIEN;
-    sai_init_stuct->clk_div_bypass         = SAI_CLKDIV_BYPASS_OFF;
-    sai_init_stuct->mclk_div               = SAI_MCLKDIV_1;
-    sai_init_stuct->mclk_oversampling      = SAI_MCLK_OVERSAMP_256;
-    sai_init_stuct->mclk_enable            = SAI_MCLK_DISABLE;
-    sai_init_stuct->fifo_threshold         = SAI_FIFOTH_EMPTY;
+    sai_init_struct->operating_mode         = SAI_MASTER_TRANSMITTER;
+    sai_init_struct->protocol               = SAI_PROTOCOL_POLYMORPHIC;
+    sai_init_struct->data_width             = SAI_DATAWIDTH_32BIT;
+    sai_init_struct->shift_dir              = SAI_SHIFT_MSB;
+    sai_init_struct->sample_edge            = SAI_SAMPEDGE_FALLING;
+    sai_init_struct->sync_mode              = SAI_SYNCMODE_ASYNC;
+    sai_init_struct->output_drive           = SAI_OUTPUT_WITH_SAIEN;
+    sai_init_struct->clk_div_bypass         = SAI_CLKDIV_BYPASS_OFF;
+    sai_init_struct->mclk_div               = SAI_MCLKDIV_1;
+    sai_init_struct->mclk_oversampling      = SAI_MCLK_OVERSAMP_256;
+    sai_init_struct->mclk_enable            = SAI_MCLK_DISABLE;
+    sai_init_struct->fifo_threshold         = SAI_FIFOTH_EMPTY;
 }
 
 /*!
@@ -213,7 +213,7 @@ void sai_frame_init(uint32_t sai_periph, uint32_t block, sai_frame_parameter_str
     \param[in]  sai_slot_struct: SAI slot parameter initialization stuct members of the structure
                             and the member values are shown as below:
                     slot_number: 1~16, slot number
-                    slot_width: SAI_SLOTWIDTH_DATA, SAI_SLOTWIDTH_16BIT, SAI_SLOTWIDTH_32BIT
+                    slot_width: SAI_SLOT_WIDTH_DATA, SAI_SLOT_WIDTH_16BIT, SAI_SLOT_WIDTH_32BIT
                     data_offset: 0~31, data offset
                     slot_active: one or more parameters can be selected, SAI_SLOT_ACTIVE_NONE, SAI_SLOT_ACTIVE_x(x=0..15), SAI_SLOT_ACTIVE_ALL
     \param[out] none

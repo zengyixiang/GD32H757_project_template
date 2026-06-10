@@ -2,11 +2,11 @@
     \file    cdc_acm_core.c
     \brief   CDC ACM driver
 
-    \version 2025-01-24, V1.4.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2025, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -35,7 +35,7 @@ OF SUCH DAMAGE.
 #include "cdc_acm_core.h"
 
 #define USBD_VID                          0x28E9U
-#define USBD_PID                          0x4002U
+#define USBD_PID                          0x018AU
 
 /* note:it should use the C99 standard when compiling the below codes */
 /* USB standard device descriptor */
@@ -356,7 +356,7 @@ static uint8_t cdc_acm_init(usb_dev *udev, uint8_t config_index)
     };
 
     udev->dev.class_data[CDC_COM_INTERFACE] = (void *)&cdc_handler;
-    cdc_acm_data_receive(udev);
+
     return USBD_OK;
 }
 
@@ -502,7 +502,7 @@ static uint8_t cdc_acm_in(usb_dev *udev, uint8_t ep_num)
 
     return USBD_OK;
 }
-extern _Bool usb_receive(void);
+
 /*!
     \brief      handle CDC ACM data OUT stage
     \param[in]  udev: pointer to USB device instance
@@ -516,6 +516,6 @@ static uint8_t cdc_acm_out(usb_dev *udev, uint8_t ep_num)
 
     cdc->packet_receive = 1U;
     cdc->receive_length = ((usb_core_driver *)udev)->dev.transc_out[ep_num].xfer_count;
-    usb_receive();
+
     return USBD_OK;
 }

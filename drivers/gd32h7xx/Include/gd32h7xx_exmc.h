@@ -2,11 +2,11 @@
     \file    gd32h7xx_exmc.h
     \brief   definitions for the EXMC
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -296,6 +296,7 @@ typedef struct {
 #define SNCTL_NRW(regval)                   (BITS(4,5) & ((uint32_t)(regval) << 4))
 #define EXMC_NOR_DATABUS_WIDTH_8B           SNCTL_NRW(0)                                                  /*!< NOR data width is 8 bits */
 #define EXMC_NOR_DATABUS_WIDTH_16B          SNCTL_NRW(1)                                                  /*!< NOR data width is 16 bits */
+#define EXMC_NOR_DATABUS_WIDTH_32B          SNCTL_NRW(2)                                                  /*!< NOR data width is 32 bits */
 
 /* NOR region memory type */
 #define SNCTL_NRTP(regval)                  (BITS(2,3) & ((uint32_t)(regval) << 2))

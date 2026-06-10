@@ -2,11 +2,11 @@
     \file    gd32h7xx_cau.h
     \brief   definitions for the CAU
     
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -227,8 +227,8 @@ typedef struct {
 #define CAU_INT_OUTFIFO             CAU_INTEN_OINTEN                            /*!< OUT FIFO Interrupt */
 
 /* cau_stat1 register value */
-#define CAU_FLAG_INFIFO             CAU_STAT1_ISTA                              /*!< IN FIFO flag status */
-#define CAU_FLAG_OUTFIFO            CAU_STAT1_OSTA                              /*!< OUT FIFO flag status */
+#define CAU_FLAG_INFIFO             (CAU_STAT1_ISTA | BIT(31))                  /*!< IN FIFO flag status */
+#define CAU_FLAG_OUTFIFO            (CAU_STAT1_OSTA | BIT(31))                  /*!< OUT FIFO flag status */
 
 /* cau_intf register value */
 #define CAU_INT_FLAG_INFIFO         CAU_INTF_IINTF                              /*!< IN FIFO interrupt status */

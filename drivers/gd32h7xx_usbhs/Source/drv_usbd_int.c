@@ -2,11 +2,11 @@
     \file    drv_usbd_int.c
     \brief   USB device mode interrupt routines
 
-    \version 2025-01-24, V1.4.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2025, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -200,10 +200,11 @@ static uint32_t usbd_int_epout(usb_core_driver *udev)
                 udev->regs.er_out[ep_num]->DOEPINTF = DOEPINTF_TF;
 
                 if((uint8_t)USB_USE_DMA == udev->bp.transfer_mode) {
+                    usb_transc *transc = &udev->dev.transc_out[ep_num];
                     __IO uint32_t eplen = udev->regs.er_out[ep_num]->DOEPLEN;
+                    uint32_t set_len = ((transc->xfer_len + transc->max_len - 1U) / transc->max_len) * transc->max_len;
 
-                    udev->dev.transc_out[ep_num].xfer_count = udev->dev.transc_out[ep_num].max_len - \
-                                                                (eplen & DEPLEN_TLEN);
+                    udev->dev.transc_out[ep_num].xfer_count = set_len - (eplen & DEPLEN_TLEN);
                 }
 
                 /* inform upper layer: data ready */
@@ -538,11 +539,12 @@ uint32_t usbd_int_dedicated_ep1out(usb_core_driver *udev)
         udev->regs.er_out[1]->DOEPINTF = DOEPINTF_TF;
 
         if(USB_USE_DMA == udev->bp.transfer_mode) {
+            usb_transc *transc = &udev->dev.transc_out[1];
+            uint32_t set_len = ((transc->xfer_len + transc->max_len - 1U) / transc->max_len) * transc->max_len;
             oeplen = udev->regs.er_out[1]->DOEPLEN;
 
-            /* ToDo : handle more than one single MPS size packet */
-            udev->dev.transc_out[1].xfer_count = udev->dev.transc_out[1].max_len - \
-                                    (oeplen & DEPLEN_TLEN);
+            /* to do : handle more than one single max packet size packet */
+            udev->dev.transc_out[1].xfer_count = set_len - (oeplen & DEPLEN_TLEN);
         }
 
         /* RX COMPLETE */

@@ -2,11 +2,11 @@
     \file    gd32h7xx_crc.c
     \brief   CRC driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -221,27 +221,26 @@ uint32_t crc_single_data_calculate(uint32_t sdata, uint8_t data_format)
 */
 uint32_t crc_block_data_calculate(void *array, uint32_t size, uint8_t data_format)
 {
-    uint8_t *data8;
-    uint16_t *data16;
-    uint32_t *data32;
     uint32_t index;
-
+    uint32_t data;
+    uint32_t data_calcul = 0xFFFFFFFFU;
+    data = (uint32_t)array;
     if(INPUT_FORMAT_WORD == data_format) {
-        data32 = (uint32_t *)array;
         for(index = 0U; index < size; index++) {
-            REG32(CRC) = data32[index];
+            REG32(CRC) = *(uint32_t *)data;
+            data += 4U;
         }
     } else if(INPUT_FORMAT_HALFWORD == data_format) {
-        data16 = (uint16_t *)array;
         for(index = 0U; index < size; index++) {
-            REG16(CRC) = data16[index];
+            REG16(CRC) = *(uint16_t *)data;
+            data += 2U;
         }
     } else {
-        data8 = (uint8_t *)array;
         for(index = 0U; index < size; index++) {
-            REG8(CRC) = data8[index];
+            REG8(CRC) = *(uint8_t *)data;
+            data += 1U;
         }
     }
-
-    return (CRC_DATA);
+    data_calcul = CRC_DATA;
+    return data_calcul;
 }

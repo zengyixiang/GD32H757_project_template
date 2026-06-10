@@ -2,11 +2,11 @@
     \file    gd32h7xx_dac.c
     \brief   DAC driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -39,7 +39,7 @@ OF SUCH DAMAGE.
 #define DH_12BIT_OFFSET           ((uint32_t)0x00000010U)
 #define DH_8BIT_OFFSET            ((uint32_t)0x00000008U)
 
-#define DAC_STAT_FLAG_MASK0       (DAC_FLAG_DDUDR0 | DAC_FLAG_DDUDR1)
+#define DAC_STAT_FLAG_MASK0       (DAC_FLAG_DDUDR0 | DAC_FLAG_DDUDR1 | DAC_FLAG_CALF0 | DAC_FLAG_CALF1 | DAC_FLAG_BWT0 | DAC_FLAG_BWT1)
 #define DAC_INT_EN_MASK0          (DAC_INT_DDUDR0 | DAC_INT_DDUDR1)
 #define DAC_INT_FLAG_MASK0        (DAC_INT_FLAG_DDUDR0 | DAC_INT_FLAG_DDUDR1)
 
@@ -646,7 +646,11 @@ FlagStatus dac_flag_get(uint32_t dac_periph, uint32_t flag)
     \param[in]  flag: DAC flag
                 only one parameter can be selected which is shown as below:
       \arg        DAC_FLAG_DDUDR0: DACx_OUT0 DMA underrun flag
+      \arg        DAC_FLAG_CALF0: DACx_OUT0 calibration offset flag
+      \arg        DAC_FLAG_BWT0: DACx_OUT0 sample and keep wtire enable flag
       \arg        DAC_FLAG_DDUDR1: DACx_OUT1 DMA underrun flag
+      \arg        DAC_FLAG_CALF1: DACx_OUT1 calibration offset flag
+      \arg        DAC_FLAG_BWT1: DACx_OUT1 sample and keep wtire enable flag
     \param[out] none
     \retval     none
 */

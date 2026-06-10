@@ -2,11 +2,11 @@
     \file    gd32h7xx_tli.h
     \brief   definitions for the TLI
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -157,7 +157,7 @@ OF SUCH DAMAGE.
 #define TLI_LXCKEY_CKEYR                  BITS(16,23)                       /*!< color key red */
 
 /* TLI_LXPPF */
-#define TLI_LXPPF_PPF                     BITS(0,2)                         /*!< packeted pixel format */
+#define TLI_LXPPF_PPF                     BITS(0,2)                         /*!< packed pixel format */
 
 /* TLI_LXSA */
 #define TLI_LXSA_SA                       BITS(0,7)                         /*!< specified alpha */
@@ -242,7 +242,7 @@ typedef struct
 /* packeted pixel format */
 typedef enum 
 {
-     LAYER_PPF_ARGB8888,                                                    /*!< layerx pixel format ARGB8888 */
+     LAYER_PPF_ARGB8888 = 0U,                                               /*!< layerx pixel format ARGB8888 */
      LAYER_PPF_RGB888,                                                      /*!< layerx pixel format RGB888 */
      LAYER_PPF_RGB565,                                                      /*!< layerx pixel format RGB565 */
      LAYER_PPF_ARGB1555,                                                    /*!< layerx pixel format ARGB1555 */
@@ -283,20 +283,20 @@ typedef enum
 #define TLI_DITHER_ENABLE             ((uint8_t)0x01U)                      /*!< dither function enable */
 
 /* horizontal pulse polarity selection */
-#define TLI_HSYN_ACTLIVE_LOW          ((uint32_t)0x00000000U)               /*!< horizontal synchronous pulse active low */
-#define TLI_HSYN_ACTLIVE_HIGH         TLI_CTL_HPPS                          /*!< horizontal synchronous pulse active high */
+#define TLI_HSYN_ACTIVE_LOW          ((uint32_t)0x00000000U)               /*!< horizontal synchronous pulse active low */
+#define TLI_HSYN_ACTIVE_HIGH         TLI_CTL_HPPS                          /*!< horizontal synchronous pulse active high */
 
 /* vertical pulse polarity selection */
-#define TLI_VSYN_ACTLIVE_LOW          ((uint32_t)0x00000000U)               /*!< vertical synchronous pulse active low */
-#define TLI_VSYN_ACTLIVE_HIGH         TLI_CTL_VPPS                          /*!< vertical synchronous pulse active high */
+#define TLI_VSYN_ACTIVE_LOW          ((uint32_t)0x00000000U)               /*!< vertical synchronous pulse active low */
+#define TLI_VSYN_ACTIVE_HIGH         TLI_CTL_VPPS                          /*!< vertical synchronous pulse active high */
 
 /* pixel clock polarity selection */
 #define TLI_PIXEL_CLOCK_TLI           ((uint32_t)0x00000000U)               /*!< pixel clock is TLI clock */
 #define TLI_PIXEL_CLOCK_INVERTEDTLI   TLI_CTL_CLKPS                         /*!< pixel clock is inverted TLI clock */
 
 /* data enable polarity selection */
-#define TLI_DE_ACTLIVE_LOW            ((uint32_t)0x00000000U)               /*!< data enable active low */
-#define TLI_DE_ACTLIVE_HIGHT          TLI_CTL_DEPS                          /*!< data enable active high */
+#define TLI_DE_ACTIVE_LOW            ((uint32_t)0x00000000U)               /*!< data enable active low */
+#define TLI_DE_ACTIVE_HIGH           TLI_CTL_DEPS                          /*!< data enable active high */
 
 /* alpha calculation factor 1 of blending method */
 #define LXBLEND_ACF1(regval)          (BITS(8,10) & ((uint32_t)(regval) << 8U))

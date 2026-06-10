@@ -2,11 +2,11 @@
     \file    gd32h7xx_hpdf.c
     \brief   HPDF driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -68,8 +68,8 @@ void hpdf_deinit(void)
 /*!
     \brief      initialize the parameters of HPDF channel struct with the default values
     \param[in]  init_struct: the initialization data needed to initialize HPDF
-                  serial_interface: EXTERNAL_CKIN, INTERNAL_CKOUT, HALF_CKOUT_FALLING_EDGE, HALF_CKOUT_RISING_EDGE
-                  spi_ck_source: SPI_RISING_EDGE, SPI_FALLING_EDGE, MANCHESTER_CODE0, MANCHESTER_CODE1
+                  spi_ck_source: EXTERNAL_CKIN, INTERNAL_CKOUT, HALF_CKOUT_FALLING_EDGE, HALF_CKOUT_RISING_EDGE
+                  serial_interface: SPI_RISING_EDGE, SPI_FALLING_EDGE, MANCHESTER_CODE0, MANCHESTER_CODE1
                   malfunction_monitor: MM_DISABLE, MM_ENABLE
                   calibration_offset: calibration offset(-8388608 ~ 8388607)
                   right_bit_shift: data right bit-shift(0 ~ 31)
@@ -79,7 +79,7 @@ void hpdf_deinit(void)
                   data_packing_mode: DPM_STANDARD_MODE, DPM_INTERLEAVED_MODE, DPM_DUAL_MODE
                   tm_filter: TM_FASTSINC, TM_SINC1, TM_SINC2, TM_SINC3
                   tm_filter_oversample: threshold monitor filter oversampling rate(0 ~ 31), AW_FLT_BYPASS=0
-                  mm_break_signal: DISABLE, ENABLE
+                  mm_break_signal: NO_MM_BREAK, MM_BREAK0, MM_BREAK1, MM_BREAK2, MM_BREAK3 
                   mm_counter_threshold: malfunction monitor counter threshold(0 ~ 255)
                   plsk_value: the number of serial input samples that will be skipped(0 ~ 63)
     \param[out] none
@@ -103,7 +103,7 @@ void hpdf_channel_struct_para_init(hpdf_channel_parameter_struct *init_struct)
     init_struct->data_packing_mode      = DPM_STANDARD_MODE;
     init_struct->tm_filter              = TM_FASTSINC;
     init_struct->tm_filter_oversample   = TM_FLT_BYPASS;
-    init_struct->mm_break_signal        = DISABLE;
+    init_struct->mm_break_signal        = NO_MM_BREAK;
     init_struct->mm_counter_threshold   = 0U;
     init_struct->plsk_value             = 0U;
 }
@@ -212,8 +212,8 @@ void hpdf_disable(void)
     \brief      initialize the HPDF channel
     \param[in]  channelx: CHANNELx(x=0..7)
     \param[in]  init_struct: the initialization data needed to initialize HPDF channel
-                  serial_interface: EXTERNAL_CKIN, INTERNAL_CKOUT, HALF_CKOUT_FALLING_EDGE, HALF_CKOUT_RISING_EDGE
-                  spi_ck_source: SPI_RISING_EDGE, SPI_FALLING_EDGE, MANCHESTER_CODE0, MANCHESTER_CODE1
+                  spi_ck_source: EXTERNAL_CKIN, INTERNAL_CKOUT, HALF_CKOUT_FALLING_EDGE, HALF_CKOUT_RISING_EDGE
+                  serial_interface: SPI_RISING_EDGE, SPI_FALLING_EDGE, MANCHESTER_CODE0, MANCHESTER_CODE1
                   malfunction_monitor: MM_DISABLE, MM_ENABLE
                   calibration_offset: calibration offset(-8388608 ~ 8388607)
                   right_bit_shift: data right bit-shift(0 ~ 31)
@@ -223,7 +223,7 @@ void hpdf_disable(void)
                   data_packing_mode: DPM_STANDARD_MODE, DPM_INTERLEAVED_MODE, DPM_DUAL_MODE
                   tm_filter: TM_FASTSINC, TM_SINC1, TM_SINC2, TM_SINC3
                   tm_filter_oversample: threshold monitor filter oversampling rate(1 ~ 32), TM_FLT_BYPASS=0
-                  mm_break_signal: DISABLE, ENABLE
+                  mm_break_signal: NO_MM_BREAK, MM_BREAK0, MM_BREAK1, MM_BREAK2, MM_BREAK3 
                   mm_counter_threshold: malfunction monitor counter threshold(0 ~ 255)
                   plsk_value: the number of serial input samples that will be skipped(0 ~ 63)
     \param[out] none
@@ -333,7 +333,7 @@ void hpdf_rc_init(hpdf_filter_enum filtery, hpdf_rc_parameter_struct *init_struc
                   icdmaen: ICDMAEN_DISABLE, ICDMAEN_ENABLE
                   ic_channel_group: ICGSEL_CHANNELx(x=0..7)
                   icsyn: ICSYN_DISABLE, ICSYN_ENABLE
-                  trigger_dege: TRG_DISABLE, RISING_EDGE_TRG, FALLING_EDGE_TRG, EDGE_TRG
+                  trigger_edge: TRG_DISABLE, RISING_EDGE_TRG, FALLING_EDGE_TRG, EDGE_TRG
                   trigger_signal: HPDF_ITRGx(x=0..8), HPDF_ITRG11, HPDF_ITRG12, HPDF_ITRG24, HPDF_ITRG25, HPDF_ITRG31
     \param[out] none
     \retval     none
@@ -373,7 +373,7 @@ void hpdf_clock_output_config(uint32_t source, uint8_t divider, uint32_t mode)
 {
     uint32_t reg;
     reg = HPDF_CHXCTL(CHANNEL0);
-    reg &= ~(HPDF_CH0CTL_CKOUTSEL | HPDF_CH0CTL_CKOUTSEL | HPDF_CH0CTL_CKOUTDM);
+    reg &= ~(HPDF_CH0CTL_CKOUTSEL | HPDF_CH0CTL_CKOUTDIV | HPDF_CH0CTL_CKOUTDM);
     /* configure serial output clock */
     reg |= (source | ((uint32_t)divider << CH0CTL_CKOUTDIV_OFFSET) | mode);
     HPDF_CHXCTL(CHANNEL0) = reg;

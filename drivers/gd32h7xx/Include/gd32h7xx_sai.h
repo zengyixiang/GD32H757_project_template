@@ -2,11 +2,11 @@
     \file    gd32h7xx_sai.h
     \brief   definitions for the SAI
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -154,13 +154,13 @@ OF SUCH DAMAGE.
 
 /* SAI_PDMCFG */
 #define SAI_PDMCFG_DPL0                 BITS(0,2)                                   /*!< the 0 group of left channel microphone data flow delay period */
-#define SAI_PDMCTL_DPR0                 BITS(4,6)                                   /*!< the 0 group of right channel microphone data flow delay period */
+#define SAI_PDMCFG_DPR0                 BITS(4,6)                                   /*!< the 0 group of right channel microphone data flow delay period */
 #define SAI_PDMCFG_DPL1                 BITS(8,10)                                  /*!< the 1st group of left channel microphone data flow delay period */
-#define SAI_PDMCTL_DPR1                 BITS(12,14)                                 /*!< the 1st group of right channel microphone data flow delay period */
+#define SAI_PDMCFG_DPR1                 BITS(12,14)                                 /*!< the 1st group of right channel microphone data flow delay period */
 #define SAI_PDMCFG_DPL2                 BITS(16,18)                                 /*!< the 2nd group of left channel microphone data flow delay period */
-#define SAI_PDMCTL_DPR2                 BITS(20,22)                                 /*!< the 2nd group of right channel microphone data flow delay period */
+#define SAI_PDMCFG_DPR2                 BITS(20,22)                                 /*!< the 2nd group of right channel microphone data flow delay period */
 #define SAI_PDMCFG_DPL3                 BITS(24,26)                                 /*!< the 3rd group of left channel microphone data flow delay period */
-#define SAI_PDMCTL_DPR3                 BITS(28,30)                                 /*!< the 3rd group of right channel microphone data flow delay period */
+#define SAI_PDMCFG_DPR3                 BITS(28,30)                                 /*!< the 3rd group of right channel microphone data flow delay period */
 
 /* constants definitions */
 /* SAI initialize parameter struct definitions */
@@ -352,7 +352,7 @@ typedef enum {
 
 /* SAI mute value */
 #define SAI_MUTESENT_0                  ((uint32_t)0x00000000U)                     /*!< 0 is sent via the serial data line when mute is on */
-#define SAI_MUTESENT_LASTFREAM          SAI_CFG1_MTVAL                              /*!< if SLOTNB is less or equals to two, last frame is sent via the serial data line */
+#define SAI_MUTESENT_LASTFRAME          SAI_CFG1_MTVAL                              /*!< if SLOTNB is less or equals to two, last frame is sent via the serial data line */
 
 /* SAI mute on */
 #define SAI_MUTE_OFF                    ((uint32_t)0x00000000U)                     /*!< mute mode off */
@@ -453,7 +453,7 @@ typedef enum {
 /* reset SAI */
 void sai_deinit(uint32_t sai_periph);
 /* initialize SAI parameter struct with the default values */
-void sai_struct_para_init(sai_parameter_struct *sai_init_stuct);
+void sai_struct_para_init(sai_parameter_struct *sai_init_struct);
 /* initialize SAI frame parameter struct with the default values */
 void sai_frame_struct_para_init(sai_frame_parameter_struct *sai_frame_init_struct);
 /* initialize SAI slot parameter struct with the default values */

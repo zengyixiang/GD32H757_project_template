@@ -2,11 +2,11 @@
     \file    gd32h7xx_rtdec.c
     \brief   RTDEC driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -35,7 +35,7 @@ OF SUCH DAMAGE.
 #include "gd32h7xx_rtdec.h"
 
 /* RTDEC firmware version offset macro */
-#define ARE_FMVER_OFFSET    (uint32_t)0x00000010U)
+#define ARE_FMVER_OFFSET    ((uint32_t)0x00000010U)
 
 /*!
     \brief      reset RTDEC
@@ -60,7 +60,7 @@ void rtdec_deinit(uint32_t rtdec_periph)
 /*!
     \brief      initialize the parameters of RTDEC struct with default values
     \param[in]  none
-    \param[out] rtdec_parameter_struct: the initialized struct rtdec_parameter_struct pointer
+    \param[out] rtdec_struct: the initialized struct rtdec_parameter_struct pointer
     \retval     none
 */
 void rtdec_struct_para_init(rtdec_parameter_struct* rtdec_struct)
@@ -98,7 +98,7 @@ ErrStatus rtdec_init(uint32_t rtdec_periph, uint32_t rtdec_area, rtdec_parameter
 
     /* write the correct MODE[1:0] value and firmware version in ARExCFG register */
     RTDEC_ARE_CFG(rtdec_periph, rtdec_area) &= ~(uint32_t)(RTDEC_MODE | RTDEC_ARE_FMVER);
-    RTDEC_ARE_CFG(rtdec_periph, rtdec_area) |= ((uint32_t)(rtdec_struct->access_mode)) | (uint32_t)(((uint32_t)(rtdec_struct->fw_version) << ARE_FMVER_OFFSET);
+    RTDEC_ARE_CFG(rtdec_periph, rtdec_area) |= ((uint32_t)(rtdec_struct->access_mode)) | ((uint32_t)((uint32_t)(rtdec_struct->fw_version) << ARE_FMVER_OFFSET));
 
     /* program ARExKEY registers */
     key_nonce_addr = (uint32_t)rtdec_struct->key;
@@ -147,14 +147,14 @@ void rtdec_config(uint32_t rtdec_periph, uint32_t rtdec_area, uint8_t access_mod
 {
     /* write the correct MODE[1:0] value and firmware version in ARExCFG register */
     RTDEC_ARE_CFG(rtdec_periph, rtdec_area) &= ~(uint32_t)(RTDEC_MODE | RTDEC_ARE_FMVER);
-    RTDEC_ARE_CFG(rtdec_periph, rtdec_area) |= ((uint32_t)access_mode) | ((uint32_t)((uint32_t)firmware_version << ARE_FMVER_OFFSET);
+    RTDEC_ARE_CFG(rtdec_periph, rtdec_area) |= ((uint32_t)access_mode) | ((uint32_t)((uint32_t)firmware_version << ARE_FMVER_OFFSET));
 }
 
 /*!
     \brief      configure RTDEC key or register lock
     \param[in]  rtdec_periph: RTDECx(x = 0, 1)
     \param[in]  rtdec_area: RTDEC_AREAx(x = 0, 1, 2, 3)
-    \param[in]: lock_type: key lock or register lock 
+    \param[in]  lock_type: key lock or register lock 
       \arg:       RTDEC_ARE_CFG_LK: register lock
       \arg:       RTDEC_ARE_K_LK: key lock
     \param[out] none
@@ -169,8 +169,8 @@ void rtdec_lock(uint32_t rtdec_periph, uint32_t rtdec_area, uint32_t lock_type)
     \brief      initialize RTDEC area address
     \param[in]  rtdec_periph: RTDECx(x = 0, 1)
     \param[in]  rtdec_area: RTDEC_AREAx(x = 0, 1, 2, 3)
-    \param[in]: saddr: area start address, the 4 MSB bits and the 12 LSB bits are ignored
-    \param[in]: eaddr: area end address, the 4 MSB bits and the 12 LSB bits are ignored
+    \param[in]  saddr: area start address, the 4 MSB bits and the 12 LSB bits are ignored
+    \param[in]  eaddr: area end address, the 4 MSB bits and the 12 LSB bits are ignored
     \param[out] none
     \retval     none
 */
@@ -185,7 +185,7 @@ void rtdec_addr_init(uint32_t rtdec_periph, uint32_t rtdec_area, uint32_t saddr,
     \brief      initialize RTDEC nonce, nonce follows little endian format
     \param[in]  rtdec_periph: RTDECx(x = 0, 1)
     \param[in]  rtdec_area: RTDEC_AREAx(x = 0, 1, 2, 3)
-    \param[in]: nonce: an array containing 64-bit nonce data, little endian format
+    \param[in]  nonce: an array containing 64-bit nonce data, little endian format
     \param[out] none
     \retval     none
 */
@@ -203,7 +203,7 @@ void rtdec_nonce_init(uint32_t rtdec_periph, uint32_t rtdec_area, uint32_t* nonc
     \brief      initialize RTDEC key, key follows little endian format
     \param[in]  rtdec_periph: RTDECx(x = 0, 1)
     \param[in]  rtdec_area: RTDEC_AREAx(x = 0, 1, 2, 3)
-    \param[in]: key: an array containing 128-bit key data, little endian format
+    \param[in]  key: an array containing 128-bit key data, little endian format
     \param[out] none
     \retval     none
 */
@@ -260,7 +260,7 @@ void rtdec_disable(uint32_t rtdec_periph, uint32_t rtdec_area)
 /*!
     \brief      get RTDEC error flag
     \param[in]  rtdec_periph: RTDECx(x = 0, 1)
-    \param[in]: flag: error flag
+    \param[in]  flag: error flag
                 only one parameter can be selected which is shown as below:
       \arg        RTDEC_FLAG_SEC_ERROR:  security error flag
       \arg        RTDEC_FLAG_MODE_ERROR: access mode error flag
@@ -280,7 +280,7 @@ FlagStatus rtdec_flag_get(uint32_t rtdec_periph, uint32_t flag)
 /*!
     \brief      clear RTDEC error flag 
     \param[in]  rtdec_periph: RTDECx(x = 0, 1)
-    \param[in]: flag: error flag
+    \param[in]  flag: error flag
                 only one parameter can be selected which is shown as below:
       \arg        RTDEC_FLAG_SEC_ERROR:  security error flag
       \arg        RTDEC_FLAG_MODE_ERROR: access mode error flag
@@ -296,7 +296,7 @@ void rtdec_flag_clear(uint32_t rtdec_periph, uint32_t flag)
 /*!
     \brief      enable RTDEC interrupt
     \param[in]  rtdec_periph: RTDECx(x = 0, 1)
-    \param[in]: interrupt: interrupt type
+    \param[in]  interrupt: interrupt type
                 one or more parameters can be selected which is shown as below:
       \arg        RTDEC_INT_SEC:  security error interrupt
       \arg        RTDEC_INT_MODE: access mode error interrupt
@@ -312,7 +312,7 @@ void rtdec_interrupt_enable(uint32_t rtdec_periph, uint32_t interrupt)
 /*!
     \brief      disable RTDEC interrupt 
     \param[in]  rtdec_periph: RTDECx(x = 0, 1)
-    \param[in]: interrupt: interrupt type
+    \param[in]  interrupt: interrupt type
                 one or more parameters can be selected which is shown as below:
       \arg        RTDEC_INT_SEC:  security error interrupt
       \arg        RTDEC_INT_MODE: access mode error interrupt
@@ -328,7 +328,7 @@ void rtdec_interrupt_disable(uint32_t rtdec_periph, uint32_t interrupt)
 /*!
     \brief      get RTDEC interrupt flag 
     \param[in]  rtdec_periph: RTDECx(x = 0, 1)
-    \param[in]: int_flag: interrupt flag
+    \param[in]  int_flag: interrupt flag
                 only one parameter can be selected which is shown as below:
       \arg        RTDEC_INT_FLAG_SEC_ERROR:  security error interrupt flag
       \arg        RTDEC_INT_FLAG_MODE_ERROR: access mode error interrupt flag

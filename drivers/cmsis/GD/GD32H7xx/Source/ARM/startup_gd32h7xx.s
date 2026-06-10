@@ -2,12 +2,12 @@
 ;    \file    startup_gd32h7xx.s
 ;    \brief   start up file
 
-;    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+;    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 ;*/
 
 ;/*
 ; * Copyright (c) 2009-2018 Arm Limited. All rights reserved.
-; * Copyright (c) 2024, GigaDevice Semiconductor Inc.
+; * Copyright (c) 2026, GigaDevice Semiconductor Inc.
 ; *
 ; * SPDX-License-Identifier: Apache-2.0
 ; *
@@ -30,7 +30,7 @@
 ;   <o> Stack Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
 
-Stack_Size      EQU     0x00004000
+Stack_Size      EQU     0x00001000
 
                 AREA    STACK, NOINIT, READWRITE, ALIGN=3
 Stack_Mem       SPACE   Stack_Size
@@ -41,7 +41,7 @@ __initial_sp
 ;   <o>  Heap Size (in Bytes) <0x0-0xFFFFFFFF:8>
 ; </h>
 
-Heap_Size       EQU     0x000001400
+Heap_Size       EQU     0x000000800
 
                 AREA    HEAP, NOINIT, READWRITE, ALIGN=3
 __heap_base
@@ -77,7 +77,7 @@ __Vectors       DCD     __initial_sp                      ; Top of Stack
 
 ;               /* external interrupts handler */
                 DCD     WWDGT_IRQHandler                             ; 16:Window Watchdog Timer
-                DCD     AVD_LVD_OVD_IRQHandler                       ; 17:AVD/LVD/OVD through EXTI Line detect
+                DCD     VAVD_LVD_VOVD_IRQHandler                     ; 17:VAVD/LVD/VOVD through EXTI Line detect
                 DCD     TAMPER_STAMP_LXTAL_IRQHandler                ; 18:RTC Tamper and TimeStamp through EXTI Line detect, LXTAL clock security system interrupt
                 DCD     RTC_WKUP_IRQHandler                          ; 19:RTC Wakeup from EXTI interrupt
                 DCD     FMC_IRQHandler                               ; 20:FMC global interrupt
@@ -137,8 +137,8 @@ __Vectors       DCD     __initial_sp                      ; Top of Stack
                 DCD     DMA1_Channel2_IRQHandler                     ; 74:DMA1 Channel2
                 DCD     DMA1_Channel3_IRQHandler                     ; 75:DMA1 Channel3
                 DCD     DMA1_Channel4_IRQHandler                     ; 76:DMA1 Channel4
-                DCD     ENET0_IRQHandler                             ; 77:Ethernet0
-                DCD     ENET0_WKUP_IRQHandler                        ; 78:Ethernet0 Wakeup through EXTI Line
+                DCD     ENET0_IRQHandler                             ; 77:ENET0
+                DCD     ENET0_WKUP_IRQHandler                        ; 78:ENET0 Wakeup through EXTI Line
                 DCD     0                                            ; Reserved
                 DCD     0                                            ; Reserved
                 DCD     0                                            ; Reserved
@@ -252,8 +252,8 @@ __Vectors       DCD     __initial_sp                      ; Top of Stack
                 DCD     USBHS1_EP1_IN_IRQHandler                     ; 189:USBHS1 endpoint 1 in
                 DCD     USBHS1_WKUP_IRQHandler                       ; 190:USBHS1 wakeup
                 DCD     USBHS1_IRQHandler                            ; 191:USBHS1
-                DCD     ENET1_IRQHandler                             ; 192:Ethernet1
-                DCD     ENET1_WKUP_IRQHandler                        ; 193:Ethernet1 wakeup
+                DCD     ENET1_IRQHandler                             ; 192:ENET1
+                DCD     ENET1_WKUP_IRQHandler                        ; 193:ENET1 wakeup
                 DCD     0                                            ; Reserved
                 DCD     CAN0_WKUP_IRQHandler                         ; 195:CAN0 wakeup
                 DCD     CAN0_Message_IRQHandler                      ; 196:CAN0 interrupt for message buffer
@@ -367,7 +367,7 @@ SysTick_Handler PROC
 Default_Handler PROC                                      
 ;               /* external interrupts handler */
                 EXPORT  WWDGT_IRQHandler                  [WEAK]
-                EXPORT  AVD_LVD_OVD_IRQHandler            [WEAK]
+                EXPORT  VAVD_LVD_VOVD_IRQHandler            [WEAK]
                 EXPORT  TAMPER_STAMP_LXTAL_IRQHandler     [WEAK]
                 EXPORT  RTC_WKUP_IRQHandler               [WEAK]
                 EXPORT  FMC_IRQHandler                    [WEAK]
@@ -532,7 +532,7 @@ Default_Handler PROC
 
 ;/* external interrupts handler */
 WWDGT_IRQHandler
-AVD_LVD_OVD_IRQHandler
+VAVD_LVD_VOVD_IRQHandler
 TAMPER_STAMP_LXTAL_IRQHandler
 RTC_WKUP_IRQHandler
 FMC_IRQHandler

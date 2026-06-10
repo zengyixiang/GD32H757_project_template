@@ -2,11 +2,11 @@
     \file    gd32h7xx_i2c.h
     \brief   definitions for the I2C
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -328,8 +328,6 @@ void i2c_slave_byte_control_enable(uint32_t i2c_periph);
 void i2c_slave_byte_control_disable(uint32_t i2c_periph);
 /* generate a NACK in slave mode */
 void i2c_nack_enable(uint32_t i2c_periph);
-/* generate an ACK in slave mode */
-void i2c_nack_disable(uint32_t i2c_periph);
 /* enable wakeup from deep-sleep mode */
 void i2c_wakeup_from_deepsleep_enable(uint32_t i2c_periph);
 /* disable wakeup from deep-sleep mode */
@@ -351,7 +349,7 @@ void i2c_reload_enable(uint32_t i2c_periph);
 /* disable I2C reload mode */
 void i2c_reload_disable(uint32_t i2c_periph);
 /* configure number of bytes to be transferred */
-void i2c_transfer_byte_number_config(uint32_t i2c_periph, uint32_t byte_number);
+void i2c_transfer_byte_number_config(uint32_t i2c_periph, uint8_t byte_number);
 /* enable I2C DMA for transmission or reception */
 void i2c_dma_enable(uint32_t i2c_periph, uint8_t dma);
 /* disable I2C DMA for transmission or reception */

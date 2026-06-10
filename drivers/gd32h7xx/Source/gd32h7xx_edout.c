@@ -2,11 +2,11 @@
     \file    gd32h7xx_edout.c
     \brief   EDOUT driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -138,7 +138,7 @@ void edout_max_location_value_config(uint32_t max_loc)
 
 /*!
     \brief      update the output counter, used to set the phase difference and the number of edges for the next update period
-    \param[in]  num_edges: edge count, value range is -32768~32767, positive means clockwise rotation, negative means counter-clockwise rotation
+    \param[in]  num_edges: edge count, value range is -32767(0x8001)~32767(0x7FFF), positive means clockwise rotation, negative means counter-clockwise rotation
     \param[in]  phase_diff: phase difference, value range is 2~65535, in units of PCLK
     \param[out] none
     \retval     none

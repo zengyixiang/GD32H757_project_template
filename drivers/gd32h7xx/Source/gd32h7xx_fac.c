@@ -2,11 +2,11 @@
     \file    gd32h7xx_fac.c
     \brief   FAC driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -72,7 +72,7 @@ void fac_struct_para_init(fac_parameter_struct *fac_parameter)
 
 /*!
     \brief      initialize the FAC fixed data preload parameter struct with the default values
-    \param[in]  fac_parameter: fac parameter struct
+    \param[in]  init_struct: FAC fixed data preload init struct
     \param[out] none
     \retval     none
 */
@@ -90,7 +90,7 @@ void fac_fixed_data_preload_init(fac_fixed_data_preload_struct *init_struct)
 
 /*!
     \brief      initialize the FAC float data preload parameter struct with the default values
-    \param[in]  fac_parameter: fac parameter struct
+    \param[in]  init_struct: FAC float data preload init struct
     \param[out] none
     \retval     none
 */
@@ -108,7 +108,7 @@ void fac_float_data_preload_init(fac_float_data_preload_struct *init_struct)
 
 /*!
     \brief      initialize the FAC peripheral
-    \param[in]  init_struct: the data needed to initialize FAC
+    \param[in]  fac_parameter: the data needed to initialize FAC
                   input_addr: x0 buffer base address, 0..255
                   input_size: x0 buffer size, 0..255
                   input_threshold: FAC_THRESHOLD_1, FAC_THRESHOLD_2,
@@ -212,8 +212,6 @@ void fac_fixed_buffer_preload(fac_fixed_data_preload_struct *init_struct)
                   output_size: size of the output data,0~255
                   output_ctx: content of the output data
                 only one parameter can be selected which is shown as below:
-      \arg      PRELOAD_DMA_MODE: preload access buffer mode with dma
-      \arg      PRELOAD_POLLING_MODE: preload access buffer mode with polling
     \param[out] none
     \retval     none
 */
@@ -265,8 +263,8 @@ void fac_fixed_data_preload(uint8_t size, int16_t array[])
 
 /*!
     \brief      FAC preload float data pointer
-    \param[in]  data: 32-bit data
     \param[in]  size: size of data
+    \param[in]  array: 32-bit data
     \param[out] none
     \retval     none
 */
@@ -427,11 +425,21 @@ void fac_y_config(uint32_t watermark, uint8_t baseaddr, uint8_t bufsize)
 
 /*!
     \brief      FAC configure execute function
-    \param[in]  func: select function to excute
-                  FUNC_CONVO_FIR, FUNC_IIR_DIRECT_FORM_1
-    \param[in]  ipp: parameter of forward coefficient, 2..64
-    \param[in]  ipq: parameter of backward coefficient, 1..63
-    \param[in]  ipr: parameter of gain, 0..7
+    \param[in]  fac_parameter: the data needed to initialize FAC
+                  input_addr: x0 buffer base address, 0..255
+                  input_size: x0 buffer size, 0..255
+                  input_threshold: FAC_THRESHOLD_1, FAC_THRESHOLD_2,
+                                   FAC_THRESHOLD_4, FAC_THRESHOLD_8
+                  coeff_addr: x1 buffer base address, 0..255
+                  coeff_size: x1 buffer size, 0..255
+                  output_addr: Y buffer base address, 0..255
+                  output_size: Y buffer size, 0..255
+                  output_threshold: FAC_THRESHOLD_1, FAC_THRESHOLD_2,
+                                    FAC_THRESHOLD_4, FAC_THRESHOLD_8
+                  clip: enable or disable the clipping feature
+                  ipp: value IPP (vector length, number of filter taps, etc.)
+                  ipq: value IPQ (vector length, etc.)
+                  ipr: value IPR (gain, etc.)
     \param[out] none
     \retval     none
 */

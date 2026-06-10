@@ -2,11 +2,11 @@
     \file    gd32h7xx_pmu.h
     \brief   definitions for the PMU
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -59,7 +59,7 @@ OF SUCH DAMAGE.
 #define PMU_CTL0_SLDOVS                 BITS(14,15)                         /*!< deep sleep mode mode LDO output voltage select */
 #define PMU_CTL0_VAVDEN                 BIT(16)                             /*!< VDDA analog voltage detector enable */
 #define PMU_CTL0_VAVDVC                 BITS(17,18)                         /*!< VDDA analog voltage detector level configure bits */
-#define PMU_CTL0_VOVDEN                 BIT(19)                             /*!< peripheral voltage on V0.9V detector enable bit */
+#define PMU_CTL0_VOVDEN                 BIT(19)                             /*!< peripheral voltage on Vcore detector enable bit */
 
 /* PMU_CS */
 #define PMU_CS_WUF                      BIT(0)                              /*!< wakeup flag */
@@ -70,7 +70,7 @@ OF SUCH DAMAGE.
 #define PMU_CS_WUPEN3                   BIT(11)                             /*!< wakeup pin3(PC13) enable */
 #define PMU_CS_WUPEN5                   BIT(13)                             /*!< wakeup pin5(PC1) enable */
 #define PMU_CS_VAVDF                    BIT(16)                             /*!< VDDA analog voltage detector voltage output on VDDA flag */
-#define PMU_CS_VOVDF                    BIT(20)                             /*!< peripheral voltage on V0.9V detector flag bit */
+#define PMU_CS_VOVDF                    BIT(20)                             /*!< peripheral voltage on Vcore detector flag bit */
 
 /* PMU_CTL1 */
 #define PMU_CTL1_BKPVSEN                BIT(0)                              /*!< backup voltage stabilizer enable */
@@ -85,8 +85,6 @@ OF SUCH DAMAGE.
 #define PMU_CTL2_BYPASS                 BIT(0)                              /*!< power management unit bypass control bit */
 #define PMU_CTL2_LDOEN                  BIT(1)                              /*!< Low drop-out voltage stabilizer enable bit */
 #define PMU_CTL2_DVSEN                  BIT(2)                              /*!< step-down voltage stabilizer enable bit */
-#define PMU_CTL2_DVSCFG                 BIT(3)                              /*!< SMPS step-down converter forced on and in high power MR mode */
-#define PMU_CTL2_DVSVC                  BITS(4,5)                           /*!< SMPS step-down converter voltage output level selection */
 #define PMU_CTL2_VCEN                   BIT(8)                              /*!< VBAT battery charging enable */
 #define PMU_CTL2_VCRSEL                 BIT(9)                              /*!< VBAT battery charging resistor selection */
 #define PMU_CTL2_DVSRF                  BIT(16)                             /*!< step-down voltage stabilizer ready flag bit */
@@ -96,7 +94,7 @@ OF SUCH DAMAGE.
 
 /* PMU_CTL3 */
 #define PMU_CTL3_LDOVS                  BITS(12,14)                         /*!< voltage scaling selection according to performance */
-#define PMU_CTL3_VOVRF                  BIT(16)                             /*!< V0.9V voltage ready bit */
+#define PMU_CTL3_VOVRF                  BIT(16)                             /*!< Vcore voltage ready bit */
 
 /* PMU_PAR */
 #define PMU_PAR_CNT                     BITS(0,11)                          /*!< exit deep-sleep mode wait time count configure bits */
@@ -127,11 +125,6 @@ OF SUCH DAMAGE.
 #define PMU_VAVDVC_1                    CTL0_VAVDVC(1)                      /*!< voltage threshold is 2.1V */
 #define PMU_VAVDVC_2                    CTL0_VAVDVC(2)                      /*!< voltage threshold is 2.5V */
 #define PMU_VAVDVC_3                    CTL0_VAVDVC(3)                      /*!< voltage threshold is 2.8V */
-
-/* PMU step-down voltage stabilizer output level definitions */
-#define CTL2_DVSVC(regval)              (BITS(4,5) & ((uint32_t)(regval) << 4U))
-#define PMU_STEPDOWNVOL_1P8             CTL2_DVSVC(1)                       /*!< SMPS step-down converter voltage output level 1.8V */
-#define PMU_STEPDOWNVOL_2P5             CTL2_DVSVC(2)                       /*!< SMPS step-down converter voltage output level 2.5V */
 
 /* PMU VBAT battery charging resistor selection */
 #define CTL2_VCRSEL(regval)             (BIT(9) & ((uint32_t)(regval) << 9U))
@@ -180,15 +173,9 @@ OF SUCH DAMAGE.
 #define PMU_WAKEUP_PIN5                 PMU_CS_WUPEN5                       /*!< wakeup pin 5 */
 
 /* PMU SMPS LDO supply mode definitions */
-#define PMU_LDO_SUPPLY                      PMU_CTL2_LDOEN                                                              /*!< V0.9V domains are suppplied from the LDO */
-#define PMU_DIRECT_SMPS_SUPPLY              PMU_CTL2_DVSEN                                                              /*!< V0.9V domains are suppplied from the SMPS only */
-#define PMU_SMPS_1V8_SUPPLIES_LDO           (PMU_STEPDOWNVOL_1P8 | PMU_CTL2_DVSEN | PMU_CTL2_LDOEN)                     /*!< The SMPS 1.8V output supplies the LDO which supplies the V0.9V domains */
-#define PMU_SMPS_2V5_SUPPLIES_LDO           (PMU_STEPDOWNVOL_2P5 | PMU_CTL2_DVSEN | PMU_CTL2_LDOEN)                     /*!< The SMPS 2.5V output supplies the LDO which supplies the V0.9V domains */
-#define PMU_SMPS_1V8_SUPPLIES_EXT_AND_LDO   (PMU_STEPDOWNVOL_1P8 | PMU_CTL2_DVSCFG | PMU_CTL2_DVSEN | PMU_CTL2_LDOEN)   /*!< The SMPS 1.8V output supplies an external circuits and the LDO. The V0.9V domains are suppplied from the LDO */
-#define PMU_SMPS_2V5_SUPPLIES_EXT_AND_LDO   (PMU_STEPDOWNVOL_2P5 | PMU_CTL2_DVSCFG | PMU_CTL2_DVSEN | PMU_CTL2_LDOEN)   /*!< The SMPS 2.5V output supplies an external circuits and the LDO. The V0.9V domains are suppplied from the LDO */
-#define PMU_SMPS_1V8_SUPPLIES_EXT           (PMU_STEPDOWNVOL_1P8 | PMU_CTL2_DVSCFG | PMU_CTL2_DVSEN | PMU_CTL2_BYPASS)  /*!< The SMPS 1.8V output supplies an external source which supplies the V0.9V domains */
-#define PMU_SMPS_2V5_SUPPLIES_EXT           (PMU_STEPDOWNVOL_2P5 | PMU_CTL2_DVSCFG | PMU_CTL2_DVSEN | PMU_CTL2_BYPASS)  /*!< The SMPS 2.5V output supplies an external source which supplies the V0.9V domains */
-#define PMU_BYPASS                          PMU_CTL2_BYPASS                                                             /*!< The SMPS disabled and the LDO Bypass. The V0.9V domains are supplied from an external source */
+#define PMU_LDO_SUPPLY                      PMU_CTL2_LDOEN                                                              /*!< Vcore domains are suppplied from the LDO */
+#define PMU_DIRECT_SMPS_SUPPLY              PMU_CTL2_DVSEN                                                              /*!< Vcore domains are suppplied from the SMPS only */
+#define PMU_BYPASS                          PMU_CTL2_BYPASS                                                             /*!< The SMPS disabled and the LDO Bypass. The Vcore domains are supplied from an external source */
 
 /* PMU command constants definitions */
 #define WFI_CMD                         ((uint8_t)0x00U)                    /*!< use WFI command */
@@ -205,18 +192,18 @@ void pmu_lvd_enable(void);
 /* disable PMU lvd */
 void pmu_lvd_disable(void);
 /* select analog voltage detector threshold */
-void pmu_avd_select(uint32_t avdt_n);
+void pmu_vavd_select(uint32_t vavdt_n);
 /* enable PMU analog voltage detector */
-void pmu_avd_enable(void);
+void pmu_vavd_enable(void);
 /* disable PMU analog voltage detector */
-void pmu_avd_disable(void);
+void pmu_vavd_disable(void);
 /* enable PMU core voltage detector */
-void pmu_cvd_enable(void);
-/* disable PMU V0.9V core voltage detector */
-void pmu_cvd_disable(void);
-/* control the V0.9V core voltage level */
+void pmu_vovd_enable(void);
+/* disable PMU Vcore core voltage detector */
+void pmu_vovd_disable(void);
+/* control the Vcore core voltage level */
 void pmu_ldo_output_select(uint32_t ldo_n);
-/* Deep-sleep mode V0.9V core voltage select */
+/* Deep-sleep mode Vcore core voltage select */
 void pmu_sldo_output_select(uint32_t sldo_n);
 
 /* PMU VBAT battery charging resistor selection */

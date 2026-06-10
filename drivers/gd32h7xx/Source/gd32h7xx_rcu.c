@@ -2,11 +2,11 @@
     \file    gd32h7xx_rcu.c
     \brief   RCU driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -1443,7 +1443,7 @@ void rcu_adc_clock_config(adc_idx_enum adc_idx, uint32_t ck_adc)
 
 /*!
     \brief      configure the SAIx (x = 0,1) clock source selection (need to check the target clock whether to ready before enabling or switching dynamically)
-    \param[in]  can_idx: IDX_SAIx (x = 0,1)
+    \param[in]  sai_idx: IDX_SAIx (x = 0,1)
     \param[in]  ck_sai: SAI clock source selection
                 only one parameter can be selected which is shown as below:
       \arg        RCU_SAISRC_PLL0Q: CK_SAI select CK_PLL0Q
@@ -2006,7 +2006,7 @@ void rcu_osci_bypass_mode_disable(rcu_osci_type_enum osci)
 
 /*!
     \brief      set the IRC64M adjust value
-    \param[in]  irc64M_adjval: IRC64M adjust value, must be between 0 and 0x7F
+    \param[in]  irc64m_adjvalrcu_clock_freq_get: IRC64M adjust value, must be between 0 and 0x7F
       \arg        0x00 - 0x7F
     \param[out] none
     \retval     none
@@ -2267,7 +2267,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
             ck_src = LPIRC4M_VALUE;
         }
 
-        if((pll0psc != 0U) && (ck_src != 0U)) {
+        if(pll0psc != 0U) {
             if((RCU_PLLADDCTL & RCU_PLLADDCTL_PLL0PEN) != 0U) {
                 pll0p_freq = rcu_pll_clock_freq_cal(ck_src, pll0psc, pll0n, fracn, pll0p);
             }
@@ -2297,7 +2297,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
             ck_src = LPIRC4M_VALUE;
         }
 
-        if((pll0psc != 0U) && (ck_src != 0U)) {
+        if(pll0psc != 0U) {
             if((RCU_PLLADDCTL & RCU_PLLADDCTL_PLL0REN) != 0U) {
                 pll0r_freq = rcu_pll_clock_freq_cal(ck_src, pll0psc, pll0n, fracn, pll0r);
             }
@@ -2327,7 +2327,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
             ck_src = LPIRC4M_VALUE;
         }
 
-        if((pll0psc != 0U) && (ck_src != 0U)) {
+        if(pll0psc != 0U) {
             if((RCU_PLLADDCTL & RCU_PLLADDCTL_PLL0QEN) != 0U) {
                 pll0q_freq = rcu_pll_clock_freq_cal(ck_src, pll0psc, pll0n, fracn, pll0q);
             }
@@ -2357,7 +2357,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
             ck_src = LPIRC4M_VALUE;
         }
 
-        if((pll1psc != 0U) && (ck_src != 0U)) {
+        if(pll1psc != 0U) {
             if((RCU_PLLADDCTL & RCU_PLLADDCTL_PLL1PEN) != 0U) {
                 pll1p_freq = rcu_pll_clock_freq_cal(ck_src, pll1psc, pll1n, fracn, pll1p);
             }
@@ -2387,7 +2387,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
             ck_src = LPIRC4M_VALUE;
         }
 
-        if((pll1psc != 0U) && (ck_src != 0U)) {
+        if(pll1psc != 0U) {
             if((RCU_PLLADDCTL & RCU_PLLADDCTL_PLL1REN) != 0U) {
                 pll1r_freq = rcu_pll_clock_freq_cal(ck_src, pll1psc, pll1n, fracn, pll1r);
             }
@@ -2417,7 +2417,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
             ck_src = LPIRC4M_VALUE;
         }
 
-        if((pll1psc != 0U) && (ck_src != 0U)) {
+        if(pll1psc != 0U) {
             if((RCU_PLLADDCTL & RCU_PLLADDCTL_PLL1QEN) != 0U) {
                 pll1q_freq = rcu_pll_clock_freq_cal(ck_src, pll1psc, pll1n, fracn, pll1q);
             }
@@ -2447,7 +2447,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
             ck_src = LPIRC4M_VALUE;
         }
 
-        if((pll2psc != 0U) && (ck_src != 0U)) {
+        if(pll2psc != 0U) {
             if((RCU_PLLADDCTL & RCU_PLLADDCTL_PLL2PEN) != 0U) {
                 pll2p_freq = rcu_pll_clock_freq_cal(ck_src, pll2psc, pll2n, fracn, pll2p);
             }
@@ -2477,7 +2477,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
             ck_src = LPIRC4M_VALUE;
         }
 
-        if((pll2psc != 0U) && (ck_src != 0U)) {
+        if(pll2psc != 0U) {
             if((RCU_PLLADDCTL & RCU_PLLADDCTL_PLL2REN) != 0U) {
                 pll2r_freq = rcu_pll_clock_freq_cal(ck_src, pll2psc, pll2n, fracn, pll2r);
             }
@@ -2507,7 +2507,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
             ck_src = LPIRC4M_VALUE;
         }
 
-        if((pll2psc != 0U) && (ck_src != 0U)) {
+        if(pll2psc != 0U) {
             if((RCU_PLLADDCTL & RCU_PLLADDCTL_PLL2QEN) != 0U) {
                 pll2q_freq = rcu_pll_clock_freq_cal(ck_src, pll2psc, pll2n, fracn, pll2q);
             }
@@ -2629,7 +2629,7 @@ uint32_t rcu_clock_freq_get(rcu_clock_freq_enum clock)
       \arg        RCU_FLAG_WWDGTRST: window watchdog timer reset flag
       \arg        RCU_FLAG_LPRST: low-power reset flag
     \param[out] none
-    \retval     none
+    \retval     FlagStatus: SET or RESET
 */
 FlagStatus rcu_flag_get(rcu_flag_enum flag)
 {

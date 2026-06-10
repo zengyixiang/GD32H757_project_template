@@ -2,11 +2,11 @@
     \file    gd32h7xx_fmc.h
     \brief   definitions for the FMC
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -490,8 +490,10 @@ void ob_low_power_get(uint32_t *fwdgt, uint32_t *deepsleep, uint32_t *standby, u
 void ob_tcm_ecc_get(uint32_t *itcmecc_option, uint32_t *dtcm0ecc_option, uint32_t *dtcm1ecc_option);
 /* get IO speed optimize configuration */
 FlagStatus ob_iospeed_optimize_get(void);
-/* get the option byte TCM shared RAM size */
-void ob_tcm_shared_ram_size_get(uint32_t *itcm_shared_ram_kb_size, uint32_t *dtcm_shared_ram_kb_size);
+/* get ITCM shared RAM size */
+uint32_t ob_itcm_shared_ram_size_get(void);
+/* get DTCM shared RAM size */
+uint32_t ob_dtcm_shared_ram_size_get(void);
 /* get user data value */
 uint16_t ob_data_get(void);
 /* get boot address */
@@ -499,7 +501,7 @@ uint32_t ob_boot_address_get(uint8_t boot_pin);
 /* get DCRP area configuration */
 uint8_t ob_dcrp_area_get(uint32_t *dcrp_erase_option, uint32_t *dcrp_area_start_addr, uint32_t *dcrp_area_end_addr);
 /* get secure-access area configuration */
-uint8_t ob_secure_area_get(uint32_t *secure_area_option, uint32_t *scr_area_start_addr, uint32_t *scr_area_end_addr);
+uint8_t ob_secure_area_get(uint32_t *secure_erase_option, uint32_t *scr_area_start_addr, uint32_t *scr_area_end_addr);
 /* get the option byte erase/program protection state */
 uint32_t ob_write_protection_get(void);
 

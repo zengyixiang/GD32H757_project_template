@@ -2,11 +2,11 @@
     \file    gd32h7xx_enet.c
     \brief   ENET driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -34,46 +34,12 @@ OF SUCH DAMAGE.
 
 #include "gd32h7xx_enet.h"
 #include <stdlib.h>
-#include <string.h>
 
 #if defined(GD32H7XX)
-
-#if defined   (__CC_ARM)                                    /*!< ARM compiler */
-__attribute__((section(".ARM.__at_0x30000000")))  enet_descriptors_struct  rxdesc_tab[ENET_RXBUF_NUM];        /*!< ENET RxDMA descriptor */
-__attribute__((section(".ARM.__at_0x30000160")))  enet_descriptors_struct  txdesc_tab[ENET_TXBUF_NUM];        /*!< ENET TxDMA descriptor */
-__attribute__((section(".ARM.__at_0x30000300")))  uint8_t rx_buff[ENET_RXBUF_NUM][ENET_RXBUF_SIZE];           /*!< ENET receive buffer */
-__attribute__((section(".ARM.__at_0x30002100")))  uint8_t tx_buff[ENET_TXBUF_NUM][ENET_TXBUF_SIZE];           /*!< ENET transmit buffer */
-
-#elif defined ( __ICCARM__ )                                /*!< IAR compiler */
-#pragma location=0x30000000
-enet_descriptors_struct  rxdesc_tab[ENET_RXBUF_NUM];        /*!< ENET RxDMA descriptor */
-#pragma location=0x30000160
-enet_descriptors_struct  txdesc_tab[ENET_TXBUF_NUM];        /*!< ENET TxDMA descriptor */
-#pragma location=0x30000300
-uint8_t rx_buff[ENET_RXBUF_NUM][ENET_RXBUF_SIZE];           /*!< ENET receive buffer */
-#pragma location=0x30002100
-uint8_t tx_buff[ENET_TXBUF_NUM][ENET_TXBUF_SIZE];           /*!< ENET transmit buffer */
-
-#elif defined (__GNUC__)        /* GNU Compiler */
-enet_descriptors_struct  rxdesc_tab[ENET_RXBUF_NUM] __attribute__((section(".ARM.__at_0x30000000")));          /*!< ENET RxDMA descriptor */
-enet_descriptors_struct  txdesc_tab[ENET_TXBUF_NUM] __attribute__((section(".ARM.__at_0x30000160")));          /*!< ENET TxDMA descriptor */
-uint8_t rx_buff[ENET_RXBUF_NUM][ENET_RXBUF_SIZE] __attribute__((section(".ARM.__at_0x30000300")));             /*!< ENET receive buffer */
-uint8_t tx_buff[ENET_TXBUF_NUM][ENET_TXBUF_SIZE] __attribute__((section(".ARM.__at_0x30002100")));             /*!< ENET transmit buffer */
-
-#endif /* __CC_ARM */
-
-/* global transmit and receive descriptors pointers */
-enet_descriptors_struct  *dma_current_txdesc;
-enet_descriptors_struct  *dma_current_rxdesc;
-
-/* structure pointer of ptp descriptor for normal mode */
-enet_descriptors_struct  *dma_current_ptp_txdesc = NULL;
-enet_descriptors_struct  *dma_current_ptp_rxdesc = NULL;
 
 /* init structure parameters for ENET initialization */
 static enet_initpara_struct enet_initpara = {0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U, 0U};
 
-static uint32_t enet_unknow_err = 0U;
 /* array of register offset for debug information get */
 static const uint16_t enet_reg_tab[] = {
     0x0000U, 0x0004U, 0x0008U, 0x000CU, 0x0010U, 0x0014U, 0x0018U, 0x001CU, 0x0028U, 0x002CU, 0x0034U,
@@ -91,13 +57,22 @@ static const uint16_t enet_reg_tab[] = {
 
 /* initialize ENET peripheral with generally concerned parameters, call it by enet_init() */
 static void enet_default_init(uint32_t enet_periph);
-#ifndef USE_DELAY
-/* insert a delay time */
-static void enet_delay(uint32_t ncount);
-#endif /* USE_DELAY */
+/* change subsecond to nanosecond */
+static uint32_t enet_ptp_subsecond_2_nanosecond(uint32_t subsecond);
+
+#define PHY_ADDR_REG_MASK                   (0x0000001FU)
+#define FILTER_FEATURE_MASK                 (BITS(8,10) | BITS(2,4))
+#define DEACTIVE_THRESHOLD_MASK             (0x00007000U)
+#define ACTIVE_THRESHOLD_MASK               (0x00000700U)
+#define FLOWCONTROL_FEATURE_MASK            (0x00000087U)
+#define DMA_FEATURE_MASK                    (0x01000004U)
+#define WUM_FEATURE_EN_MASK                 (0x00000207U)
+#define WUM_FEATURE_DIS_MASK                (0x00000206U)
+#define MSC_FEATURE_MASK                    (0x0000000EU)
+#define PTP_FAETURE_MASK                    (0x00043911U)
 
 /*!
-    \brief      deinitialize the ENET, and reset structure parameters for ENET initialization
+    \brief      deinitialize the ENET, and reset structure parameters for ENET initialization (API_ID(0x0001U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     none
@@ -123,7 +98,32 @@ void enet_deinit(uint32_t enet_periph)
 }
 
 /*!
-    \brief      configure the parameters which are usually less cared for initialization
+    \brief      reset the ENET initpara struct, call it before using enet_initpara_config() (API_ID(0x0002U))
+    \param[in]  none
+    \param[out] none
+    \retval     none
+*/
+void enet_initpara_reset(void)
+{
+    enet_initpara.option_enable = 0U;
+    enet_initpara.forward_frame = 0U;
+    enet_initpara.dmabus_mode = 0U;
+    enet_initpara.dma_maxburst = 0U;
+    enet_initpara.dma_arbitration = 0U;
+    enet_initpara.store_forward_mode = 0U;
+    enet_initpara.dma_function = 0U;
+    enet_initpara.vlan_config = 0U;
+    enet_initpara.flow_control = 0U;
+    enet_initpara.hashtable_high = 0U;
+    enet_initpara.hashtable_low = 0U;
+    enet_initpara.framesfilter_mode = 0U;
+    enet_initpara.halfduplex_param = 0U;
+    enet_initpara.timer_config = 0U;
+    enet_initpara.interframegap = 0U;
+}
+
+/*!
+    \brief      configure the parameters which are usually less cared for initialization (API_ID(0x0003U))
                 note -- this function must be called before enet_init(), otherwise
                 configuration will be no effect
     \param[in]  option: different function option, which is related to several parameters,
@@ -265,9 +265,9 @@ void enet_initpara_config(enet_option_enum option, uint32_t para)
         /* choose to configure dma_function, and save the configuration parameters */
         enet_initpara.option_enable |= (uint32_t)DMA_OPTION;
 
-#ifndef SELECT_DESCRIPTORS_ENHANCED_MODE
+#if (0U == SELECT_DESCRIPTORS_ENHANCED_MODE)
         para &= ~ENET_ENHANCED_DESCRIPTOR;
-#endif /* SELECT_DESCRIPTORS_ENHANCED_MODE */
+#endif /* 0U == SELECT_DESCRIPTORS_ENHANCED_MODE */
 
         enet_initpara.dma_function = para;
         break;
@@ -317,12 +317,10 @@ void enet_initpara_config(enet_option_enum option, uint32_t para)
 }
 
 /*!
-    \brief      initialize ENET peripheral with generally concerned parameters and the less cared
-                parameters
+    \brief      initialize ENET peripheral with generally concerned parameters and the less cared parameters (API_ID(0x0004U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  mediamode: PHY mode and mac loopback configurations, only one parameter can be selected
                            which is shown as below, refer to enet_mediamode_enum
-      \arg        ENET_AUTO_NEGOTIATION: PHY auto negotiation
       \arg        ENET_100M_FULLDUPLEX: 100Mbit/s, full-duplex
       \arg        ENET_100M_HALFDUPLEX: 100Mbit/s, half-duplex
       \arg        ENET_10M_FULLDUPLEX: 10Mbit/s, full-duplex
@@ -346,89 +344,17 @@ void enet_initpara_config(enet_option_enum option, uint32_t para)
 ErrStatus enet_init(uint32_t enet_periph, enet_mediamode_enum mediamode, enet_chksumconf_enum checksum, enet_frmrecept_enum recept)
 {
     uint32_t reg_value = 0U, reg_temp = 0U, temp = 0U;
-    uint32_t media_temp = 0U;
-    uint32_t timeout = 0U;
-    uint16_t phy_value = 0U;
-    ErrStatus phy_state = ERROR, enet_state = ERROR;
+    ErrStatus enet_state = ERROR;
 
-    /* PHY interface configuration, configure SMI clock and reset PHY chip */
-    if(ERROR == enet_phy_config(enet_periph)) {
-        _ENET_DELAY_(PHY_RESETDELAY);
-        if(ERROR == enet_phy_config(enet_periph)) {
-            return enet_state;
-        }
-    }
     /* initialize ENET peripheral with generally concerned parameters */
     enet_default_init(enet_periph);
 
     /* 1st, configure mediamode */
-    media_temp = (uint32_t)mediamode;
-    /* if is PHY auto negotiation */
-    if((uint32_t)ENET_AUTO_NEGOTIATION == media_temp) {
-        /* wait for PHY_LINKED_STATUS bit be set */
-        do {
-            enet_phy_write_read(enet_periph, ENET_PHY_READ, PHY_ADDRESS, PHY_REG_BSR, &phy_value);
-            phy_value &= PHY_LINKED_STATUS;
-            timeout++;
-        } while((RESET == phy_value) && (timeout < PHY_READ_TO));
-        /* return ERROR due to timeout */
-        if(PHY_READ_TO == timeout) {
-            return enet_state;
-        }
-        /* reset timeout counter */
-        timeout = 0U;
-
-        /* enable auto-negotiation */
-        phy_value = PHY_AUTONEGOTIATION;
-        phy_state = enet_phy_write_read(enet_periph, ENET_PHY_WRITE, PHY_ADDRESS, PHY_REG_BCR, &phy_value);
-        if(!phy_state) {
-            /* return ERROR due to write timeout */
-            return enet_state;
-        }
-
-        /* wait for the PHY_AUTONEGO_COMPLETE bit be set */
-        do {
-            enet_phy_write_read(enet_periph, ENET_PHY_READ, PHY_ADDRESS, PHY_REG_BSR, &phy_value);
-            phy_value &= PHY_AUTONEGO_COMPLETE;
-            timeout++;
-        } while((RESET == phy_value) && (timeout < (uint32_t)PHY_READ_TO));
-        /* return ERROR due to timeout */
-        if(PHY_READ_TO == timeout) {
-            return enet_state;
-        }
-        /* reset timeout counter */
-        timeout = 0U;
-
-        /* read the result of the auto-negotiation */
-        enet_phy_write_read(enet_periph, ENET_PHY_READ, PHY_ADDRESS, PHY_SR, &phy_value);
-        /* configure the duplex mode of MAC following the auto-negotiation result */
-        if((uint16_t)RESET != (phy_value & PHY_DUPLEX_STATUS)) {
-            media_temp = ENET_MODE_FULLDUPLEX;
-        } else {
-            media_temp = ENET_MODE_HALFDUPLEX;
-        }
-        /* configure the communication speed of MAC following the auto-negotiation result */
-        if((uint16_t)RESET != (phy_value & PHY_SPEED_STATUS)) {
-            media_temp |= ENET_SPEEDMODE_10M;
-        } else {
-            media_temp |= ENET_SPEEDMODE_100M;
-        }
-    } else {
-        phy_value = (uint16_t)((media_temp & ENET_MAC_CFG_DPM) >> 3U);
-        phy_value |= (uint16_t)((media_temp & ENET_MAC_CFG_SPD) >> 1U);
-        phy_state = enet_phy_write_read(enet_periph, ENET_PHY_WRITE, PHY_ADDRESS, PHY_REG_BCR, &phy_value);
-        if(!phy_state) {
-            /* return ERROR due to write timeout */
-            return enet_state;
-        }
-        /* PHY configuration need some time */
-        _ENET_DELAY_(PHY_CONFIGDELAY);
-    }
     /* after configuring the PHY, use mediamode to configure registers */
     reg_value = ENET_MAC_CFG(enet_periph);
     /* configure ENET_MAC_CFG register */
     reg_value &= (~(ENET_MAC_CFG_SPD | ENET_MAC_CFG_DPM | ENET_MAC_CFG_LBM));
-    reg_value |= media_temp;
+    reg_value |= (uint32_t)mediamode;
     ENET_MAC_CFG(enet_periph) = reg_value;
 
     /* 2st, configure checksum */
@@ -625,11 +551,12 @@ ErrStatus enet_init(uint32_t enet_periph, enet_mediamode_enum mediamode, enet_ch
     }
 
     enet_state = SUCCESS;
+
     return enet_state;
 }
 
 /*!
-    \brief      reset all core internal registers located in CLK_TX and CLK_RX
+    \brief      reset all core internal registers located in CLK_TX and CLK_RX (API_ID(0x0005U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     ErrStatus: SUCCESS or ERROR
@@ -658,421 +585,7 @@ ErrStatus enet_software_reset(uint32_t enet_periph)
 }
 
 /*!
-    \brief      check receive frame valid and return frame size
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[out] none
-    \retval     size of received frame: 0x0 - 0x3FFF
-*/
-uint32_t enet_rxframe_size_get(uint32_t enet_periph)
-{
-    uint32_t size = 0U;
-    uint32_t status;
-
-    /* get rdes0 information of current RxDMA descriptor */
-    status = dma_current_rxdesc->status;
-
-    /* if the desciptor is owned by DMA */
-    if((uint32_t)RESET != (status & ENET_RDES0_DAV)) {
-        return 0U;
-    }
-
-    /* if has any error, or the frame uses two or more descriptors */
-    if((((uint32_t)RESET) != (status & ENET_RDES0_ERRS)) ||
-            (((uint32_t)RESET) == (status & ENET_RDES0_LDES)) ||
-            (((uint32_t)RESET) == (status & ENET_RDES0_FDES))) {
-        /* drop current receive frame */
-        enet_rxframe_drop(enet_periph);
-
-        return 1U;
-    }
-#ifdef SELECT_DESCRIPTORS_ENHANCED_MODE
-    /* if is an ethernet-type frame, and IP frame payload error occurred */
-    if(((uint32_t)RESET) != (dma_current_rxdesc->status & ENET_RDES0_FRMT) &&
-            ((uint32_t)RESET) != (dma_current_rxdesc->extended_status & ENET_RDES4_IPPLDERR)) {
-        /* drop current receive frame */
-        enet_rxframe_drop(enet_periph);
-
-        return 1U;
-    }
-#else
-    /* if is an ethernet-type frame, and IP frame payload error occurred */
-    if((((uint32_t)RESET) != (status & ENET_RDES0_FRMT)) &&
-            (((uint32_t)RESET) != (status & ENET_RDES0_PCERR))) {
-        /* drop current receive frame */
-        enet_rxframe_drop(enet_periph);
-
-        return 1U;
-    }
-#endif
-    /* if CPU owns current descriptor, no error occured, the frame uses only one descriptor */
-    if((((uint32_t)RESET) == (status & ENET_RDES0_DAV)) &&
-            (((uint32_t)RESET) == (status & ENET_RDES0_ERRS)) &&
-            (((uint32_t)RESET) != (status & ENET_RDES0_LDES)) &&
-            (((uint32_t)RESET) != (status & ENET_RDES0_FDES))) {
-        /* get the size of the received data including CRC */
-        size = GET_RDES0_FRML(status);
-        /* substract the CRC size */
-        size = size - 4U;
-
-        /* if is a type frame, and CRC is not included in forwarding frame */
-        if((RESET != (ENET_MAC_CFG(enet_periph) & ENET_MAC_CFG_TFCD)) && (RESET != (status & ENET_RDES0_FRMT))) {
-            size = size + 4U;
-        }
-    } else {
-        enet_unknow_err++;
-        enet_rxframe_drop(enet_periph);
-
-        return 1U;
-    }
-
-    /* return packet size */
-    return size;
-}
-
-/*!
-    \brief      initialize the DMA Tx/Rx descriptors's parameters in chain mode
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  direction: the descriptors which users want to init, refer to enet_dmadirection_enum,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_DMA_TX: DMA Tx descriptors
-      \arg        ENET_DMA_RX: DMA Rx descriptors
-    \param[out] none
-    \retval     none
-*/
-void enet_descriptors_chain_init(uint32_t enet_periph, enet_dmadirection_enum direction)
-{
-    uint32_t num = 0U, count = 0U, maxsize = 0U;
-    uint32_t desc_status = 0U, desc_bufsize = 0U;
-    enet_descriptors_struct *desc, *desc_tab;
-    uint8_t *buf;
-
-    /* if want to initialize DMA Tx descriptors */
-    if(ENET_DMA_TX == direction) {
-        /* save a copy of the DMA Tx descriptors */
-        desc_tab = txdesc_tab;
-        buf = &tx_buff[0][0];
-        count = ENET_TXBUF_NUM;
-        maxsize = ENET_TXBUF_SIZE;
-
-        /* select chain mode */
-        desc_status = ENET_TDES0_TCHM;
-
-        /* configure DMA Tx descriptor table address register */
-        ENET_DMA_TDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_txdesc = desc_tab;
-    } else {
-        /* if want to initialize DMA Rx descriptors */
-        /* save a copy of the DMA Rx descriptors */
-        desc_tab = rxdesc_tab;
-        buf = &rx_buff[0][0];
-        count = ENET_RXBUF_NUM;
-        maxsize = ENET_RXBUF_SIZE;
-
-        /* enable receiving */
-        desc_status = ENET_RDES0_DAV;
-        /* select receive chained mode and set buffer1 size */
-        desc_bufsize = ENET_RDES1_RCHM | (uint32_t)ENET_RXBUF_SIZE;
-
-        /* configure DMA Rx descriptor table address register */
-        ENET_DMA_RDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_rxdesc = desc_tab;
-    }
-    dma_current_ptp_rxdesc = NULL;
-    dma_current_ptp_txdesc = NULL;
-
-    /* configure each descriptor */
-    for(num = 0U; num < count; num++) {
-        /* get the pointer to the next descriptor of the descriptor table */
-        desc = desc_tab + num;
-
-        /* configure descriptors */
-        desc->status = desc_status;
-        desc->control_buffer_size = desc_bufsize;
-        desc->buffer1_addr = (uint32_t)(&buf[num * maxsize]);
-
-        /* if is not the last descriptor */
-        if(num < (count - 1U)) {
-            /* configure the next descriptor address */
-            desc->buffer2_next_desc_addr = (uint32_t)(desc_tab + num + 1U);
-        } else {
-            /* when it is the last descriptor, the next descriptor address
-            equals to first descriptor address in descriptor table */
-            desc->buffer2_next_desc_addr = (uint32_t) desc_tab;
-        }
-    }
-}
-
-/*!
-    \brief      initialize the DMA Tx/Rx descriptors's parameters in ring mode
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  direction: the descriptors which users want to init, refer to enet_dmadirection_enum,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_DMA_TX: DMA Tx descriptors
-      \arg        ENET_DMA_RX: DMA Rx descriptors
-    \param[out] none
-    \retval     none
-*/
-void enet_descriptors_ring_init(uint32_t enet_periph, enet_dmadirection_enum direction)
-{
-    uint32_t num = 0U, count = 0U, maxsize = 0U;
-    uint32_t desc_status = 0U, desc_bufsize = 0U;
-    enet_descriptors_struct *desc;
-    enet_descriptors_struct *desc_tab;
-    uint8_t *buf;
-
-    /* configure descriptor skip length */
-    ENET_DMA_BCTL(enet_periph) &= ~ENET_DMA_BCTL_DPSL;
-    ENET_DMA_BCTL(enet_periph) |= DMA_BCTL_DPSL(0);
-
-    /* if want to initialize DMA Tx descriptors */
-    if(ENET_DMA_TX == direction) {
-        /* save a copy of the DMA Tx descriptors */
-        desc_tab = txdesc_tab;
-        buf = &tx_buff[0][0];
-        count = ENET_TXBUF_NUM;
-        maxsize = ENET_TXBUF_SIZE;
-
-        /* configure DMA Tx descriptor table address register */
-        ENET_DMA_TDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_txdesc = desc_tab;
-    } else {
-        /* if want to initialize DMA Rx descriptors */
-        /* save a copy of the DMA Rx descriptors */
-        desc_tab = rxdesc_tab;
-        buf = &rx_buff[0][0];
-        count = ENET_RXBUF_NUM;
-        maxsize = ENET_RXBUF_SIZE;
-
-        /* enable receiving */
-        desc_status = ENET_RDES0_DAV;
-        /* set buffer1 size */
-        desc_bufsize = ENET_RXBUF_SIZE;
-
-        /* configure DMA Rx descriptor table address register */
-        ENET_DMA_RDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_rxdesc = desc_tab;
-    }
-    dma_current_ptp_rxdesc = NULL;
-    dma_current_ptp_txdesc = NULL;
-
-    /* configure each descriptor */
-    for(num = 0U; num < count; num++) {
-        /* get the pointer to the next descriptor of the descriptor table */
-        desc = desc_tab + num;
-
-        /* configure descriptors */
-        desc->status = desc_status;
-        desc->control_buffer_size = desc_bufsize;
-        desc->buffer1_addr = (uint32_t)(&buf[num * maxsize]);
-
-        /* when it is the last descriptor */
-        if(num == (count - 1U)) {
-            if(ENET_DMA_TX == direction) {
-                /* configure transmit end of ring mode */
-                desc->status |= ENET_TDES0_TERM;
-            } else {
-                /* configure receive end of ring mode */
-                desc->control_buffer_size |= ENET_RDES1_RERM;
-            }
-        }
-    }
-}
-
-/*!
-    \brief      handle current received frame data to application buffer
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  bufsize: the size of buffer which is the parameter in function
-    \param[out] buffer: pointer to the received frame data
-                note -- if the input is NULL, user should copy data in application by himself
-    \retval     ErrStatus: SUCCESS or ERROR
-*/
-ErrStatus enet_frame_receive(uint32_t enet_periph, uint8_t buffer[], uint32_t bufsize)
-{
-    uint32_t offset = 0U, size = 0U;
-
-    /* the descriptor is busy due to own by the DMA */
-    if((uint32_t)RESET != (dma_current_rxdesc->status & ENET_RDES0_DAV)) {
-        return ERROR;
-    }
-
-    /* if buffer pointer is null, indicates that users has copied data in application */
-    if(NULL != buffer) {
-        /* if no error occurs, and the frame uses only one descriptor */
-        if((((uint32_t)RESET) == (dma_current_rxdesc->status & ENET_RDES0_ERRS)) &&
-                (((uint32_t)RESET) != (dma_current_rxdesc->status & ENET_RDES0_LDES)) &&
-                (((uint32_t)RESET) != (dma_current_rxdesc->status & ENET_RDES0_FDES))) {
-            /* get the frame length except CRC */
-            size = GET_RDES0_FRML(dma_current_rxdesc->status);
-            size = size - 4U;
-
-            /* if is a type frame, and CRC is not included in forwarding frame */
-            if((RESET != (ENET_MAC_CFG(enet_periph) & ENET_MAC_CFG_TFCD)) && (RESET != (dma_current_rxdesc->status & ENET_RDES0_FRMT))) {
-                size = size + 4U;
-            }
-
-            /* to avoid situation that the frame size exceeds the buffer length */
-            if(size > bufsize) {
-                return ERROR;
-            }
-
-            /* copy data from Rx buffer to application buffer */
-            for(offset = 0U; offset < size; offset++) {
-                (*(buffer + offset)) = (*(__IO uint8_t *)(uint32_t)((dma_current_rxdesc->buffer1_addr) + offset));
-            }
-
-        } else {
-            /* return ERROR */
-            return ERROR;
-        }
-    }
-    /* enable reception, descriptor is owned by DMA */
-    dma_current_rxdesc->status = ENET_RDES0_DAV;
-
-    /* check Rx buffer unavailable flag status */
-    if((uint32_t)RESET != (ENET_DMA_STAT(enet_periph) & ENET_DMA_STAT_RBU)) {
-        /* clear RBU flag */
-        ENET_DMA_STAT(enet_periph) = ENET_DMA_STAT_RBU;
-        /* resume DMA reception by writing to the RPEN register*/
-        ENET_DMA_RPEN(enet_periph) = 0U;
-    }
-
-    /* update the current RxDMA descriptor pointer to the next decriptor in RxDMA decriptor table */
-    /* chained mode */
-    if((uint32_t)RESET != (dma_current_rxdesc->control_buffer_size & ENET_RDES1_RCHM)) {
-        dma_current_rxdesc = (enet_descriptors_struct *)(dma_current_rxdesc->buffer2_next_desc_addr);
-    } else {
-        /* ring mode */
-        if((uint32_t)RESET != (dma_current_rxdesc->control_buffer_size & ENET_RDES1_RERM)) {
-            /* if is the last descriptor in table, the next descriptor is the table header */
-            dma_current_rxdesc = (enet_descriptors_struct *)(ENET_DMA_RDTADDR(enet_periph));
-        } else {
-            /* the next descriptor is the current address, add the descriptor size, and descriptor skip length */
-            dma_current_rxdesc = (enet_descriptors_struct *)(uint32_t)((uint32_t)dma_current_rxdesc + ETH_DMARXDESC_SIZE + (GET_DMA_BCTL_DPSL(ENET_DMA_BCTL(
-                                     enet_periph))));
-        }
-    }
-
-    return SUCCESS;
-}
-
-/*!
-    \brief      handle application buffer data to transmit it
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  buffer: pointer to the frame data to be transmitted,
-                note -- if the input is NULL, user should handle the data in application by himself
-    \param[in]  length: the length of frame data to be transmitted
-    \param[out] none
-    \retval     ErrStatus: SUCCESS or ERROR
-*/
-ErrStatus enet_frame_transmit(uint32_t enet_periph, uint8_t buffer[], uint32_t length)
-{
-    uint32_t offset = 0U;
-    uint32_t dma_tbu_flag, dma_tu_flag;
-
-    /* the descriptor is busy due to own by the DMA */
-    if((uint32_t)RESET != (dma_current_txdesc->status & ENET_TDES0_DAV)) {
-        return ERROR;
-    }
-
-    /* only frame length no more than ENET_MAX_FRAME_SIZE is allowed */
-    if(length > ENET_MAX_FRAME_SIZE) {
-        return ERROR;
-    }
-
-    /* if buffer pointer is null, indicates that users has handled data in application */
-    if(NULL != buffer) {
-        /* copy frame data from application buffer to Tx buffer */
-        for(offset = 0U; offset < length; offset++) {
-            (*(__IO uint8_t *)(uint32_t)((dma_current_txdesc->buffer1_addr) + offset)) = (*(buffer + offset));
-        }
-    }
-
-    /* set the frame length */
-    dma_current_txdesc->control_buffer_size = length;
-    /* set the segment of frame, frame is transmitted in one descriptor */
-    dma_current_txdesc->status |= ENET_TDES0_LSG | ENET_TDES0_FSG;
-    /* enable the DMA transmission */
-    dma_current_txdesc->status |= ENET_TDES0_DAV;
-
-    /* check Tx buffer unavailable flag status */
-    dma_tbu_flag = (ENET_DMA_STAT(enet_periph) & ENET_DMA_STAT_TBU);
-    dma_tu_flag = (ENET_DMA_STAT(enet_periph) & ENET_DMA_STAT_TU);
-
-    if((RESET != dma_tbu_flag) || (RESET != dma_tu_flag)) {
-        /* clear TBU and TU flag */
-        ENET_DMA_STAT(enet_periph) = (dma_tbu_flag | dma_tu_flag);
-        /* resume DMA transmission by writing to the TPEN register*/
-        ENET_DMA_TPEN(enet_periph) = 0U;
-    }
-
-    /* update the current TxDMA descriptor pointer to the next decriptor in TxDMA decriptor table*/
-    /* chained mode */
-    if((uint32_t)RESET != (dma_current_txdesc->status & ENET_TDES0_TCHM)) {
-        dma_current_txdesc = (enet_descriptors_struct *)(dma_current_txdesc->buffer2_next_desc_addr);
-    } else {
-        /* ring mode */
-        if((uint32_t)RESET != (dma_current_txdesc->status & ENET_TDES0_TERM)) {
-            /* if is the last descriptor in table, the next descriptor is the table header */
-            dma_current_txdesc = (enet_descriptors_struct *)(ENET_DMA_TDTADDR(enet_periph));
-        } else {
-            /* the next descriptor is the current address, add the descriptor size, and descriptor skip length */
-            dma_current_txdesc = (enet_descriptors_struct *)(uint32_t)((uint32_t)dma_current_txdesc + ETH_DMATXDESC_SIZE + (GET_DMA_BCTL_DPSL(ENET_DMA_BCTL(
-                                     enet_periph))));
-        }
-    }
-
-    return SUCCESS;
-}
-
-/*!
-    \brief      configure the transmit IP frame checksum offload calculation and insertion
-    \param[in]  desc: the descriptor pointer which users want to configure
-    \param[in]  checksum: IP frame checksum configuration
-                only one parameter can be selected which is shown as below
-      \arg        ENET_CHECKSUM_DISABLE: checksum insertion disabled
-      \arg        ENET_CHECKSUM_IPV4HEADER: only IP header checksum calculation and insertion are enabled
-      \arg        ENET_CHECKSUM_TCPUDPICMP_SEGMENT: TCP/UDP/ICMP checksum insertion calculated but pseudo-header
-      \arg        ENET_CHECKSUM_TCPUDPICMP_FULL: TCP/UDP/ICMP checksum insertion fully calculated
-    \param[out] none
-    \retval     ErrStatus: ERROR, SUCCESS
-*/
-ErrStatus enet_transmit_checksum_config(enet_descriptors_struct *desc, uint32_t checksum)
-{
-    if(NULL != desc) {
-        desc->status &= ~ENET_TDES0_CM;
-        desc->status |= checksum;
-        return SUCCESS;
-    } else {
-        return ERROR;
-    }
-}
-
-/*!
-    \brief      ENET Tx and Rx function enable (include MAC and DMA module)
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[out] none
-    \retval     none
-*/
-void enet_enable(uint32_t enet_periph)
-{
-    enet_tx_enable(enet_periph);
-    enet_rx_enable(enet_periph);
-}
-
-/*!
-    \brief      ENET Tx and Rx function disable (include MAC and DMA module)
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[out] none
-    \retval     none
-*/
-void enet_disable(uint32_t enet_periph)
-{
-    enet_tx_disable(enet_periph);
-    enet_rx_disable(enet_periph);
-}
-
-/*!
-    \brief      configure MAC address
+    \brief      set MAC address (API_ID(0x0006U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  mac_addr: select which MAC address will be set,
                 only one parameter can be selected which is shown as below
@@ -1081,7 +594,7 @@ void enet_disable(uint32_t enet_periph)
       \arg        ENET_MAC_ADDRESS2: set MAC address 2 filter
       \arg        ENET_MAC_ADDRESS3: set MAC address 3 filter
     \param[in]  paddr: the buffer pointer which stores the MAC address
-                  (little-ending store, such as MAC address is aa:bb:cc:dd:ee:22, the buffer is {22, ee, dd, cc, bb, aa})
+                  (little-endian store, such as MAC address is aa:bb:cc:dd:ee:22, the buffer is {22, ee, dd, cc, bb, aa})
     \param[out] none
     \retval     none
 */
@@ -1092,7 +605,7 @@ void enet_mac_address_set(uint32_t enet_periph, enet_macaddress_enum mac_addr, u
 }
 
 /*!
-    \brief      get MAC address
+    \brief      get MAC address (API_ID(0x0007U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  mac_addr: select which MAC address will be get,
                 only one parameter can be selected which is shown as below
@@ -1101,27 +614,30 @@ void enet_mac_address_set(uint32_t enet_periph, enet_macaddress_enum mac_addr, u
       \arg        ENET_MAC_ADDRESS2: get MAC address 2 filter
       \arg        ENET_MAC_ADDRESS3: get MAC address 3 filter
     \param[out] paddr: the buffer pointer which is stored the MAC address
-                  (little-ending store, such as mac address is aa:bb:cc:dd:ee:22, the buffer is {22, ee, dd, cc, bb, aa})
+                  (little-endian store, such as MAC address is aa:bb:cc:dd:ee:22, the buffer is {22, ee, dd, cc, bb, aa})
     \param[in]  bufsize: refer to the size of the buffer which stores the MAC address
       \arg        6 - 255
     \retval     ErrStatus: ERROR, SUCCESS
 */
 ErrStatus enet_mac_address_get(uint32_t enet_periph, enet_macaddress_enum mac_addr, uint8_t paddr[], uint8_t bufsize)
 {
-    if(bufsize < 6U) {
-        return ERROR;
+    ErrStatus ret = ERROR;
+
+    if(bufsize >= 6U) {
+        paddr[0] = ENET_GET_MACADDR(enet_periph, mac_addr, 0U);
+        paddr[1] = ENET_GET_MACADDR(enet_periph, mac_addr, 1U);
+        paddr[2] = ENET_GET_MACADDR(enet_periph, mac_addr, 2U);
+        paddr[3] = ENET_GET_MACADDR(enet_periph, mac_addr, 3U);
+        paddr[4] = ENET_GET_MACADDR(enet_periph, mac_addr, 4U);
+        paddr[5] = ENET_GET_MACADDR(enet_periph, mac_addr, 5U);
+        ret = SUCCESS;
     }
-    paddr[0] = ENET_GET_MACADDR(enet_periph, mac_addr, 0U);
-    paddr[1] = ENET_GET_MACADDR(enet_periph, mac_addr, 1U);
-    paddr[2] = ENET_GET_MACADDR(enet_periph, mac_addr, 2U);
-    paddr[3] = ENET_GET_MACADDR(enet_periph, mac_addr, 3U);
-    paddr[4] = ENET_GET_MACADDR(enet_periph, mac_addr, 4U);
-    paddr[5] = ENET_GET_MACADDR(enet_periph, mac_addr, 5U);
-    return SUCCESS;
+
+    return ret;
 }
 
 /*!
-    \brief      ENET Tx function enable (include MAC and DMA module)
+    \brief      ENET Tx function enable (include MAC and DMA module) (API_ID(0x0008U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     none
@@ -1134,7 +650,7 @@ void enet_tx_enable(uint32_t enet_periph)
 }
 
 /*!
-    \brief      ENET Tx function disable (include MAC and DMA module)
+    \brief      ENET Tx function disable (include MAC and DMA module) (API_ID(0x0009U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     none
@@ -1147,7 +663,7 @@ void enet_tx_disable(uint32_t enet_periph)
 }
 
 /*!
-    \brief      ENET Rx function enable (include MAC and DMA module)
+    \brief      ENET Rx function enable (include MAC and DMA module) (API_ID(0x000AU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     none
@@ -1159,7 +675,7 @@ void enet_rx_enable(uint32_t enet_periph)
 }
 
 /*!
-    \brief      ENET Rx function disable (include MAC and DMA module)
+    \brief      ENET Rx function disable (include MAC and DMA module) (API_ID(0x000BU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     none
@@ -1171,7 +687,7 @@ void enet_rx_disable(uint32_t enet_periph)
 }
 
 /*!
-    \brief      put registers value into the application buffer
+    \brief      put registers value into the application buffer (API_ID(0x000CU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  type: register type which will be get, refer to enet_registers_type_enum,
                 only one parameter can be selected which is shown as below
@@ -1179,34 +695,42 @@ void enet_rx_disable(uint32_t enet_periph)
       \arg        ALL_MSC_REG: get the registers within the offset scope between ENET_MSC_CTL and ENET_MSC_RGUFCNT
       \arg        ALL_PTP_REG: get the registers within the offset scope between ENET_PTP_TSCTL and ENET_PTP_PPSCTL
       \arg        ALL_DMA_REG: get the registers within the offset scope between ENET_DMA_BCTL and ENET_DMA_CRBADDR
-    \param[in]  num: the number of registers that the user want to get
+    \param[in]  num: the number of registers that the user wants to get
     \param[out] preg: the application buffer pointer for storing the register value
     \retval     none
 */
-void enet_registers_get(uint32_t enet_periph, enet_registers_type_enum type, uint32_t *preg, uint32_t num)
+void enet_registers_get(uint32_t enet_periph, enet_registers_type_enum type, uint32_t preg[], uint32_t num)
 {
-    uint32_t offset = 0U, max = 0U, limit = 0U;
+    uint32_t offset = 0U, max = 0U, limit = 0U, i = 0U;
 
-    offset = (uint32_t)type;
-    max = (uint32_t)type + num;
-    limit = sizeof(enet_reg_tab) / sizeof(uint16_t);
+#ifdef FW_DEBUG_ERR_REPORT
+    /* check parameter */
+    if(NOT_VALID_POINTER(preg)) {
+        fw_debug_report_err(ENET_MODULE_ID, API_ID(0x000C), ERR_PARAM_POINTER);
+    } else
+#endif
+    {
+        offset = (uint32_t)type;
+        max = (uint32_t)type + num;
+        limit = sizeof(enet_reg_tab) / sizeof(uint16_t);
 
-    /* prevent element in this array is out of range */
-    if(max > limit) {
-        max = limit;
-    }
+        /* prevent element in this array is out of range */
+        if(max > limit) {
+            max = limit;
+        }
 
-    for(; offset < max; offset++) {
-        /* get value of the corresponding register */
-        *preg = REG32((enet_periph) + enet_reg_tab[offset]);
-        preg++;
+        for(; offset < max; offset++) {
+            /* get value of the corresponding register */
+            preg[i] = REG32((enet_periph) + enet_reg_tab[offset]);
+            i++;
+        }
     }
 }
 
 /*!
-    \brief      get the enet debug status from the debug register
+    \brief      get the ENET debug status from the debug register (API_ID(0x000DU))
     \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  mac_debug: enet debug status,
+    \param[in]  mac_debug: ENET debug status,
                 only one parameter can be selected which is shown as below
       \arg        ENET_MAC_RECEIVER_NOT_IDLE: MAC receiver is not in idle state
       \arg        ENET_RX_ASYNCHRONOUS_FIFO_STATE: Rx asynchronous FIFO status
@@ -1253,12 +777,13 @@ uint32_t enet_debug_status_get(uint32_t enet_periph, uint32_t mac_debug)
 }
 
 /*!
-    \brief      enable the MAC address filter
+    \brief      enable the MAC address filter (API_ID(0x000EU))
     \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  mac_addr: select which MAC address will be enable
-    \arg        ENET_MAC_ADDRESS1: enable MAC address 1 filter
-    \arg        ENET_MAC_ADDRESS2: enable MAC address 2 filter
-    \arg        ENET_MAC_ADDRESS3: enable MAC address 3 filter
+    \param[in]  mac_addr: select which MAC address will be enabled,
+                only one parameter can be selected which is shown as below
+      \arg        ENET_MAC_ADDRESS1: enable MAC address 1 filter
+      \arg        ENET_MAC_ADDRESS2: enable MAC address 2 filter
+      \arg        ENET_MAC_ADDRESS3: enable MAC address 3 filter
     \param[out] none
     \retval     none
 */
@@ -1268,9 +793,9 @@ void enet_address_filter_enable(uint32_t enet_periph, enet_macaddress_enum mac_a
 }
 
 /*!
-    \brief      disable the MAC address filter
+    \brief      disable the MAC address filter (API_ID(0x000FU))
     \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  mac_addr: select which MAC address will be disable,
+    \param[in]  mac_addr: select which MAC address will be disabled,
                 only one parameter can be selected which is shown as below
       \arg        ENET_MAC_ADDRESS1: disable MAC address 1 filter
       \arg        ENET_MAC_ADDRESS2: disable MAC address 2 filter
@@ -1284,14 +809,14 @@ void enet_address_filter_disable(uint32_t enet_periph, enet_macaddress_enum mac_
 }
 
 /*!
-    \brief      configure the MAC address filter
+    \brief      configure the MAC address filter (API_ID(0x0010U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  mac_addr: select which MAC address will be configured,
                 only one parameter can be selected which is shown as below
       \arg        ENET_MAC_ADDRESS1: configure MAC address 1 filter
       \arg        ENET_MAC_ADDRESS2: configure MAC address 2 filter
       \arg        ENET_MAC_ADDRESS3: configure MAC address 3 filter
-    \param[in]  addr_mask: select which MAC address bytes will be mask,
+    \param[in]  addr_mask: select which MAC address bytes will be masked,
                 one or more parameters can be selected which are shown as below
       \arg        ENET_ADDRESS_MASK_BYTE0: mask ENET_MAC_ADDR1L[7:0] bits
       \arg        ENET_ADDRESS_MASK_BYTE1: mask ENET_MAC_ADDR1L[15:8] bits
@@ -1301,8 +826,8 @@ void enet_address_filter_disable(uint32_t enet_periph, enet_macaddress_enum mac_
       \arg        ENET_ADDRESS_MASK_BYTE5: mask ENET_MAC_ADDR1H [15:8] bits
     \param[in]  filter_type: select which MAC address filter type will be selected,
                 only one parameter can be selected which is shown as below
-      \arg        ENET_ADDRESS_FILTER_SA: The MAC address is used to compared with the SA field of the received frame
-      \arg        ENET_ADDRESS_FILTER_DA: The MAC address is used to compared with the DA field of the received frame
+      \arg        ENET_ADDRESS_FILTER_SA: The MAC address is used to compare with the SA field of the received frame
+      \arg        ENET_ADDRESS_FILTER_DA: The MAC address is used to compare with the DA field of the received frame
     \param[out] none
     \retval     none
 */
@@ -1315,12 +840,12 @@ void enet_address_filter_config(uint32_t enet_periph, enet_macaddress_enum mac_a
 
     /* clear and configure the address filter register */
     reg &= ~(ENET_MAC_ADDR1H_MB | ENET_MAC_ADDR1H_SAF);
-    reg |= (addr_mask | filter_type);
+    reg |= ((addr_mask & ENET_MAC_ADDR1H_MB) | (filter_type & ENET_ADDRESS_FILTER_SA));
     REG32(ENET_ADDRH_BASE(enet_periph) + mac_addr) = reg;
 }
 
 /*!
-    \brief      PHY interface configuration (configure SMI clock and reset PHY chip)
+    \brief      PHY interface configuration (configure SMI clock and reset PHY chip) (API_ID(0x0011U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     ErrStatus: SUCCESS or ERROR
@@ -1329,7 +854,6 @@ ErrStatus enet_phy_config(uint32_t enet_periph)
 {
     uint32_t ahbclk;
     uint32_t reg;
-    uint16_t phy_value;
     ErrStatus enet_state = ERROR;
 
     /* clear the previous MDC clock */
@@ -1352,31 +876,11 @@ ErrStatus enet_phy_config(uint32_t enet_periph)
         reg |= ENET_MDC_HCLK_DIV102;
     } else if(ENET_RANGE(ahbclk, 250000000U, 300000000U)) {
         reg |= ENET_MDC_HCLK_DIV124;
-    } else if(ENET_RANGE(ahbclk, 300000000U, 350000000U)) {
-        reg |= ENET_MDC_HCLK_DIV142;
-    } else if((ENET_RANGE(ahbclk, 350000000U, 400000000U)) || (400000000U == ahbclk)) {
-        reg |= ENET_MDC_HCLK_DIV162;
     } else {
-        return enet_state;
     }
-
-    ENET_MAC_PHY_CTL(enet_periph) = reg;
-
-    /* reset PHY */
-    phy_value = PHY_RESET;
-    if(ERROR == (enet_phy_write_read(enet_periph, ENET_PHY_WRITE, PHY_ADDRESS, PHY_REG_BCR, &phy_value))){
-        return enet_state;
-    }
-    /* PHY reset need some time */
-    _ENET_DELAY_(ENET_DELAY_TO);
-
-    /* check whether PHY reset is complete */
-    if(ERROR == (enet_phy_write_read(enet_periph, ENET_PHY_READ, PHY_ADDRESS, PHY_REG_BCR, &phy_value))) {
-        return enet_state;
-    }
-
-    /* PHY reset complete */
-    if(RESET == (phy_value & PHY_RESET)) {
+    /* only proceed if clock configuration is valid */
+    if(ENET_RANGE(ahbclk, 20000000U, 300000000U) || (300000000U == ahbclk)) {
+        ENET_MAC_PHY_CTL(enet_periph) = reg;
         enet_state = SUCCESS;
     }
 
@@ -1384,13 +888,13 @@ ErrStatus enet_phy_config(uint32_t enet_periph)
 }
 
 /*!
-    \brief      write to / read from a PHY register
+    \brief      write to / read from a PHY register (API_ID(0x0012U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  direction: only one parameter can be selected which is shown as below
       \arg        ENET_PHY_WRITE: write data to phy register
       \arg        ENET_PHY_READ:  read data from phy register
-    \param[in]  phy_address: 0x0 - 0x1F
-    \param[in]  phy_reg: 0x0 - 0x1F
+    \param[in]  phy_address: 0x0 - 0x1F, the address of the PHY chip
+    \param[in]  phy_reg: 0x0 - 0x1F, the register address of the PHY chip
     \param[in]  pvalue: the value will be written to the PHY register in ENET_PHY_WRITE direction
     \param[out] pvalue: the value will be read from the PHY register in ENET_PHY_READ direction
     \retval     ErrStatus: SUCCESS or ERROR
@@ -1401,84 +905,46 @@ ErrStatus enet_phy_write_read(uint32_t enet_periph, enet_phydirection_enum direc
     uint32_t timeout = 0U;
     ErrStatus enet_state = ERROR;
 
-    /* configure ENET_MAC_PHY_CTL with write/read operation */
-    reg = ENET_MAC_PHY_CTL(enet_periph);
-    reg &= ~(ENET_MAC_PHY_CTL_PB | ENET_MAC_PHY_CTL_PW | ENET_MAC_PHY_CTL_PR | ENET_MAC_PHY_CTL_PA);
-    reg |= (direction | MAC_PHY_CTL_PR(phy_reg) | MAC_PHY_CTL_PA(phy_address) | ENET_MAC_PHY_CTL_PB);
+#ifdef FW_DEBUG_ERR_REPORT
+    /* check parameter */
+    if(NOT_VALID_POINTER(pvalue)) {
+        fw_debug_report_err(ENET_MODULE_ID, API_ID(0x0012), ERR_PARAM_POINTER);
+    } else
+#endif
+    {
+        /* configure ENET_MAC_PHY_CTL with write/read operation */
+        reg = ENET_MAC_PHY_CTL(enet_periph);
+        reg &= ~(ENET_MAC_PHY_CTL_PB | ENET_MAC_PHY_CTL_PW | ENET_MAC_PHY_CTL_PR | ENET_MAC_PHY_CTL_PA);
+        reg |= (direction | MAC_PHY_CTL_PR((uint32_t)phy_reg & PHY_ADDR_REG_MASK) | MAC_PHY_CTL_PA((uint32_t)phy_address & PHY_ADDR_REG_MASK) |
+                ENET_MAC_PHY_CTL_PB);
 
-    /* if do the write operation, write value to the register */
-    if(ENET_PHY_WRITE == direction) {
-        ENET_MAC_PHY_DATA(enet_periph) = *pvalue;
+        /* if do the write operation, write value to the register */
+        if(ENET_PHY_WRITE == direction) {
+            ENET_MAC_PHY_DATA(enet_periph) = *pvalue;
+        }
+
+        /* do PHY write/read operation, and wait the operation complete */
+        ENET_MAC_PHY_CTL(enet_periph) = reg;
+        do {
+            phy_flag = (ENET_MAC_PHY_CTL(enet_periph) & ENET_MAC_PHY_CTL_PB);
+            timeout++;
+        } while((RESET != phy_flag) && (ENET_DELAY_TO != timeout));
+
+        /* write/read operation complete */
+        if(RESET == (ENET_MAC_PHY_CTL(enet_periph) & ENET_MAC_PHY_CTL_PB)) {
+            enet_state = SUCCESS;
+        }
+
+        /* if do the read operation, get value from the register */
+        if(ENET_PHY_READ == direction) {
+            *pvalue = (uint16_t)ENET_MAC_PHY_DATA(enet_periph);
+        }
     }
-
-    /* do PHY write/read operation, and wait the operation complete */
-    ENET_MAC_PHY_CTL(enet_periph) = reg;
-    do {
-        phy_flag = (ENET_MAC_PHY_CTL(enet_periph) & ENET_MAC_PHY_CTL_PB);
-        timeout++;
-    } while((RESET != phy_flag) && (ENET_DELAY_TO != timeout));
-
-    /* write/read operation complete */
-    if(RESET == (ENET_MAC_PHY_CTL(enet_periph) & ENET_MAC_PHY_CTL_PB)) {
-        enet_state = SUCCESS;
-    }
-
-    /* if do the read operation, get value from the register */
-    if(ENET_PHY_READ == direction) {
-        *pvalue = (uint16_t)ENET_MAC_PHY_DATA(enet_periph);
-    }
-
     return enet_state;
 }
 
 /*!
-    \brief      enable the loopback function of PHY chip
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[out] none
-    \retval     ErrStatus: ERROR or SUCCESS
-*/
-ErrStatus enet_phyloopback_enable(uint32_t enet_periph)
-{
-    uint16_t temp_phy = 0U;
-    ErrStatus phy_state = ERROR;
-
-    /* get the PHY configuration to update it */
-    enet_phy_write_read(enet_periph, ENET_PHY_READ, PHY_ADDRESS, PHY_REG_BCR, &temp_phy);
-
-    /* enable the PHY loopback mode */
-    temp_phy |= PHY_LOOPBACK;
-
-    /* update the PHY control register with the new configuration */
-    phy_state = enet_phy_write_read(enet_periph, ENET_PHY_WRITE, PHY_ADDRESS, PHY_REG_BCR, &temp_phy);
-
-    return phy_state;
-}
-
-/*!
-    \brief      disable the loopback function of PHY chip
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[out] none
-    \retval     ErrStatus: ERROR or SUCCESS
-*/
-ErrStatus enet_phyloopback_disable(uint32_t enet_periph)
-{
-    uint16_t temp_phy = 0U;
-    ErrStatus phy_state = ERROR;
-
-    /* get the PHY configuration to update it */
-    enet_phy_write_read(enet_periph, ENET_PHY_READ, PHY_ADDRESS, PHY_REG_BCR, &temp_phy);
-
-    /* disable the PHY loopback mode */
-    temp_phy &= (uint16_t)~PHY_LOOPBACK;
-
-    /* update the PHY control register with the new configuration */
-    phy_state = enet_phy_write_read(enet_periph, ENET_PHY_WRITE, PHY_ADDRESS, PHY_REG_BCR, &temp_phy);
-
-    return phy_state;
-}
-
-/*!
-    \brief      enable ENET forward feature
+    \brief      enable ENET forward feature (API_ID(0x0013U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: the feature of ENET forward mode,
                 one or more parameters can be selected which are shown as below
@@ -1501,7 +967,7 @@ void enet_forward_feature_enable(uint32_t enet_periph, uint32_t feature)
 }
 
 /*!
-    \brief      disable ENET forward feature
+    \brief      disable ENET forward feature (API_ID(0x0014U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: the feature of ENET forward mode,
                 one or more parameters can be selected which are shown as below
@@ -1524,9 +990,9 @@ void enet_forward_feature_disable(uint32_t enet_periph, uint32_t feature)
 }
 
 /*!
-    \brief      enable ENET fliter feature
+    \brief      enable ENET filter feature (API_ID(0x0015U))
     \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  feature: the feature of ENET fliter mode,
+    \param[in]  feature: the feature of ENET filter mode,
                 one or more parameters can be selected which are shown as below
       \arg        ENET_SRC_FILTER: filter source address function
       \arg        ENET_SRC_FILTER_INVERSE: inverse source address filtering result function
@@ -1538,15 +1004,15 @@ void enet_forward_feature_disable(uint32_t enet_periph, uint32_t feature)
     \param[out] none
     \retval     none
 */
-void enet_fliter_feature_enable(uint32_t enet_periph, uint32_t feature)
+void enet_filter_feature_enable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_MAC_FRMF(enet_periph) |= feature;
+    ENET_MAC_FRMF(enet_periph) |= (feature & FILTER_FEATURE_MASK);
 }
 
 /*!
-    \brief      disable ENET fliter feature
+    \brief      disable ENET filter feature (API_ID(0x0016U))
     \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  feature: the feature of ENET fliter mode,
+    \param[in]  feature: the feature of ENET filter mode,
                 one or more parameters can be selected which are shown as below
       \arg        ENET_SRC_FILTER: filter source address function
       \arg        ENET_SRC_FILTER_INVERSE: inverse source address filtering result function
@@ -1558,14 +1024,14 @@ void enet_fliter_feature_enable(uint32_t enet_periph, uint32_t feature)
     \param[out] none
     \retval     none
 */
-void enet_fliter_feature_disable(uint32_t enet_periph, uint32_t feature)
+void enet_filter_feature_disable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_MAC_FRMF(enet_periph) &= ~feature;
+    ENET_MAC_FRMF(enet_periph) &= ~(feature & FILTER_FEATURE_MASK);
 }
 
 /*!
-    \brief      generate the pause frame, ENET will send pause frame after enable transmit flow control
-                this function only use in full-dulex mode
+    \brief      generate the pause frame, ENET will send pause frame after enable transmit flow control (API_ID(0x0017U))
+                this function only use in full-duplex mode
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     ErrStatus: ERROR or SUCCESS
@@ -1585,7 +1051,7 @@ ErrStatus enet_pauseframe_generate(uint32_t enet_periph)
 }
 
 /*!
-    \brief      configure the pause frame detect type
+    \brief      configure the pause frame detect type (API_ID(0x0018U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  detect: pause frame detect type,
                 only one parameter can be selected which is shown as below
@@ -1599,11 +1065,11 @@ ErrStatus enet_pauseframe_generate(uint32_t enet_periph)
 void enet_pauseframe_detect_config(uint32_t enet_periph, uint32_t detect)
 {
     ENET_MAC_FCTL(enet_periph) &= ~ENET_MAC_FCTL_UPFDT;
-    ENET_MAC_FCTL(enet_periph) |= detect;
+    ENET_MAC_FCTL(enet_periph) |= (detect & ENET_MAC_FCTL_UPFDT);
 }
 
 /*!
-    \brief      configure the pause frame parameters
+    \brief      configure the pause frame parameters (API_ID(0x0019U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  pausetime: pause time in transmit pause control frame
     \param[in]  pause_threshold: the threshold of the pause timer for retransmitting frames automatically,
@@ -1619,11 +1085,11 @@ void enet_pauseframe_detect_config(uint32_t enet_periph, uint32_t detect)
 void enet_pauseframe_config(uint32_t enet_periph, uint32_t pausetime, uint32_t pause_threshold)
 {
     ENET_MAC_FCTL(enet_periph) &= ~(ENET_MAC_FCTL_PTM | ENET_MAC_FCTL_PLTS);
-    ENET_MAC_FCTL(enet_periph) |= (MAC_FCTL_PTM(pausetime) | pause_threshold);
+    ENET_MAC_FCTL(enet_periph) |= (MAC_FCTL_PTM(pausetime) | (pause_threshold & ENET_MAC_FCTL_PLTS));
 }
 
 /*!
-    \brief      configure the threshold of the flow control(deactive and active threshold)
+    \brief      configure the threshold of the flow control(deactive and active threshold) (API_ID(0x001AU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  deactive: the threshold of the deactive flow control, this value
                 should always be less than active flow control value, only one
@@ -1649,53 +1115,60 @@ void enet_pauseframe_config(uint32_t enet_periph, uint32_t pausetime, uint32_t p
 */
 void enet_flowcontrol_threshold_config(uint32_t enet_periph, uint32_t deactive, uint32_t active)
 {
-    ENET_MAC_FCTH(enet_periph) = ((deactive | active) >> 8U);
+    ENET_MAC_FCTH(enet_periph) = (((deactive & DEACTIVE_THRESHOLD_MASK) | (active & ACTIVE_THRESHOLD_MASK)) >> 8U);
 }
 
 /*!
-    \brief      enable ENET flow control feature
+    \brief      enable ENET flow control feature (API_ID(0x001BU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: the feature of ENET flow control mode
                 one or more parameters can be selected which are shown as below
       \arg        ENET_ZERO_QUANTA_PAUSE: the automatic zero-quanta generation function
       \arg        ENET_TX_FLOWCONTROL: the flow control operation in the MAC
       \arg        ENET_RX_FLOWCONTROL: decoding function for the received pause frame and process it
-      \arg        ENET_BACK_PRESSURE: back pressure operation in the MAC(only use in half-dulex mode)
+      \arg        ENET_BACK_PRESSURE: back pressure operation in the MAC(only use in half-duplex mode)
     \param[out] none
     \retval     none
 */
 void enet_flowcontrol_feature_enable(uint32_t enet_periph, uint32_t feature)
 {
+    feature = (feature & FLOWCONTROL_FEATURE_MASK);
+
+    /* enable the zero-quanta pause function */
     if(RESET != (feature & ENET_ZERO_QUANTA_PAUSE)) {
         ENET_MAC_FCTL(enet_periph) &= ~ENET_ZERO_QUANTA_PAUSE;
     }
+
     feature &= ~ENET_ZERO_QUANTA_PAUSE;
     ENET_MAC_FCTL(enet_periph) |= feature;
 }
 
 /*!
-    \brief      disable ENET flow control feature
+    \brief      disable ENET flow control feature (API_ID(0x001CU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: the feature of ENET flow control mode
                 one or more parameters can be selected which are shown as below
       \arg        ENET_ZERO_QUANTA_PAUSE: the automatic zero-quanta generation function
       \arg        ENET_TX_FLOWCONTROL: the flow control operation in the MAC
       \arg        ENET_RX_FLOWCONTROL: decoding function for the received pause frame and process it
-      \arg        ENET_BACK_PRESSURE: back pressure operation in the MAC(only use in half-dulex mode)
+      \arg        ENET_BACK_PRESSURE: back pressure operation in the MAC(only use in half-duplex mode)
     \param[out] none
     \retval     none
 */
 void enet_flowcontrol_feature_disable(uint32_t enet_periph, uint32_t feature)
 {
+    feature = (feature & FLOWCONTROL_FEATURE_MASK);
+
     if(RESET != (feature & ENET_ZERO_QUANTA_PAUSE)) {
         ENET_MAC_FCTL(enet_periph) |= ENET_ZERO_QUANTA_PAUSE;
     }
+
     feature &= ~ENET_ZERO_QUANTA_PAUSE;
     ENET_MAC_FCTL(enet_periph) &= ~feature;
 }
 
 /*!
-    \brief      get the dma transmit/receive process state
+    \brief      get the dma transmit/receive process state (API_ID(0x001DU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  direction: choose the direction of dma process which users want to check,
                 refer to enet_dmadirection_enum, only one parameter can be selected which is shown as below
@@ -1717,7 +1190,7 @@ uint32_t enet_dmaprocess_state_get(uint32_t enet_periph, enet_dmadirection_enum 
 
 /*!
     \brief      poll the DMA transmission/reception enable by writing any value to the
-                ENET_DMA_TPEN/ENET_DMA_RPEN register, this will make the DMA to resume transmission/reception
+                ENET_DMA_TPEN/ENET_DMA_RPEN register, this will make the DMA to resume transmission/reception (API_ID(0x001EU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  direction: choose the direction of DMA process which users want to resume,
                 refer to enet_dmadirection_enum, only one parameter can be selected which is shown as below
@@ -1736,29 +1209,7 @@ void enet_dmaprocess_resume(uint32_t enet_periph, enet_dmadirection_enum directi
 }
 
 /*!
-    \brief      check and recover the Rx process
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[out] none
-    \retval     none
-*/
-void enet_rxprocess_check_recovery(uint32_t enet_periph)
-{
-    uint32_t status;
-
-    /* get DAV information of current RxDMA descriptor */
-    status = dma_current_rxdesc->status;
-    status &= ENET_RDES0_DAV;
-
-    /* if current descriptor is owned by DMA, but the descriptor address mismatches with
-    receive descriptor address pointer updated by RxDMA controller */
-    if((ENET_DMA_CRDADDR(enet_periph) != ((uint32_t)dma_current_rxdesc)) &&
-            (ENET_RDES0_DAV == status)) {
-        dma_current_rxdesc = (enet_descriptors_struct *)ENET_DMA_CRDADDR(enet_periph);
-    }
-}
-
-/*!
-    \brief      flush the ENET transmit FIFO, and wait until the flush operation completes
+    \brief      flush the ENET transmit FIFO, and wait until the flush operation completes (API_ID(0x001FU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     ErrStatus: ERROR or SUCCESS
@@ -1785,7 +1236,7 @@ ErrStatus enet_txfifo_flush(uint32_t enet_periph)
 }
 
 /*!
-    \brief      get the transmit/receive address of current descriptor, or current buffer, or descriptor table
+    \brief      get the transmit/receive address of current descriptor, or current buffer, or descriptor table (API_ID(0x0020U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  addr_get: choose the address which users want to get, refer to enet_desc_reg_enum,
                 only one parameter can be selected which is shown as below
@@ -1809,62 +1260,7 @@ uint32_t enet_current_desc_address_get(uint32_t enet_periph, enet_desc_reg_enum 
 }
 
 /*!
-    \brief      get the Tx or Rx descriptor information
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  desc: the descriptor pointer which users want to get information
-    \param[in]  info_get: the descriptor information type which is selected,
-                only one parameter can be selected which is shown as below
-      \arg        RXDESC_BUFFER_1_SIZE: receive buffer 1 size
-      \arg        RXDESC_BUFFER_2_SIZE: receive buffer 2 size
-      \arg        RXDESC_FRAME_LENGTH: the byte length of the received frame that was transferred to the buffer
-      \arg        TXDESC_COLLISION_COUNT: the number of collisions occurred before the frame was transmitted
-      \arg        RXDESC_BUFFER_1_ADDR: the buffer1 address of the Rx frame
-      \arg        TXDESC_BUFFER_1_ADDR: the buffer1 address of the Tx frame
-    \param[out] none
-    \retval     descriptor information, if value is 0xFFFFFFFFU, means the false input parameter
-*/
-uint32_t enet_desc_information_get(uint32_t enet_periph, enet_descriptors_struct *desc, enet_descstate_enum info_get)
-{
-    uint32_t reval = 0xFFFFFFFFU;
-
-    switch(info_get) {
-    case RXDESC_BUFFER_1_SIZE:
-        reval = GET_RDES1_RB1S(desc->control_buffer_size);
-        break;
-    case RXDESC_BUFFER_2_SIZE:
-        reval = GET_RDES1_RB2S(desc->control_buffer_size);
-        break;
-    case RXDESC_FRAME_LENGTH:
-        reval = GET_RDES0_FRML(desc->status);
-        if(reval > 4U) {
-            reval = reval - 4U;
-
-            /* if is a type frame, and CRC is not included in forwarding frame */
-            if((RESET != (ENET_MAC_CFG(enet_periph) & ENET_MAC_CFG_TFCD)) && (RESET != (desc->status & ENET_RDES0_FRMT))) {
-                reval = reval + 4U;
-            }
-        } else {
-            reval = 0U;
-        }
-
-        break;
-    case RXDESC_BUFFER_1_ADDR:
-        reval = desc->buffer1_addr;
-        break;
-    case TXDESC_BUFFER_1_ADDR:
-        reval = desc->buffer1_addr;
-        break;
-    case TXDESC_COLLISION_COUNT:
-        reval = GET_TDES0_COCNT(desc->status);
-        break;
-    default:
-        break;
-    }
-    return reval;
-}
-
-/*!
-    \brief      get the number of missed frames during receiving
+    \brief      get the number of missed frames during receiving (API_ID(0x0021U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] rxfifo_drop: pointer to the number of frames dropped by RxFIFO
     \param[out] rxdma_drop: pointer to the number of frames missed by the RxDMA controller
@@ -1874,267 +1270,55 @@ void enet_missed_frame_counter_get(uint32_t enet_periph, uint32_t *rxfifo_drop, 
 {
     uint32_t temp_counter = 0U;
 
-    temp_counter = ENET_DMA_MFBOCNT(enet_periph);
-    *rxfifo_drop = GET_DMA_MFBOCNT_MSFA(temp_counter);
-    *rxdma_drop = GET_DMA_MFBOCNT_MSFC(temp_counter);
-}
-
-/*!
-    \brief      get the bit flag of ENET DMA descriptor
-    \param[in]  desc: the descriptor pointer which users want to get flag
-    \param[in]  desc_flag: the bit flag of ENET DMA descriptor,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_TDES0_DB: deferred
-      \arg        ENET_TDES0_UFE: underflow error
-      \arg        ENET_TDES0_EXD: excessive deferral
-      \arg        ENET_TDES0_VFRM: VLAN frame
-      \arg        ENET_TDES0_ECO: excessive collision
-      \arg        ENET_TDES0_LCO: late collision
-      \arg        ENET_TDES0_NCA: no carrier
-      \arg        ENET_TDES0_LCA: loss of carrier
-      \arg        ENET_TDES0_IPPE: IP payload error
-      \arg        ENET_TDES0_FRMF: frame flushed
-      \arg        ENET_TDES0_JT: jabber timeout
-      \arg        ENET_TDES0_ES: error summary
-      \arg        ENET_TDES0_IPHE: IP header error
-      \arg        ENET_TDES0_TTMSS: transmit timestamp status
-      \arg        ENET_TDES0_TCHM: the second address chained mode
-      \arg        ENET_TDES0_TERM: transmit end of ring mode
-      \arg        ENET_TDES0_TTSEN: transmit timestamp function enable
-      \arg        ENET_TDES0_DPAD: disable adding pad
-      \arg        ENET_TDES0_DCRC: disable CRC
-      \arg        ENET_TDES0_FSG: first segment
-      \arg        ENET_TDES0_LSG: last segment
-      \arg        ENET_TDES0_INTC: interrupt on completion
-      \arg        ENET_TDES0_DAV: DAV bit
-      \arg        ENET_RDES0_PCERR: payload checksum error
-      \arg        ENET_RDES0_EXSV: extended status valid
-      \arg        ENET_RDES0_CERR: CRC error
-      \arg        ENET_RDES0_DBERR: dribble bit error
-      \arg        ENET_RDES0_RERR: receive error
-      \arg        ENET_RDES0_RWDT: receive watchdog timeout
-      \arg        ENET_RDES0_FRMT: frame type
-      \arg        ENET_RDES0_LCO: late collision
-      \arg        ENET_RDES0_IPHERR: IP frame header error
-      \arg        ENET_RDES0_TSV: timestamp valid
-      \arg        ENET_RDES0_LDES: last descriptor
-      \arg        ENET_RDES0_FDES: first descriptor
-      \arg        ENET_RDES0_VTAG: VLAN tag
-      \arg        ENET_RDES0_OERR: overflow error
-      \arg        ENET_RDES0_LERR: length error
-      \arg        ENET_RDES0_SAFF: SA filter fail
-      \arg        ENET_RDES0_DERR: descriptor error
-      \arg        ENET_RDES0_ERRS: error summary
-      \arg        ENET_RDES0_DAFF: destination address filter fail
-      \arg        ENET_RDES0_DAV: descriptor available
-    \param[out] none
-    \retval     FlagStatus: SET or RESET
-*/
-FlagStatus enet_desc_flag_get(enet_descriptors_struct *desc, uint32_t desc_flag)
-{
-    FlagStatus enet_flag = RESET;
-
-    if((uint32_t)RESET != (desc->status & desc_flag)) {
-        enet_flag = SET;
-    }
-
-    return enet_flag;
-}
-
-/*!
-    \brief      set the bit flag of ENET DMA descriptor
-    \param[in]  desc: the descriptor pointer which users want to set flag
-    \param[in]  desc_flag: the bit flag of ENET DMA descriptor,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_TDES0_VFRM: VLAN frame
-      \arg        ENET_TDES0_FRMF: frame flushed
-      \arg        ENET_TDES0_TCHM: the second address chained mode
-      \arg        ENET_TDES0_TERM: transmit end of ring mode
-      \arg        ENET_TDES0_TTSEN: transmit timestamp function enable
-      \arg        ENET_TDES0_DPAD: disable adding pad
-      \arg        ENET_TDES0_DCRC: disable CRC
-      \arg        ENET_TDES0_FSG: first segment
-      \arg        ENET_TDES0_LSG: last segment
-      \arg        ENET_TDES0_INTC: interrupt on completion
-      \arg        ENET_TDES0_DAV: DAV bit
-      \arg        ENET_RDES0_DAV: descriptor available
-    \param[out] none
-    \retval     none
-*/
-void enet_desc_flag_set(enet_descriptors_struct *desc, uint32_t desc_flag)
-{
-    desc->status |= desc_flag;
-}
-
-/*!
-    \brief      clear the bit flag of ENET DMA descriptor
-    \param[in]  desc: the descriptor pointer which users want to clear flag
-    \param[in]  desc_flag: the bit flag of ENET DMA descriptor,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_TDES0_VFRM: VLAN frame
-      \arg        ENET_TDES0_FRMF: frame flushed
-      \arg        ENET_TDES0_TCHM: the second address chained mode
-      \arg        ENET_TDES0_TERM: transmit end of ring mode
-      \arg        ENET_TDES0_TTSEN: transmit timestamp function enable
-      \arg        ENET_TDES0_DPAD: disable adding pad
-      \arg        ENET_TDES0_DCRC: disable CRC
-      \arg        ENET_TDES0_FSG: first segment
-      \arg        ENET_TDES0_LSG: last segment
-      \arg        ENET_TDES0_INTC: interrupt on completion
-      \arg        ENET_TDES0_DAV: DAV bit
-      \arg        ENET_RDES0_DAV: descriptor available
-    \param[out] none
-    \retval     none
-*/
-void enet_desc_flag_clear(enet_descriptors_struct *desc, uint32_t desc_flag)
-{
-    desc->status &= ~desc_flag;
-}
-
-/*!
-    \brief      when receiving completed, set RS bit in ENET_DMA_STAT register will immediately set
-    \param[in]  desc: the descriptor pointer which users want to configure
-    \param[out] none
-    \retval     none
-*/
-void enet_rx_desc_immediate_receive_complete_interrupt(enet_descriptors_struct *desc)
-{
-    desc->control_buffer_size &= ~ENET_RDES1_DINTC;
-}
-
-/*!
-    \brief      when receiving completed, set RS bit in ENET_DMA_STAT register will is set after a configurable delay time
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  desc: the descriptor pointer which users want to configure
-    \param[in]  delay_time: delay a time of 256*delay_time HCLK, this value must be between 0 and 0xFF
-    \param[out] none
-    \retval     none
-*/
-void enet_rx_desc_delay_receive_complete_interrupt(uint32_t enet_periph, enet_descriptors_struct *desc, uint32_t delay_time)
-{
-    desc->control_buffer_size |= ENET_RDES1_DINTC;
-    ENET_DMA_RSWDC(enet_periph) = DMA_RSWDC_WDCFRS(delay_time);
-}
-
-/*!
-    \brief      drop current receive frame
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[out] none
-    \retval     none
-*/
-void enet_rxframe_drop(uint32_t enet_periph)
-{
-    /* enable reception, descriptor is owned by DMA */
-    dma_current_rxdesc->status = ENET_RDES0_DAV;
-
-    /* chained mode */
-    if((uint32_t)RESET != (dma_current_rxdesc->control_buffer_size & ENET_RDES1_RCHM)) {
-        if(NULL != dma_current_ptp_rxdesc) {
-            dma_current_rxdesc = (enet_descriptors_struct *)(dma_current_ptp_rxdesc->buffer2_next_desc_addr);
-            /* if it is the last ptp descriptor */
-            if(0U != dma_current_ptp_rxdesc->status) {
-                /* pointer back to the first ptp descriptor address in the desc_ptptab list address */
-                dma_current_ptp_rxdesc = (enet_descriptors_struct *)(dma_current_ptp_rxdesc->status);
-            } else {
-                /* ponter to the next ptp descriptor */
-                dma_current_ptp_rxdesc++;
-            }
-        } else {
-            dma_current_rxdesc = (enet_descriptors_struct *)(dma_current_rxdesc->buffer2_next_desc_addr);
-        }
-
-    } else {
-        /* ring mode */
-        if((uint32_t)RESET != (dma_current_rxdesc->control_buffer_size & ENET_RDES1_RERM)) {
-            /* if is the last descriptor in table, the next descriptor is the table header */
-            dma_current_rxdesc = (enet_descriptors_struct *)(ENET_DMA_RDTADDR(enet_periph));
-            if(NULL != dma_current_ptp_rxdesc) {
-                dma_current_ptp_rxdesc = (enet_descriptors_struct *)(dma_current_ptp_rxdesc->status);
-            }
-        } else {
-            /* the next descriptor is the current address, add the descriptor size, and descriptor skip length */
-            dma_current_rxdesc = (enet_descriptors_struct *)(uint32_t)((uint32_t)dma_current_rxdesc + ETH_DMARXDESC_SIZE + GET_DMA_BCTL_DPSL(ENET_DMA_BCTL(
-                                     enet_periph)));
-            if(NULL != dma_current_ptp_rxdesc) {
-                dma_current_ptp_rxdesc++;
-            }
-        }
+#ifdef FW_DEBUG_ERR_REPORT
+    /* check parameters */
+    if(NOT_VALID_POINTER(rxfifo_drop)) {
+        fw_debug_report_err(ENET_MODULE_ID, API_ID(0x0021), ERR_PARAM_POINTER);
+    } else if(NOT_VALID_POINTER(rxdma_drop)) {
+        fw_debug_report_err(ENET_MODULE_ID, API_ID(0x0021), ERR_PARAM_POINTER);
+    } else
+#endif
+    {
+        temp_counter = ENET_DMA_MFBOCNT(enet_periph);
+        *rxfifo_drop = GET_DMA_MFBOCNT_MSFA(temp_counter);
+        *rxdma_drop = GET_DMA_MFBOCNT_MSFC(temp_counter);
     }
 }
 
 /*!
-    \brief      enable DMA feature
+    \brief      enable DMA feature (API_ID(0x0022U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: the feature of DMA mode,
                 one or more parameters can be selected which are shown as below
-      \arg        ENET_NO_FLUSH_RXFRAME: RxDMA does not flushes frames function
+      \arg        ENET_NO_FLUSH_RXFRAME: RxDMA does not flush frames function
       \arg        ENET_SECONDFRAME_OPT: TxDMA controller operate on second frame function
     \param[out] none
     \retval     none
 */
 void enet_dma_feature_enable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_DMA_CTL(enet_periph) |= feature;
+    ENET_DMA_CTL(enet_periph) |= (feature & DMA_FEATURE_MASK);
 }
 
 /*!
-    \brief      disable DMA feature
+    \brief      disable DMA feature (API_ID(0x0023U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: the feature of DMA mode,
                 one or more parameters can be selected which are shown as below
-      \arg        ENET_NO_FLUSH_RXFRAME: RxDMA does not flushes frames function
+      \arg        ENET_NO_FLUSH_RXFRAME: RxDMA does not flush frames function
       \arg        ENET_SECONDFRAME_OPT: TxDMA controller operate on second frame function
     \param[out] none
     \retval     none
 */
 void enet_dma_feature_disable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_DMA_CTL(enet_periph) &= ~feature;
+    ENET_DMA_CTL(enet_periph) &= ~(feature & DMA_FEATURE_MASK);
 }
 
-#ifdef SELECT_DESCRIPTORS_ENHANCED_MODE
+#if SELECT_DESCRIPTORS_ENHANCED_MODE
 /*!
-    \brief      get the bit of extended status flag in ENET DMA descriptor
-    \param[in]  desc: the descriptor pointer which users want to get the extended status flag
-    \param[in]  desc_status: the extended status want to get,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_RDES4_IPPLDT: IP frame payload type
-      \arg        ENET_RDES4_IPHERR: IP frame header error
-      \arg        ENET_RDES4_IPPLDERR: IP frame payload error
-      \arg        ENET_RDES4_IPCKSB: IP frame checksum bypassed
-      \arg        ENET_RDES4_IPF4: IP frame in version 4
-      \arg        ENET_RDES4_IPF6: IP frame in version 6
-      \arg        ENET_RDES4_PTPMT: PTP message type
-      \arg        ENET_RDES4_PTPOEF: PTP on ethernet frame
-      \arg        ENET_RDES4_PTPVF: PTP version format
-    \param[out] none
-    \retval     value of extended status
-*/
-uint32_t enet_rx_desc_enhanced_status_get(enet_descriptors_struct *desc, uint32_t desc_status)
-{
-    uint32_t reval = 0xFFFFFFFFU;
-
-    switch(desc_status) {
-    case ENET_RDES4_IPPLDT:
-        reval = GET_RDES4_IPPLDT(desc->extended_status);
-        break;
-    case ENET_RDES4_PTPMT:
-        reval = GET_RDES4_PTPMT(desc->extended_status);
-        break;
-    default:
-        if((uint32_t)RESET != (desc->extended_status & desc_status)) {
-            reval = 1U;
-        } else {
-            reval = 0U;
-        }
-    }
-
-    return reval;
-}
-
-/*!
-    \brief      configure descriptor to work in enhanced mode
-    \param[in]  none
+    \brief      configure descriptor to work in enhanced mode (API_ID(0x0024U))
+    \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     none
 */
@@ -2143,348 +1327,10 @@ void enet_desc_select_enhanced_mode(uint32_t enet_periph)
     ENET_DMA_BCTL(enet_periph) |= ENET_DMA_BCTL_DFM;
 }
 
-/*!
-    \brief      initialize the DMA Tx/Rx descriptors's parameters in enhanced chain mode with ptp function
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  direction: the descriptors which users want to init, refer to enet_dmadirection_enum,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_DMA_TX: DMA Tx descriptors
-      \arg        ENET_DMA_RX: DMA Rx descriptors
-    \param[out] none
-    \retval     none
-*/
-void enet_ptp_enhanced_descriptors_chain_init(uint32_t enet_periph, enet_dmadirection_enum direction)
-{
-    uint32_t num = 0U, count = 0U, maxsize = 0U;
-    uint32_t desc_status = 0U, desc_bufsize = 0U;
-    enet_descriptors_struct *desc, *desc_tab;
-    uint8_t *buf;
-
-    /* if want to initialize DMA Tx descriptors */
-    if(ENET_DMA_TX == direction) {
-        /* save a copy of the DMA Tx descriptors */
-        desc_tab = txdesc_tab;
-        buf = &tx_buff[0][0];
-        count = ENET_TXBUF_NUM;
-        maxsize = ENET_TXBUF_SIZE;
-
-        /* select chain mode, and enable transmit timestamp function */
-        desc_status = ENET_TDES0_TCHM | ENET_TDES0_TTSEN;
-
-        /* configure DMA Tx descriptor table address register */
-        ENET_DMA_TDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_txdesc = desc_tab;
-    } else {
-        /* if want to initialize DMA Rx descriptors */
-        /* save a copy of the DMA Rx descriptors */
-        desc_tab = rxdesc_tab;
-        buf = &rx_buff[0][0];
-        count = ENET_RXBUF_NUM;
-        maxsize = ENET_RXBUF_SIZE;
-
-        /* enable receiving */
-        desc_status = ENET_RDES0_DAV;
-        /* select receive chained mode and set buffer1 size */
-        desc_bufsize = ENET_RDES1_RCHM | (uint32_t)ENET_RXBUF_SIZE;
-
-        /* configure DMA Rx descriptor table address register */
-        ENET_DMA_RDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_rxdesc = desc_tab;
-    }
-
-    /* configuration each descriptor */
-    for(num = 0U; num < count; num++) {
-        /* get the pointer to the next descriptor of the descriptor table */
-        desc = desc_tab + num;
-
-        /* configure descriptors */
-        desc->status = desc_status;
-        desc->control_buffer_size = desc_bufsize;
-        desc->buffer1_addr = (uint32_t)(&buf[num * maxsize]);
-
-        /* if is not the last descriptor */
-        if(num < (count - 1U)) {
-            /* configure the next descriptor address */
-            desc->buffer2_next_desc_addr = (uint32_t)(desc_tab + num + 1U);
-        } else {
-            /* when it is the last descriptor, the next descriptor address
-            equals to first descriptor address in descriptor table */
-            desc->buffer2_next_desc_addr = (uint32_t)desc_tab;
-        }
-    }
-}
-
-/*!
-    \brief      initialize the DMA Tx/Rx descriptors's parameters in enhanced ring mode with ptp function
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  direction: the descriptors which users want to init, refer to enet_dmadirection_enum,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_DMA_TX: DMA Tx descriptors
-      \arg        ENET_DMA_RX: DMA Rx descriptors
-    \param[out] none
-    \retval     none
-*/
-void enet_ptp_enhanced_descriptors_ring_init(uint32_t enet_periph, enet_dmadirection_enum direction)
-{
-    uint32_t num = 0U, count = 0U, maxsize = 0U;
-    uint32_t desc_status = 0U, desc_bufsize = 0U;
-    enet_descriptors_struct *desc;
-    enet_descriptors_struct *desc_tab;
-    uint8_t *buf;
-
-    /* configure descriptor skip length */
-    ENET_DMA_BCTL(enet_periph) &= ~ENET_DMA_BCTL_DPSL;
-    ENET_DMA_BCTL(enet_periph) |= DMA_BCTL_DPSL(0);
-
-    /* if want to initialize DMA Tx descriptors */
-    if(ENET_DMA_TX == direction) {
-        /* save a copy of the DMA Tx descriptors */
-        desc_tab = txdesc_tab;
-        buf = &tx_buff[0][0];
-        count = ENET_TXBUF_NUM;
-        maxsize = ENET_TXBUF_SIZE;
-
-        /* select ring mode, and enable transmit timestamp function */
-        desc_status = ENET_TDES0_TTSEN;
-
-        /* configure DMA Tx descriptor table address register */
-        ENET_DMA_TDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_txdesc = desc_tab;
-    } else {
-        /* if want to initialize DMA Rx descriptors */
-        /* save a copy of the DMA Rx descriptors */
-        desc_tab = rxdesc_tab;
-        buf = &rx_buff[0][0];
-        count = ENET_RXBUF_NUM;
-        maxsize = ENET_RXBUF_SIZE;
-
-        /* enable receiving */
-        desc_status = ENET_RDES0_DAV;
-        /* set buffer1 size */
-        desc_bufsize = ENET_RXBUF_SIZE;
-
-        /* configure DMA Rx descriptor table address register */
-        ENET_DMA_RDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_rxdesc = desc_tab;
-    }
-
-    /* configure each descriptor */
-    for(num = 0U; num < count; num++) {
-        /* get the pointer to the next descriptor of the descriptor table */
-        desc = desc_tab + num;
-
-        /* configure descriptors */
-        desc->status = desc_status;
-        desc->control_buffer_size = desc_bufsize;
-        desc->buffer1_addr = (uint32_t)(&buf[num * maxsize]);
-
-        /* when it is the last descriptor */
-        if(num == (count - 1U)) {
-            if(ENET_DMA_TX == direction) {
-                /* configure transmit end of ring mode */
-                desc->status |= ENET_TDES0_TERM;
-            } else {
-                /* configure receive end of ring mode */
-                desc->control_buffer_size |= ENET_RDES1_RERM;
-            }
-        }
-    }
-}
-
-/*!
-    \brief      receive a packet data with timestamp values to application buffer, when the DMA is in enhanced mode
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  bufsize: the size of buffer which is the parameter in function
-    \param[out] buffer: pointer to the application buffer
-                note -- if the input is NULL, user should copy data in application by himself
-    \param[out] timestamp: pointer to the table which stores the timestamp high and low
-                note -- if the input is NULL, timestamp is ignored
-    \retval     ErrStatus: SUCCESS or ERROR
-*/
-ErrStatus enet_ptpframe_receive_enhanced_mode(uint32_t enet_periph, uint8_t buffer[], uint32_t bufsize, uint32_t timestamp[])
-{
-    uint32_t offset = 0U, size = 0U;
-    uint32_t timeout = 0U;
-    uint32_t rdes0_tsv_flag;
-
-    /* the descriptor is busy due to own by the DMA */
-    if((uint32_t)RESET != (dma_current_rxdesc->status & ENET_RDES0_DAV)) {
-        return ERROR;
-    }
-
-    /* if buffer pointer is null, indicates that users has copied data in application */
-    if(NULL != buffer) {
-        /* if no error occurs, and the frame uses only one descriptor */
-        if(((uint32_t)RESET == (dma_current_rxdesc->status & ENET_RDES0_ERRS)) &&
-                ((uint32_t)RESET != (dma_current_rxdesc->status & ENET_RDES0_LDES)) &&
-                ((uint32_t)RESET != (dma_current_rxdesc->status & ENET_RDES0_FDES))) {
-            /* get the frame length except CRC */
-            size = GET_RDES0_FRML(dma_current_rxdesc->status) - 4U;
-
-            /* if is a type frame, and CRC is not included in forwarding frame */
-            if((RESET != (ENET_MAC_CFG(enet_periph) & ENET_MAC_CFG_TFCD)) && (RESET != (dma_current_rxdesc->status & ENET_RDES0_FRMT))) {
-                size = size + 4U;
-            }
-
-            /* to avoid situation that the frame size exceeds the buffer length */
-            if(size > bufsize) {
-                return ERROR;
-            }
-
-            /* copy data from Rx buffer to application buffer */
-            for(offset = 0U; offset < size; offset++) {
-                (*(buffer + offset)) = (*(__IO uint8_t *)((dma_current_rxdesc->buffer1_addr) + offset));
-            }
-        } else {
-            return ERROR;
-        }
-    }
-
-    /* if timestamp pointer is null, indicates that users don't care timestamp in application */
-    if(NULL != timestamp) {
-        /* wait for ENET_RDES0_TSV flag to be set, the timestamp value is taken and
-        write to the RDES6 and RDES7 */
-        do {
-            rdes0_tsv_flag = (dma_current_rxdesc->status & ENET_RDES0_TSV);
-            timeout++;
-        } while((RESET == rdes0_tsv_flag) && (timeout < ENET_DELAY_TO));
-
-        /* return ERROR due to timeout */
-        if(ENET_DELAY_TO == timeout) {
-            return ERROR;
-        }
-
-        /* clear the ENET_RDES0_TSV flag */
-        dma_current_rxdesc->status &= ~ENET_RDES0_TSV;
-        /* get the timestamp value of the received frame */
-        timestamp[0] = dma_current_rxdesc->timestamp_low;
-        timestamp[1] = dma_current_rxdesc->timestamp_high;
-    }
-
-    /* enable reception, descriptor is owned by DMA */
-    dma_current_rxdesc->status = ENET_RDES0_DAV;
-
-    /* check Rx buffer unavailable flag status */
-    if((uint32_t)RESET != (ENET_DMA_STAT(enet_periph) & ENET_DMA_STAT_RBU)) {
-        /* Clear RBU flag */
-        ENET_DMA_STAT(enet_periph) = ENET_DMA_STAT_RBU;
-        /* resume DMA reception by writing to the RPEN register*/
-        ENET_DMA_RPEN(enet_periph) = 0U;
-    }
-
-    /* update the current RxDMA descriptor pointer to the next decriptor in RxDMA decriptor table */
-    /* chained mode */
-    if((uint32_t)RESET != (dma_current_rxdesc->control_buffer_size & ENET_RDES1_RCHM)) {
-        dma_current_rxdesc = (enet_descriptors_struct *)(dma_current_rxdesc->buffer2_next_desc_addr);
-    } else {
-        /* ring mode */
-        if((uint32_t)RESET != (dma_current_rxdesc->control_buffer_size & ENET_RDES1_RERM)) {
-            /* if is the last descriptor in table, the next descriptor is the table header */
-            dma_current_rxdesc = (enet_descriptors_struct *)(ENET_DMA_RDTADDR(enet_periph));
-        } else {
-            /* the next descriptor is the current address, add the descriptor size, and descriptor skip length */
-            dma_current_rxdesc = (enet_descriptors_struct *)((uint32_t)dma_current_rxdesc + ETH_DMARXDESC_SIZE + GET_DMA_BCTL_DPSL(ENET_DMA_BCTL(enet_periph)));
-        }
-    }
-
-    return SUCCESS;
-}
-
-/*!
-    \brief      send data with timestamp values in application buffer as a transmit packet, when the DMA is in enhanced mode
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  buffer: pointer on the application buffer
-                note -- if the input is NULL, user should copy data in application by himself
-    \param[in]  length: the length of frame data to be transmitted
-    \param[out] timestamp: pointer to the table which stores the timestamp high and low
-                note -- if the input is NULL, timestamp is ignored
-    \param[out] none
-    \retval     ErrStatus: SUCCESS or ERROR
-*/
-ErrStatus enet_ptpframe_transmit_enhanced_mode(uint32_t enet_periph, uint8_t buffer[], uint32_t length, uint32_t timestamp[])
-{
-    uint32_t offset = 0U;
-    uint32_t dma_tbu_flag, dma_tu_flag;
-    uint32_t tdes0_ttmss_flag;
-    uint32_t timeout = 0U;
-
-    /* the descriptor is busy due to own by the DMA */
-    if((uint32_t)RESET != (dma_current_txdesc->status & ENET_TDES0_DAV)) {
-        return ERROR;
-    }
-
-    /* only frame length no more than ENET_MAX_FRAME_SIZE is allowed */
-    if(length > ENET_MAX_FRAME_SIZE) {
-        return ERROR;
-    }
-
-    /* if buffer pointer is null, indicates that users has handled data in application */
-    if(NULL != buffer) {
-        /* copy frame data from application buffer to Tx buffer */
-        for(offset = 0U; offset < length; offset++) {
-            (*(__IO uint8_t *)((dma_current_txdesc->buffer1_addr) + offset)) = (*(buffer + offset));
-        }
-    }
-    /* set the frame length */
-    dma_current_txdesc->control_buffer_size = length;
-    /* set the segment of frame, frame is transmitted in one descriptor */
-    dma_current_txdesc->status |= ENET_TDES0_LSG | ENET_TDES0_FSG;
-    /* enable the DMA transmission */
-    dma_current_txdesc->status |= ENET_TDES0_DAV;
-
-    /* check Tx buffer unavailable flag status */
-    dma_tbu_flag = (ENET_DMA_STAT(enet_periph) & ENET_DMA_STAT_TBU);
-    dma_tu_flag = (ENET_DMA_STAT(enet_periph) & ENET_DMA_STAT_TU);
-
-    if((RESET != dma_tbu_flag) || (RESET != dma_tu_flag)) {
-        /* Clear TBU and TU flag */
-        ENET_DMA_STAT(enet_periph) = (dma_tbu_flag | dma_tu_flag);
-        /* resume DMA transmission by writing to the TPEN register*/
-        ENET_DMA_TPEN(enet_periph) = 0U;
-    }
-
-    /* if timestamp pointer is null, indicates that users don't care timestamp in application */
-    if(NULL != timestamp) {
-        /* wait for ENET_TDES0_TTMSS flag to be set, a timestamp was captured */
-        do {
-            tdes0_ttmss_flag = (dma_current_txdesc->status & ENET_TDES0_TTMSS);
-            timeout++;
-        } while((RESET == tdes0_ttmss_flag) && (timeout < ENET_DELAY_TO));
-
-        /* return ERROR due to timeout */
-        if(ENET_DELAY_TO == timeout) {
-            return ERROR;
-        }
-
-        /* clear the ENET_TDES0_TTMSS flag */
-        dma_current_txdesc->status &= ~ENET_TDES0_TTMSS;
-        /* get the timestamp value of the transmit frame */
-        timestamp[0] = dma_current_txdesc->timestamp_low;
-        timestamp[1] = dma_current_txdesc->timestamp_high;
-    }
-
-    /* update the current TxDMA descriptor pointer to the next decriptor in TxDMA decriptor table*/
-    /* chained mode */
-    if((uint32_t)RESET != (dma_current_txdesc->status & ENET_TDES0_TCHM)) {
-        dma_current_txdesc = (enet_descriptors_struct *)(dma_current_txdesc->buffer2_next_desc_addr);
-    } else {
-        /* ring mode */
-        if((uint32_t)RESET != (dma_current_txdesc->status & ENET_TDES0_TERM)) {
-            /* if is the last descriptor in table, the next descriptor is the table header */
-            dma_current_txdesc = (enet_descriptors_struct *)(ENET_DMA_TDTADDR(enet_periph));
-        } else {
-            /* the next descriptor is the current address, add the descriptor size, and descriptor skip length */
-            dma_current_txdesc = (enet_descriptors_struct *)((uint32_t)dma_current_txdesc + ETH_DMATXDESC_SIZE + GET_DMA_BCTL_DPSL(ENET_DMA_BCTL(enet_periph)));
-        }
-    }
-
-    return SUCCESS;
-}
-
 #else
 
 /*!
-    \brief      configure descriptor to work in normal mode
+    \brief      configure descriptor to work in normal mode (API_ID(0x0025U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     none
@@ -2494,372 +1340,10 @@ void enet_desc_select_normal_mode(uint32_t enet_periph)
     ENET_DMA_BCTL(enet_periph) &= ~ENET_DMA_BCTL_DFM;
 }
 
-/*!
-    \brief      initialize the DMA Tx/Rx descriptors's parameters in normal chain mode with PTP function
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  direction: the descriptors which users want to init, refer to enet_dmadirection_enum,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_DMA_TX: DMA Tx descriptors
-      \arg        ENET_DMA_RX: DMA Rx descriptors
-    \param[in]  desc_ptptab: pointer to the first descriptor address of PTP Rx descriptor table
-    \param[out] none
-    \retval     none
-*/
-void enet_ptp_normal_descriptors_chain_init(uint32_t enet_periph, enet_dmadirection_enum direction, enet_descriptors_struct *desc_ptptab)
-{
-    uint32_t num = 0U, count = 0U, maxsize = 0U;
-    uint32_t desc_status = 0U, desc_bufsize = 0U;
-    enet_descriptors_struct *desc, *desc_tab;
-    uint8_t *buf;
-
-    /* if want to initialize DMA Tx descriptors */
-    if(ENET_DMA_TX == direction) {
-        /* save a copy of the DMA Tx descriptors */
-        desc_tab = txdesc_tab;
-        buf = &tx_buff[0][0];
-        count = ENET_TXBUF_NUM;
-        maxsize = ENET_TXBUF_SIZE;
-
-        /* select chain mode, and enable transmit timestamp function */
-        desc_status = ENET_TDES0_TCHM | ENET_TDES0_TTSEN;
-
-        /* configure DMA Tx descriptor table address register */
-        ENET_DMA_TDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_txdesc = desc_tab;
-        dma_current_ptp_txdesc = desc_ptptab;
-    } else {
-        /* if want to initialize DMA Rx descriptors */
-        /* save a copy of the DMA Rx descriptors */
-        desc_tab = rxdesc_tab;
-        buf = &rx_buff[0][0];
-        count = ENET_RXBUF_NUM;
-        maxsize = ENET_RXBUF_SIZE;
-
-        /* enable receiving */
-        desc_status = ENET_RDES0_DAV;
-        /* select receive chained mode and set buffer1 size */
-        desc_bufsize = ENET_RDES1_RCHM | (uint32_t)ENET_RXBUF_SIZE;
-
-        /* configure DMA Rx descriptor table address register */
-        ENET_DMA_RDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_rxdesc = desc_tab;
-        dma_current_ptp_rxdesc = desc_ptptab;
-    }
-
-    /* configure each descriptor */
-    for(num = 0U; num < count; num++) {
-        /* get the pointer to the next descriptor of the descriptor table */
-        desc = desc_tab + num;
-
-        /* configure descriptors */
-        desc->status = desc_status;
-        desc->control_buffer_size = desc_bufsize;
-        desc->buffer1_addr = (uint32_t)(&buf[num * maxsize]);
-
-        /* if is not the last descriptor */
-        if(num < (count - 1U)) {
-            /* configure the next descriptor address */
-            desc->buffer2_next_desc_addr = (uint32_t)(desc_tab + num + 1U);
-        } else {
-            /* when it is the last descriptor, the next descriptor address
-            equals to first descriptor address in descriptor table */
-            desc->buffer2_next_desc_addr = (uint32_t)desc_tab;
-        }
-        /* set desc_ptptab equal to desc_tab */
-        (&desc_ptptab[num])->buffer1_addr = desc->buffer1_addr;
-        (&desc_ptptab[num])->buffer2_next_desc_addr = desc->buffer2_next_desc_addr;
-    }
-    /* when it is the last ptp descriptor, preserve the first descriptor
-    address of desc_ptptab in ptp descriptor status */
-    (&desc_ptptab[num - 1U])->status = (uint32_t)desc_ptptab;
-}
-
-/*!
-    \brief      initialize the DMA Tx/Rx descriptors's parameters in normal ring mode with PTP function
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  direction: the descriptors which users want to init, refer to enet_dmadirection_enum,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_DMA_TX: DMA Tx descriptors
-      \arg        ENET_DMA_RX: DMA Rx descriptors
-    \param[in]  desc_ptptab: pointer to the first descriptor address of PTP Rx descriptor table
-    \param[out] none
-    \retval     none
-*/
-void enet_ptp_normal_descriptors_ring_init(uint32_t enet_periph, enet_dmadirection_enum direction, enet_descriptors_struct *desc_ptptab)
-{
-    uint32_t num = 0U, count = 0U, maxsize = 0U;
-    uint32_t desc_status = 0U, desc_bufsize = 0U;
-    enet_descriptors_struct *desc, *desc_tab;
-    uint8_t *buf;
-
-    /* configure descriptor skip length */
-    ENET_DMA_BCTL(enet_periph) &= ~ENET_DMA_BCTL_DPSL;
-    ENET_DMA_BCTL(enet_periph) |= DMA_BCTL_DPSL(0);
-
-    /* if want to initialize DMA Tx descriptors */
-    if(ENET_DMA_TX == direction) {
-        /* save a copy of the DMA Tx descriptors */
-        desc_tab = txdesc_tab;
-        buf = &tx_buff[0][0];
-        count = ENET_TXBUF_NUM;
-        maxsize = ENET_TXBUF_SIZE;
-
-        /* select ring mode, and enable transmit timestamp function */
-        desc_status = ENET_TDES0_TTSEN;
-
-        /* configure DMA Tx descriptor table address register */
-        ENET_DMA_TDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_txdesc = desc_tab;
-        dma_current_ptp_txdesc = desc_ptptab;
-    } else {
-        /* if want to initialize DMA Rx descriptors */
-        /* save a copy of the DMA Rx descriptors */
-        desc_tab = rxdesc_tab;
-        buf = &rx_buff[0][0];
-        count = ENET_RXBUF_NUM;
-        maxsize = ENET_RXBUF_SIZE;
-
-        /* enable receiving */
-        desc_status = ENET_RDES0_DAV;
-        /* select receive ring mode and set buffer1 size */
-        desc_bufsize = (uint32_t)ENET_RXBUF_SIZE;
-
-        /* configure DMA Rx descriptor table address register */
-        ENET_DMA_RDTADDR(enet_periph) = (uint32_t)desc_tab;
-        dma_current_rxdesc = desc_tab;
-        dma_current_ptp_rxdesc = desc_ptptab;
-    }
-
-    /* configure each descriptor */
-    for(num = 0U; num < count; num++) {
-        /* get the pointer to the next descriptor of the descriptor table */
-        desc = desc_tab + num;
-
-        /* configure descriptors */
-        desc->status = desc_status;
-        desc->control_buffer_size = desc_bufsize;
-        desc->buffer1_addr = (uint32_t)(&buf[num * maxsize]);
-
-        /* when it is the last descriptor */
-        if(num == (count - 1U)) {
-            if(ENET_DMA_TX == direction) {
-                /* configure transmit end of ring mode */
-                desc->status |= ENET_TDES0_TERM;
-            } else {
-                /* configure receive end of ring mode */
-                desc->control_buffer_size |= ENET_RDES1_RERM;
-            }
-        }
-        /* set desc_ptptab equal to desc_tab */
-        (&desc_ptptab[num])->buffer1_addr = desc->buffer1_addr;
-        (&desc_ptptab[num])->buffer2_next_desc_addr = desc->buffer2_next_desc_addr;
-    }
-    /* when it is the last ptp descriptor, preserve the first descriptor
-    address of desc_ptptab in ptp descriptor status */
-    (&desc_ptptab[num - 1U])->status = (uint32_t)desc_ptptab;
-}
-
-/*!
-    \brief      receive a packet data with timestamp values to application buffer, when the DMA is in normal mode
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  bufsize: the size of buffer which is the parameter in function
-    \param[out] timestamp: pointer to the table which stores the timestamp high and low
-    \param[out] buffer: pointer to the application buffer
-                note -- if the input is NULL, user should copy data in application by himself
-    \retval     ErrStatus: SUCCESS or ERROR
-*/
-ErrStatus enet_ptpframe_receive_normal_mode(uint32_t enet_periph, uint8_t buffer[], uint32_t bufsize, uint32_t timestamp[])
-{
-    uint32_t offset = 0U, size = 0U;
-
-    /* the descriptor is busy due to own by the DMA */
-    if((uint32_t)RESET != (dma_current_rxdesc->status & ENET_RDES0_DAV)) {
-        return ERROR;
-    }
-
-    /* if buffer pointer is null, indicates that users has copied data in application */
-    if(NULL != buffer) {
-        /* if no error occurs, and the frame uses only one descriptor */
-        if(((uint32_t)RESET == (dma_current_rxdesc->status & ENET_RDES0_ERRS)) &&
-                ((uint32_t)RESET != (dma_current_rxdesc->status & ENET_RDES0_LDES)) &&
-                ((uint32_t)RESET != (dma_current_rxdesc->status & ENET_RDES0_FDES))) {
-
-            /* get the frame length except CRC */
-            size = GET_RDES0_FRML(dma_current_rxdesc->status) - 4U;
-            /* if is a type frame, and CRC is not included in forwarding frame */
-            if((RESET != (ENET_MAC_CFG(enet_periph) & ENET_MAC_CFG_TFCD)) && (RESET != (dma_current_rxdesc->status & ENET_RDES0_FRMT))) {
-                size = size + 4U;
-            }
-
-            /* to avoid situation that the frame size exceeds the buffer length */
-            if(size > bufsize) {
-                return ERROR;
-            }
-
-            /* copy data from Rx buffer to application buffer */
-            for(offset = 0U; offset < size; offset++) {
-                (*(buffer + offset)) = (*(__IO uint8_t *)(uint32_t)((dma_current_ptp_rxdesc->buffer1_addr) + offset));
-            }
-
-        } else {
-            return ERROR;
-        }
-    }
-    /* copy timestamp value from Rx descriptor to application array */
-    timestamp[0] = dma_current_rxdesc->buffer1_addr;
-    timestamp[1] = dma_current_rxdesc->buffer2_next_desc_addr;
-
-    dma_current_rxdesc->buffer1_addr = dma_current_ptp_rxdesc ->buffer1_addr ;
-    dma_current_rxdesc->buffer2_next_desc_addr = dma_current_ptp_rxdesc ->buffer2_next_desc_addr;
-
-    /* enable reception, descriptor is owned by DMA */
-    dma_current_rxdesc->status = ENET_RDES0_DAV;
-
-    /* check Rx buffer unavailable flag status */
-    if((uint32_t)RESET != (ENET_DMA_STAT(enet_periph) & ENET_DMA_STAT_RBU)) {
-        /* clear RBU flag */
-        ENET_DMA_STAT(enet_periph) = ENET_DMA_STAT_RBU;
-        /* resume DMA reception by writing to the RPEN register*/
-        ENET_DMA_RPEN(enet_periph) = 0U;
-    }
-
-    /* update the current RxDMA descriptor pointer to the next decriptor in RxDMA decriptor table */
-    /* chained mode */
-    if((uint32_t)RESET != (dma_current_rxdesc->control_buffer_size & ENET_RDES1_RCHM)) {
-        dma_current_rxdesc = (enet_descriptors_struct *)(dma_current_ptp_rxdesc->buffer2_next_desc_addr);
-        /* if it is the last ptp descriptor */
-        if(0U != dma_current_ptp_rxdesc->status) {
-            /* pointer back to the first ptp descriptor address in the desc_ptptab list address */
-            dma_current_ptp_rxdesc = (enet_descriptors_struct *)(dma_current_ptp_rxdesc->status);
-        } else {
-            /* ponter to the next ptp descriptor */
-            dma_current_ptp_rxdesc++;
-        }
-    } else {
-        /* ring mode */
-        if((uint32_t)RESET != (dma_current_rxdesc->control_buffer_size & ENET_RDES1_RERM)) {
-            /* if is the last descriptor in table, the next descriptor is the table header */
-            dma_current_rxdesc = (enet_descriptors_struct *)(ENET_DMA_RDTADDR(enet_periph));
-            /* RDES2 and RDES3 will not be covered by buffer address, so do not need to preserve a new table,
-            use the same table with RxDMA descriptor */
-            dma_current_ptp_rxdesc = (enet_descriptors_struct *)(dma_current_ptp_rxdesc->status);
-        } else {
-            /* the next descriptor is the current address, add the descriptor size, and descriptor skip length */
-            dma_current_rxdesc = (enet_descriptors_struct *)(uint32_t)((uint32_t)dma_current_rxdesc + ETH_DMARXDESC_SIZE + GET_DMA_BCTL_DPSL(ENET_DMA_BCTL(
-                                     enet_periph)));
-            dma_current_ptp_rxdesc ++;
-        }
-    }
-
-    return SUCCESS;
-}
-
-/*!
-    \brief      send data with timestamp values in application buffer as a transmit packet, when the DMA is in normal mode
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  buffer: pointer on the application buffer
-                note -- if the input is NULL, user should copy data in application by himself
-    \param[in]  length: the length of frame data to be transmitted
-    \param[out] timestamp: pointer to the table which stores the timestamp high and low
-                note -- if the input is NULL, timestamp is ignored
-    \retval     ErrStatus: SUCCESS or ERROR
-*/
-ErrStatus enet_ptpframe_transmit_normal_mode(uint32_t enet_periph, uint8_t buffer[], uint32_t length, uint32_t timestamp[])
-{
-    uint32_t offset = 0U, timeout = 0U;
-    uint32_t dma_tbu_flag, dma_tu_flag, tdes0_ttmss_flag;
-
-    /* the descriptor is busy due to own by the DMA */
-    if((uint32_t)RESET != (dma_current_txdesc->status & ENET_TDES0_DAV)) {
-        return ERROR;
-    }
-
-    /* only frame length no more than ENET_MAX_FRAME_SIZE is allowed */
-    if(length > ENET_MAX_FRAME_SIZE) {
-        return ERROR;
-    }
-
-    /* if buffer pointer is null, indicates that users has handled data in application */
-    if(NULL != buffer) {
-        /* copy frame data from application buffer to Tx buffer */
-        for(offset = 0U; offset < length; offset++) {
-            (*(__IO uint8_t *)(uint32_t)((dma_current_ptp_txdesc->buffer1_addr) + offset)) = (*(buffer + offset));
-        }
-    }
-    /* set the frame length */
-    dma_current_txdesc->control_buffer_size = (length & (uint32_t)0x00001FFFU);
-    /* set the segment of frame, frame is transmitted in one descriptor */
-    dma_current_txdesc->status |= ENET_TDES0_LSG | ENET_TDES0_FSG;
-    /* enable the DMA transmission */
-    dma_current_txdesc->status |= ENET_TDES0_DAV;
-
-    /* check Tx buffer unavailable flag status */
-    dma_tbu_flag = (ENET_DMA_STAT(enet_periph) & ENET_DMA_STAT_TBU);
-    dma_tu_flag = (ENET_DMA_STAT(enet_periph) & ENET_DMA_STAT_TU);
-
-    if((RESET != dma_tbu_flag) || (RESET != dma_tu_flag)) {
-        /* clear TBU and TU flag */
-        ENET_DMA_STAT(enet_periph) = (dma_tbu_flag | dma_tu_flag);
-        /* resume DMA transmission by writing to the TPEN register*/
-        ENET_DMA_TPEN(enet_periph) = 0U;
-    }
-
-    /* if timestamp pointer is null, indicates that users don't care timestamp in application */
-    if(NULL != timestamp) {
-        /* wait for ENET_TDES0_TTMSS flag to be set, a timestamp was captured */
-        do {
-            tdes0_ttmss_flag = (dma_current_txdesc->status & ENET_TDES0_TTMSS);
-            timeout++;
-        } while((RESET == tdes0_ttmss_flag) && (timeout < ENET_DELAY_TO));
-
-        /* return ERROR due to timeout */
-        if(ENET_DELAY_TO == timeout) {
-            return ERROR;
-        }
-
-        /* clear the ENET_TDES0_TTMSS flag */
-        dma_current_txdesc->status &= ~ENET_TDES0_TTMSS;
-        /* get the timestamp value of the transmit frame */
-        timestamp[0] = dma_current_txdesc->buffer1_addr;
-        timestamp[1] = dma_current_txdesc->buffer2_next_desc_addr;
-    }
-    dma_current_txdesc->buffer1_addr = dma_current_ptp_txdesc ->buffer1_addr ;
-    dma_current_txdesc->buffer2_next_desc_addr = dma_current_ptp_txdesc ->buffer2_next_desc_addr;
-
-    /* update the current TxDMA descriptor pointer to the next decriptor in TxDMA decriptor table */
-    /* chained mode */
-    if((uint32_t)RESET != (dma_current_txdesc->status & ENET_TDES0_TCHM)) {
-        dma_current_txdesc = (enet_descriptors_struct *)(dma_current_ptp_txdesc->buffer2_next_desc_addr);
-        /* if it is the last ptp descriptor */
-        if(0U != dma_current_ptp_txdesc->status) {
-            /* pointer back to the first ptp descriptor address in the desc_ptptab list address */
-            dma_current_ptp_txdesc = (enet_descriptors_struct *)(dma_current_ptp_txdesc->status);
-        } else {
-            /* ponter to the next ptp descriptor */
-            dma_current_ptp_txdesc++;
-        }
-    } else {
-        /* ring mode */
-        if((uint32_t)RESET != (dma_current_txdesc->status & ENET_TDES0_TERM)) {
-            /* if is the last descriptor in table, the next descriptor is the table header */
-            dma_current_txdesc = (enet_descriptors_struct *)(ENET_DMA_TDTADDR(enet_periph));
-            /* TDES2 and TDES3 will not be covered by buffer address, so do not need to preserve a new table,
-            use the same table with TxDMA descriptor */
-            dma_current_ptp_txdesc = (enet_descriptors_struct *)(dma_current_ptp_txdesc->status);
-        } else {
-            /* the next descriptor is the current address, add the descriptor size, and descriptor skip length */
-            dma_current_txdesc = (enet_descriptors_struct *)(uint32_t)((uint32_t)dma_current_txdesc + ETH_DMATXDESC_SIZE + GET_DMA_BCTL_DPSL(ENET_DMA_BCTL(
-                                     enet_periph)));
-            dma_current_ptp_txdesc ++;
-        }
-    }
-    return SUCCESS;
-}
-
 #endif /* SELECT_DESCRIPTORS_ENHANCED_MODE */
 
 /*!
-    \brief      wakeup frame filter register pointer reset
+    \brief      wakeup frame filter register pointer reset (API_ID(0x0026U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     none
@@ -2870,7 +1354,7 @@ void enet_wum_filter_register_pointer_reset(uint32_t enet_periph)
 }
 
 /*!
-    \brief      set the remote wakeup frame registers
+    \brief      set the remote wakeup frame registers (API_ID(0x0027U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  pdata: pointer to buffer data which is written to remote wakeup frame registers (8 words total)
     \param[out] none
@@ -2887,7 +1371,7 @@ void enet_wum_filter_config(uint32_t enet_periph, uint32_t pdata[])
 }
 
 /*!
-    \brief      enable wakeup management features
+    \brief      enable wakeup management features (API_ID(0x0028U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: one or more parameters can be selected which are shown as below
       \arg        ENET_WUM_POWER_DOWN: power down mode
@@ -2899,11 +1383,11 @@ void enet_wum_filter_config(uint32_t enet_periph, uint32_t pdata[])
 */
 void enet_wum_feature_enable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_MAC_WUM(enet_periph) |= feature;
+    ENET_MAC_WUM(enet_periph) |= (feature & WUM_FEATURE_EN_MASK);
 }
 
 /*!
-    \brief      disable wakeup management features
+    \brief      disable wakeup management features (API_ID(0x0029U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: one or more parameters can be selected which are shown as below
       \arg        ENET_WUM_MAGIC_PACKET_FRAME: enable a wakeup event due to magic packet reception
@@ -2914,11 +1398,11 @@ void enet_wum_feature_enable(uint32_t enet_periph, uint32_t feature)
 */
 void enet_wum_feature_disable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_MAC_WUM(enet_periph) &= (~feature);
+    ENET_MAC_WUM(enet_periph) &= ~(feature & WUM_FEATURE_DIS_MASK);
 }
 
 /*!
-    \brief      reset the MAC statistics counters
+    \brief      reset the MAC statistics counters (API_ID(0x002AU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] none
     \retval     none
@@ -2930,7 +1414,7 @@ void enet_msc_counters_reset(uint32_t enet_periph)
 }
 
 /*!
-    \brief      enable the MAC statistics counter features
+    \brief      enable the MAC statistics counter features (API_ID(0x002BU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: one or more parameters can be selected which are shown as below
       \arg        ENET_MSC_COUNTER_STOP_ROLLOVER: counter stop rollover
@@ -2941,11 +1425,11 @@ void enet_msc_counters_reset(uint32_t enet_periph)
 */
 void enet_msc_feature_enable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_MSC_CTL(enet_periph) |= feature;
+    ENET_MSC_CTL(enet_periph) |= (feature & MSC_FEATURE_MASK);
 }
 
 /*!
-    \brief      disable the MAC statistics counter features
+    \brief      disable the MAC statistics counter features (API_ID(0x002CU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: one or more parameters can be selected which are shown as below
       \arg        ENET_MSC_COUNTER_STOP_ROLLOVER: counter stop rollover
@@ -2956,11 +1440,11 @@ void enet_msc_feature_enable(uint32_t enet_periph, uint32_t feature)
 */
 void enet_msc_feature_disable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_MSC_CTL(enet_periph) &= (~feature);
+    ENET_MSC_CTL(enet_periph) &= ~(feature & MSC_FEATURE_MASK);
 }
 
 /*!
-    \brief      configure MAC statistics counters preset mode
+    \brief      configure MAC statistics counters preset mode (API_ID(0x002DU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  mode: MSC counters preset mode, refer to enet_msc_preset_enum,
                 only one parameter can be selected which is shown as below
@@ -2977,7 +1461,7 @@ void enet_msc_counters_preset_config(uint32_t enet_periph, enet_msc_preset_enum 
 }
 
 /*!
-    \brief      get MAC statistics counter
+    \brief      get MAC statistics counter (API_ID(0x002EU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  counter: MSC counters which is selected, refer to enet_msc_counter_enum,
                 only one parameter can be selected which is shown as below
@@ -2998,33 +1482,7 @@ uint32_t enet_msc_counters_get(uint32_t enet_periph, enet_msc_counter_enum count
 }
 
 /*!
-    \brief      change subsecond to nanosecond
-    \param[in]  subsecond: subsecond value
-    \param[out] none
-    \retval     the nanosecond value
-*/
-uint32_t enet_ptp_subsecond_2_nanosecond(uint32_t subsecond)
-{
-    uint64_t val = subsecond * 1000000000Ull;
-    val >>= 31U;
-    return (uint32_t)val;
-}
-
-/*!
-    \brief      change nanosecond to subsecond
-    \param[in]  nanosecond: nanosecond value
-    \param[out] none
-    \retval     the subsecond value
-*/
-uint32_t enet_ptp_nanosecond_2_subsecond(uint32_t nanosecond)
-{
-    uint64_t val = nanosecond * 0x80000000Ull;
-    val /= 1000000000U;
-    return (uint32_t)val;
-}
-
-/*!
-    \brief      enable the PTP features
+    \brief      enable the PTP features (API_ID(0x002FU))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: the feature of ENET PTP mode
                 one or more parameters can be selected which are shown as below
@@ -3040,11 +1498,11 @@ uint32_t enet_ptp_nanosecond_2_subsecond(uint32_t nanosecond)
 */
 void enet_ptp_feature_enable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_PTP_TSCTL(enet_periph) |= feature;
+    ENET_PTP_TSCTL(enet_periph) |= (feature & PTP_FAETURE_MASK);
 }
 
 /*!
-    \brief      disable the PTP features
+    \brief      disable the PTP features (API_ID(0x0030U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  feature: the feature of ENET PTP mode
                 one or more parameters can be selected which are shown as below
@@ -3060,11 +1518,11 @@ void enet_ptp_feature_enable(uint32_t enet_periph, uint32_t feature)
 */
 void enet_ptp_feature_disable(uint32_t enet_periph, uint32_t feature)
 {
-    ENET_PTP_TSCTL(enet_periph) &= ~feature;
+    ENET_PTP_TSCTL(enet_periph) &= ~(feature & PTP_FAETURE_MASK);
 }
 
 /*!
-    \brief      configure the PTP timestamp function
+    \brief      configure the PTP timestamp function (API_ID(0x0031U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  func: only one parameter can be selected which is shown as below
       \arg        ENET_CKNT_ORDINARY: type of ordinary clock node type for timestamp
@@ -3155,7 +1613,7 @@ ErrStatus enet_ptp_timestamp_function_config(uint32_t enet_periph, enet_ptp_func
 }
 
 /*!
-    \brief      configure system time subsecond increment value
+    \brief      configure system time subsecond increment value (API_ID(0x0032U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  subsecond: the value will be added to the subsecond value of system time,
                 this value must be between 0 and 0xFF
@@ -3168,7 +1626,7 @@ void enet_ptp_subsecond_increment_config(uint32_t enet_periph, uint32_t subsecon
 }
 
 /*!
-    \brief      adjusting the clock frequency only in fine update mode
+    \brief      adjusting the clock frequency only in fine update mode (API_ID(0x0033U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  add: the value will be added to the accumulator register to achieve time synchronization
     \param[out] none
@@ -3180,7 +1638,7 @@ void enet_ptp_timestamp_addend_config(uint32_t enet_periph, uint32_t add)
 }
 
 /*!
-    \brief      initialize or add/subtract to second of the system time
+    \brief      initialize or add/subtract to second of the system time (API_ID(0x0034U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  sign: timestamp update positive or negative sign,
                 only one parameter can be selected which is shown as below
@@ -3199,7 +1657,7 @@ void enet_ptp_timestamp_update_config(uint32_t enet_periph, uint32_t sign, uint3
 }
 
 /*!
-    \brief      configure the expected target time
+    \brief      configure the expected target time (API_ID(0x0035U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  second: the expected target second time
     \param[in]  nanosecond: the expected target nanosecond time (signed)
@@ -3213,7 +1671,7 @@ void enet_ptp_expected_time_config(uint32_t enet_periph, uint32_t second, uint32
 }
 
 /*!
-    \brief      get the current system time
+    \brief      get the current system time (API_ID(0x0036U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[out] systime_struct: pointer to a enet_ptp_systime_struct structure which contains
                 parameters of PTP system time
@@ -3227,19 +1685,27 @@ void enet_ptp_system_time_get(uint32_t enet_periph, enet_ptp_systime_struct *sys
 {
     uint32_t temp_sec = 0U, temp_subs = 0U;
 
-    /* get the value of sysytem time registers */
-    temp_sec = (uint32_t)ENET_PTP_TSH(enet_periph);
-    temp_subs = (uint32_t)ENET_PTP_TSL(enet_periph);
+#ifdef FW_DEBUG_ERR_REPORT
+    /* check parameter */
+    if(NOT_VALID_POINTER(systime_struct)) {
+        fw_debug_report_err(ENET_MODULE_ID, API_ID(0x0036), ERR_PARAM_POINTER);
+    } else
+#endif
+    {
+        /* get the value of system time registers */
+        temp_sec = (uint32_t)ENET_PTP_TSH(enet_periph);
+        temp_subs = (uint32_t)ENET_PTP_TSL(enet_periph);
 
-    /* get sysytem time and construct the enet_ptp_systime_struct structure */
-    systime_struct->second = temp_sec;
-    systime_struct->nanosecond = GET_PTP_TSL_STMSS(temp_subs);
-    systime_struct->nanosecond = enet_ptp_subsecond_2_nanosecond(systime_struct->nanosecond);
-    systime_struct->sign = GET_PTP_TSL_STS(temp_subs);
+        /* get system time and construct the enet_ptp_systime_struct structure */
+        systime_struct->second = temp_sec;
+        systime_struct->nanosecond = GET_PTP_TSL_STMSS(temp_subs);
+        systime_struct->nanosecond = enet_ptp_subsecond_2_nanosecond(systime_struct->nanosecond);
+        systime_struct->sign = GET_PTP_TSL_STS(temp_subs);
+    }
 }
 
 /*!
-    \brief      configure the PPS output frequency
+    \brief      configure the PPS output frequency (API_ID(0x0037U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  freq: PPS output frequency,
                 only one parameter can be selected which is shown as below
@@ -3264,132 +1730,11 @@ void enet_ptp_system_time_get(uint32_t enet_periph, enet_ptp_systime_struct *sys
 */
 void enet_ptp_pps_output_frequency_config(uint32_t enet_periph, uint32_t freq)
 {
-    ENET_PTP_PPSCTL(enet_periph) = freq;
+    ENET_PTP_PPSCTL(enet_periph) = (freq & ENET_PTP_PPSCTL_PPSOFC);
 }
 
 /*!
-    \brief      configure and start PTP timestamp counter
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  updatemethod: method for updating
-      \arg        ENET_PTP_FINEMODE: fine correction method
-      \arg        ENET_PTP_COARSEMODE: coarse correction method
-    \param[in]  init_sec: second value for initializing system time
-    \param[in]  init_subsec: subsecond value for initializing system time
-    \param[in]  carry_cfg: the value to be added to the accumulator register (in fine method is used)
-    \param[in]  accuracy_cfg: the value to be added to the subsecond value of system time
-    \param[out] none
-    \retval     none
-*/
-void enet_ptp_start(uint32_t enet_periph, int32_t updatemethod, uint32_t init_sec, uint32_t init_subsec, uint32_t carry_cfg, uint32_t accuracy_cfg)
-{
-    /* mask the timestamp trigger interrupt */
-    enet_interrupt_disable(enet_periph, ENET_MAC_INT_TMSTIM);
-
-    /* enable timestamp */
-    enet_ptp_feature_enable(enet_periph, ENET_ALL_RX_TIMESTAMP | ENET_RXTX_TIMESTAMP);
-
-    /* configure system time subsecond increment based on the PTP clock frequency */
-    enet_ptp_subsecond_increment_config(enet_periph, accuracy_cfg);
-
-    if(ENET_PTP_FINEMODE == updatemethod) {
-        /* fine correction method: configure the timestamp addend, then update */
-        enet_ptp_timestamp_addend_config(enet_periph, carry_cfg);
-        enet_ptp_timestamp_function_config(enet_periph, ENET_PTP_ADDEND_UPDATE);
-        /* wait until update is completed */
-        while(SET == enet_ptp_flag_get(enet_periph, (uint32_t)ENET_PTP_ADDEND_UPDATE)) {
-        }
-    }
-
-    /* choose the fine correction method */
-    enet_ptp_timestamp_function_config(enet_periph, (enet_ptp_function_enum)updatemethod);
-
-    /* initialize the system time */
-    enet_ptp_timestamp_update_config(enet_periph, ENET_PTP_ADD_TO_TIME, init_sec, init_subsec);
-    enet_ptp_timestamp_function_config(enet_periph, ENET_PTP_SYSTIME_INIT);
-
-#ifdef SELECT_DESCRIPTORS_ENHANCED_MODE
-    enet_desc_select_enhanced_mode(enet_periph);
-#endif /* SELECT_DESCRIPTORS_ENHANCED_MODE */
-}
-
-/*!
-    \brief      adjust frequency in fine method by configure addend register
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  carry_cfg: the value to be added to the accumulator register
-    \param[out] none
-    \retval     none
-*/
-void enet_ptp_finecorrection_adjfreq(uint32_t enet_periph, int32_t carry_cfg)
-{
-    /* re-configure the timestamp addend, then update */
-    enet_ptp_timestamp_addend_config(enet_periph, (uint32_t)carry_cfg);
-    enet_ptp_timestamp_function_config(enet_periph, ENET_PTP_ADDEND_UPDATE);
-}
-
-/*!
-    \brief      update system time in coarse method
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  systime_struct: : pointer to a enet_ptp_systime_struct structure which contains
-                parameters of PTP system time
-                members of the structure and the member values are shown as below:
-                  second: 0x0 - 0xFFFF FFFF
-                  nanosecond: 0x0 - 0x7FFF FFFF * 10^9 / 2^31
-                  sign: ENET_PTP_TIME_POSITIVE, ENET_PTP_TIME_NEGATIVE
-    \param[out] none
-    \retval     none
-*/
-void enet_ptp_coarsecorrection_systime_update(uint32_t enet_periph, enet_ptp_systime_struct *systime_struct)
-{
-    uint32_t subsecond_val;
-    uint32_t carry_cfg;
-
-    subsecond_val = enet_ptp_nanosecond_2_subsecond(systime_struct->nanosecond);
-
-    /* save the carry_cfg value */
-    carry_cfg = ENET_PTP_TSADDEND_TMSA;
-
-    /* update the system time */
-    enet_ptp_timestamp_update_config(enet_periph, systime_struct->sign, systime_struct->second, subsecond_val);
-    enet_ptp_timestamp_function_config(enet_periph, ENET_PTP_SYSTIME_UPDATE);
-
-    /* wait until the update is completed */
-    while(SET == enet_ptp_flag_get(enet_periph, (uint32_t)ENET_PTP_SYSTIME_UPDATE)) {
-    }
-
-    /* write back the carry_cfg value, then update */
-    enet_ptp_timestamp_addend_config(enet_periph, carry_cfg);
-    enet_ptp_timestamp_function_config(enet_periph, ENET_PTP_ADDEND_UPDATE);
-}
-
-/*!
-    \brief      set system time in fine method
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  systime_struct: : pointer to a enet_ptp_systime_struct structure which contains
-                parameters of PTP system time
-                members of the structure and the member values are shown as below:
-                  second: 0x0 - 0xFFFF FFFF
-                  nanosecond: 0x0 - 0x7FFF FFFF * 10^9 / 2^31
-                  sign: ENET_PTP_TIME_POSITIVE, ENET_PTP_TIME_NEGATIVE
-    \param[out] none
-    \retval     none
-*/
-void enet_ptp_finecorrection_settime(uint32_t enet_periph, enet_ptp_systime_struct *systime_struct)
-{
-    uint32_t subsecond_val;
-
-    subsecond_val = enet_ptp_nanosecond_2_subsecond(systime_struct->nanosecond);
-
-    /* initialize the system time */
-    enet_ptp_timestamp_update_config(enet_periph, systime_struct->sign, systime_struct->second, subsecond_val);
-    enet_ptp_timestamp_function_config(enet_periph, ENET_PTP_SYSTIME_INIT);
-
-    /* wait until the system time initialzation finished */
-    while(SET == enet_ptp_flag_get(enet_periph, (uint32_t)ENET_PTP_SYSTIME_INIT)) {
-    }
-}
-
-/*!
-    \brief      get the ptp flag status
+    \brief      get the ptp flag status (API_ID(0x0038U))
     \param[in]  enet_periph: ENETx(x=0,1)
     \param[in]  flag: ptp flag status to be checked
       \arg        ENET_PTP_ADDEND_UPDATE: addend register update
@@ -3410,28 +1755,249 @@ FlagStatus enet_ptp_flag_get(uint32_t enet_periph, uint32_t flag)
 }
 
 /*!
-    \brief      reset the ENET initpara struct, call it before using enet_initpara_config()
-    \param[in]  none
+    \brief      get the ENET MAC/MSC/PTP/DMA status flag (API_ID(0x0039U))
+    \param[in]  enet_periph: ENETx(x=0,1)
+    \param[in]  enet_flag: ENET status flag, refer to enet_flag_enum,
+                only one parameter can be selected which is shown as below
+      \arg        ENET_MAC_FLAG_MPKR: magic packet received flag
+      \arg        ENET_MAC_FLAG_WUFR: wakeup frame received flag
+      \arg        ENET_MAC_FLAG_FLOWCONTROL: flow control status flag
+      \arg        ENET_MAC_FLAG_WUM: WUM status flag
+      \arg        ENET_MAC_FLAG_MSC: MSC status flag
+      \arg        ENET_MAC_FLAG_MSCR: MSC receive status flag
+      \arg        ENET_MAC_FLAG_MSCT: MSC transmit status flag
+      \arg        ENET_MAC_FLAG_TMST: time stamp trigger status flag
+      \arg        ENET_PTP_FLAG_TSSCO: timestamp second counter overflow flag
+      \arg        ENET_PTP_FLAG_TTM: target time match flag
+      \arg        ENET_MSC_FLAG_RFCE: received frames CRC error flag
+      \arg        ENET_MSC_FLAG_RFAE: received frames alignment error flag
+      \arg        ENET_MSC_FLAG_RGUF: received good unicast frames flag
+      \arg        ENET_MSC_FLAG_TGFSC: transmitted good frames single collision flag
+      \arg        ENET_MSC_FLAG_TGFMSC: transmitted good frames more single collision flag
+      \arg        ENET_MSC_FLAG_TGF: transmitted good frames flag
+      \arg        ENET_DMA_FLAG_TS: transmit status flag
+      \arg        ENET_DMA_FLAG_TPS: transmit process stopped status flag
+      \arg        ENET_DMA_FLAG_TBU: transmit buffer unavailable status flag
+      \arg        ENET_DMA_FLAG_TJT: transmit jabber timeout status flag
+      \arg        ENET_DMA_FLAG_RO: receive overflow status flag
+      \arg        ENET_DMA_FLAG_TU: transmit underflow status flag
+      \arg        ENET_DMA_FLAG_RS: receive status flag
+      \arg        ENET_DMA_FLAG_RBU: receive buffer unavailable status flag
+      \arg        ENET_DMA_FLAG_RPS: receive process stopped status flag
+      \arg        ENET_DMA_FLAG_RWT: receive watchdog timeout status flag
+      \arg        ENET_DMA_FLAG_ET: early transmit status flag
+      \arg        ENET_DMA_FLAG_FBE: fatal bus error status flag
+      \arg        ENET_DMA_FLAG_ER: early receive status flag
+      \arg        ENET_DMA_FLAG_AI: abnormal interrupt summary flag
+      \arg        ENET_DMA_FLAG_NI: normal interrupt summary flag
+      \arg        ENET_DMA_FLAG_EB_DMA_ERROR: DMA error flag
+      \arg        ENET_DMA_FLAG_EB_TRANSFER_ERROR: transfer error flag
+      \arg        ENET_DMA_FLAG_EB_ACCESS_ERROR: access error flag
+      \arg        ENET_DMA_FLAG_MSC: MSC status flag
+      \arg        ENET_DMA_FLAG_WUM: WUM status flag
+      \arg        ENET_DMA_FLAG_TST: timestamp trigger status flag
+    \param[out] none
+    \retval     FlagStatus: SET or RESET
+*/
+FlagStatus enet_flag_get(uint32_t enet_periph, enet_flag_enum enet_flag)
+{
+    FlagStatus status = RESET;
+    if(RESET != (ENET_REG_VAL(enet_periph, enet_flag) & BIT(ENET_BIT_POS(enet_flag)))) {
+        status = SET;
+    } else {
+        status = RESET;
+    }
+    return status;
+}
+
+/*!
+    \brief      clear the ENET DMA status flag (API_ID(0x003AU))
+    \param[in]  enet_periph: ENETx(x=0,1)
+    \param[in]  enet_flag: ENET DMA flag clear, refer to enet_flag_clear_enum
+                only one parameter can be selected which is shown as below
+      \arg        ENET_DMA_FLAG_TS_CLR: transmit status flag clear
+      \arg        ENET_DMA_FLAG_TPS_CLR: transmit process stopped status flag clear
+      \arg        ENET_DMA_FLAG_TBU_CLR: transmit buffer unavailable status flag clear
+      \arg        ENET_DMA_FLAG_TJT_CLR: transmit jabber timeout status flag clear
+      \arg        ENET_DMA_FLAG_RO_CLR: receive overflow status flag clear
+      \arg        ENET_DMA_FLAG_TU_CLR: transmit underflow status flag clear
+      \arg        ENET_DMA_FLAG_RS_CLR: receive status flag clear
+      \arg        ENET_DMA_FLAG_RBU_CLR: receive buffer unavailable status flag clear
+      \arg        ENET_DMA_FLAG_RPS_CLR: receive process stopped status flag clear
+      \arg        ENET_DMA_FLAG_RWT_CLR: receive watchdog timeout status flag clear
+      \arg        ENET_DMA_FLAG_ET_CLR: early transmit status flag clear
+      \arg        ENET_DMA_FLAG_FBE_CLR: fatal bus error status flag clear
+      \arg        ENET_DMA_FLAG_ER_CLR: early receive status flag clear
+      \arg        ENET_DMA_FLAG_AI_CLR: abnormal interrupt summary flag clear
+      \arg        ENET_DMA_FLAG_NI_CLR: normal interrupt summary flag clear
     \param[out] none
     \retval     none
 */
-void enet_initpara_reset(void)
+void enet_flag_clear(uint32_t enet_periph, enet_flag_clear_enum enet_flag)
 {
-    enet_initpara.option_enable = 0U;
-    enet_initpara.forward_frame = 0U;
-    enet_initpara.dmabus_mode = 0U;
-    enet_initpara.dma_maxburst = 0U;
-    enet_initpara.dma_arbitration = 0U;
-    enet_initpara.store_forward_mode = 0U;
-    enet_initpara.dma_function = 0U;
-    enet_initpara.vlan_config = 0U;
-    enet_initpara.flow_control = 0U;
-    enet_initpara.hashtable_high = 0U;
-    enet_initpara.hashtable_low = 0U;
-    enet_initpara.framesfilter_mode = 0U;
-    enet_initpara.halfduplex_param = 0U;
-    enet_initpara.timer_config = 0U;
-    enet_initpara.interframegap = 0U;
+    /* write 1 to the corresponding bit in ENET_DMA_STAT, to clear it */
+    ENET_REG_VAL(enet_periph, enet_flag) = BIT(ENET_BIT_POS(enet_flag));
+}
+
+/*!
+    \brief      enable ENET MAC/MSC/DMA interrupt (API_ID(0x003BU))
+    \param[in]  enet_periph: ENETx(x=0,1)
+    \param[in]  enet_int: ENET interrupt,
+                only one parameter can be selected which is shown as below
+      \arg        ENET_MAC_INT_WUMIM: WUM interrupt mask
+      \arg        ENET_MAC_INT_TMSTIM: timestamp trigger interrupt mask
+      \arg        ENET_MSC_INT_RFCEIM: received frame CRC error interrupt mask
+      \arg        ENET_MSC_INT_RFAEIM: received frames alignment error interrupt mask
+      \arg        ENET_MSC_INT_RGUFIM: received good unicast frames interrupt mask
+      \arg        ENET_MSC_INT_TGFSCIM: transmitted good frames single collision interrupt mask
+      \arg        ENET_MSC_INT_TGFMSCIM: transmitted good frames more single collision interrupt mask
+      \arg        ENET_MSC_INT_TGFIM: transmitted good frames interrupt mask
+      \arg        ENET_DMA_INT_TIE: transmit interrupt enable
+      \arg        ENET_DMA_INT_TPSIE: transmit process stopped interrupt enable
+      \arg        ENET_DMA_INT_TBUIE: transmit buffer unavailable interrupt enable
+      \arg        ENET_DMA_INT_TJTIE: transmit jabber timeout interrupt enable
+      \arg        ENET_DMA_INT_ROIE: receive overflow interrupt enable
+      \arg        ENET_DMA_INT_TUIE: transmit underflow interrupt enable
+      \arg        ENET_DMA_INT_RIE: receive interrupt enable
+      \arg        ENET_DMA_INT_RBUIE: receive buffer unavailable interrupt enable
+      \arg        ENET_DMA_INT_RPSIE: receive process stopped interrupt enable
+      \arg        ENET_DMA_INT_RWTIE: receive watchdog timeout interrupt enable
+      \arg        ENET_DMA_INT_ETIE: early transmit interrupt enable
+      \arg        ENET_DMA_INT_FBEIE: fatal bus error interrupt enable
+      \arg        ENET_DMA_INT_ERIE: early receive interrupt enable
+      \arg        ENET_DMA_INT_AIE: abnormal interrupt summary enable
+      \arg        ENET_DMA_INT_NIE: normal interrupt summary enable
+    \param[out] none
+    \retval     none
+*/
+void enet_interrupt_enable(uint32_t enet_periph, enet_int_enum enet_int)
+{
+    if(DMA_INTEN_REG_OFFSET == ((uint32_t)enet_int >> 6U)) {
+        /* ENET_DMA_INTEN register interrupt */
+        ENET_REG_VAL(enet_periph, enet_int) |= BIT(ENET_BIT_POS(enet_int));
+    } else {
+        /* other INTMSK register interrupt */
+        ENET_REG_VAL(enet_periph, enet_int) &= ~BIT(ENET_BIT_POS(enet_int));
+    }
+}
+
+/*!
+    \brief      disable ENET MAC/MSC/DMA interrupt (API_ID(0x003CU))
+    \param[in]  enet_periph: ENETx(x=0,1)
+    \param[in]  enet_int: ENET interrupt,
+                only one parameter can be selected which is shown as below
+      \arg        ENET_MAC_INT_WUMIM: WUM interrupt mask
+      \arg        ENET_MAC_INT_TMSTIM: timestamp trigger interrupt mask
+      \arg        ENET_MSC_INT_RFCEIM: received frame CRC error interrupt mask
+      \arg        ENET_MSC_INT_RFAEIM: received frames alignment error interrupt mask
+      \arg        ENET_MSC_INT_RGUFIM: received good unicast frames interrupt mask
+      \arg        ENET_MSC_INT_TGFSCIM: transmitted good frames single collision interrupt mask
+      \arg        ENET_MSC_INT_TGFMSCIM: transmitted good frames more single collision interrupt mask
+      \arg        ENET_MSC_INT_TGFIM: transmitted good frames interrupt mask
+      \arg        ENET_DMA_INT_TIE: transmit interrupt enable
+      \arg        ENET_DMA_INT_TPSIE: transmit process stopped interrupt enable
+      \arg        ENET_DMA_INT_TBUIE: transmit buffer unavailable interrupt enable
+      \arg        ENET_DMA_INT_TJTIE: transmit jabber timeout interrupt enable
+      \arg        ENET_DMA_INT_ROIE: receive overflow interrupt enable
+      \arg        ENET_DMA_INT_TUIE: transmit underflow interrupt enable
+      \arg        ENET_DMA_INT_RIE: receive interrupt enable
+      \arg        ENET_DMA_INT_RBUIE: receive buffer unavailable interrupt enable
+      \arg        ENET_DMA_INT_RPSIE: receive process stopped interrupt enable
+      \arg        ENET_DMA_INT_RWTIE: receive watchdog timeout interrupt enable
+      \arg        ENET_DMA_INT_ETIE: early transmit interrupt enable
+      \arg        ENET_DMA_INT_FBEIE: fatal bus error interrupt enable
+      \arg        ENET_DMA_INT_ERIE: early receive interrupt enable
+      \arg        ENET_DMA_INT_AIE: abnormal interrupt summary enable
+      \arg        ENET_DMA_INT_NIE: normal interrupt summary enable
+    \param[out] none
+    \retval     none
+*/
+void enet_interrupt_disable(uint32_t enet_periph, enet_int_enum enet_int)
+{
+    if(DMA_INTEN_REG_OFFSET == ((uint32_t)enet_int >> 6U)) {
+        /* ENET_DMA_INTEN register interrupt */
+        ENET_REG_VAL(enet_periph, enet_int) &= ~BIT(ENET_BIT_POS(enet_int));
+    } else {
+        /* other INTMSK register interrupt */
+        ENET_REG_VAL(enet_periph, enet_int) |= BIT(ENET_BIT_POS(enet_int));
+    }
+}
+
+/*!
+    \brief      get ENET MAC/MSC/DMA interrupt flag (API_ID(0x003DU))
+    \param[in]  enet_periph: ENETx(x=0,1)
+    \param[in]  int_flag: ENET interrupt flag,
+                only one parameter can be selected which is shown as below
+      \arg        ENET_MAC_INT_FLAG_WUM: WUM status flag
+      \arg        ENET_MAC_INT_FLAG_MSC: MSC status flag
+      \arg        ENET_MAC_INT_FLAG_MSCR: MSC receive status flag
+      \arg        ENET_MAC_INT_FLAG_MSCT: MSC transmit status flag
+      \arg        ENET_MAC_INT_FLAG_TMST: time stamp trigger status flag
+      \arg        ENET_MSC_INT_FLAG_RFCE: received frames CRC error flag
+      \arg        ENET_MSC_INT_FLAG_RFAE: received frames alignment error flag
+      \arg        ENET_MSC_INT_FLAG_RGUF: received good unicast frames flag
+      \arg        ENET_MSC_INT_FLAG_TGFSC: transmitted good frames single collision flag
+      \arg        ENET_MSC_INT_FLAG_TGFMSC: transmitted good frames more single collision flag
+      \arg        ENET_MSC_INT_FLAG_TGF: transmitted good frames flag
+      \arg        ENET_DMA_INT_FLAG_TS: transmit status flag
+      \arg        ENET_DMA_INT_FLAG_TPS: transmit process stopped status flag
+      \arg        ENET_DMA_INT_FLAG_TBU: transmit buffer unavailable status flag
+      \arg        ENET_DMA_INT_FLAG_TJT: transmit jabber timeout status flag
+      \arg        ENET_DMA_INT_FLAG_RO: receive overflow status flag
+      \arg        ENET_DMA_INT_FLAG_TU: transmit underflow status flag
+      \arg        ENET_DMA_INT_FLAG_RS: receive status flag
+      \arg        ENET_DMA_INT_FLAG_RBU: receive buffer unavailable status flag
+      \arg        ENET_DMA_INT_FLAG_RPS: receive process stopped status flag
+      \arg        ENET_DMA_INT_FLAG_RWT: receive watchdog timeout status flag
+      \arg        ENET_DMA_INT_FLAG_ET: early transmit status flag
+      \arg        ENET_DMA_INT_FLAG_FBE: fatal bus error status flag
+      \arg        ENET_DMA_INT_FLAG_ER: early receive status flag
+      \arg        ENET_DMA_INT_FLAG_AI: abnormal interrupt summary flag
+      \arg        ENET_DMA_INT_FLAG_NI: normal interrupt summary flag
+      \arg        ENET_DMA_INT_FLAG_MSC: MSC status flag
+      \arg        ENET_DMA_INT_FLAG_WUM: WUM status flag
+      \arg        ENET_DMA_INT_FLAG_TST: timestamp trigger status flag
+    \param[out] none
+    \retval     FlagStatus: SET or RESET
+*/
+FlagStatus enet_interrupt_flag_get(uint32_t enet_periph, enet_int_flag_enum int_flag)
+{
+    FlagStatus status = RESET;
+    if(RESET != (ENET_REG_VAL(enet_periph, int_flag) & BIT(ENET_BIT_POS(int_flag)))) {
+        status = SET;
+    } else {
+        status = RESET;
+    }
+    return status;
+}
+
+/*!
+    \brief      clear ENET DMA interrupt flag (API_ID(0x003EU))
+    \param[in]  enet_periph: ENETx(x=0,1)
+    \param[in]  int_flag_clear: clear ENET interrupt flag,
+                only one parameter can be selected which is shown as below
+      \arg        ENET_DMA_INT_FLAG_TS_CLR: transmit status flag
+      \arg        ENET_DMA_INT_FLAG_TPS_CLR: transmit process stopped status flag
+      \arg        ENET_DMA_INT_FLAG_TBU_CLR: transmit buffer unavailable status flag
+      \arg        ENET_DMA_INT_FLAG_TJT_CLR: transmit jabber timeout status flag
+      \arg        ENET_DMA_INT_FLAG_RO_CLR: receive overflow status flag
+      \arg        ENET_DMA_INT_FLAG_TU_CLR: transmit underflow status flag
+      \arg        ENET_DMA_INT_FLAG_RS_CLR: receive status flag
+      \arg        ENET_DMA_INT_FLAG_RBU_CLR: receive buffer unavailable status flag
+      \arg        ENET_DMA_INT_FLAG_RPS_CLR: receive process stopped status flag
+      \arg        ENET_DMA_INT_FLAG_RWT_CLR: receive watchdog timeout status flag
+      \arg        ENET_DMA_INT_FLAG_ET_CLR: early transmit status flag
+      \arg        ENET_DMA_INT_FLAG_FBE_CLR: fatal bus error status flag
+      \arg        ENET_DMA_INT_FLAG_ER_CLR: early receive status flag
+      \arg        ENET_DMA_INT_FLAG_AI_CLR: abnormal interrupt summary flag
+      \arg        ENET_DMA_INT_FLAG_NI_CLR: normal interrupt summary flag
+    \param[out] none
+    \retval     none
+*/
+void enet_interrupt_flag_clear(uint32_t enet_periph, enet_int_flag_clear_enum int_flag_clear)
+{
+    /* write 1 to the corresponding bit in ENET_DMA_STAT, to clear it */
+    ENET_REG_VAL(enet_periph, int_flag_clear) = BIT(ENET_BIT_POS(int_flag_clear));
 }
 
 /*!
@@ -3480,18 +2046,6 @@ static void enet_default_init(uint32_t enet_periph)
     /* configure ENET_MAC_VLT register */
     ENET_MAC_VLT(enet_periph) = ENET_VLANTAGCOMPARISON_16BIT | MAC_VLT_VLTI(0);
 
-    /* disable MAC interrupt */
-    ENET_MAC_INTMSK(enet_periph) |= ENET_MAC_INTMSK_TMSTIM | ENET_MAC_INTMSK_WUMIM;
-
-    /* MSC */
-    /* disable MSC Rx interrupt */
-    ENET_MSC_RINTMSK(enet_periph) |= ENET_MSC_RINTMSK_RFAEIM | ENET_MSC_RINTMSK_RFCEIM \
-                        | ENET_MSC_RINTMSK_RGUFIM;
-
-    /* disable MSC Tx interrupt */
-    ENET_MSC_TINTMSK(enet_periph) |= ENET_MSC_TINTMSK_TGFIM | ENET_MSC_TINTMSK_TGFMSCIM \
-                        | ENET_MSC_TINTMSK_TGFSCIM;
-
     /* DMA */
     /* configure ENET_DMA_CTL register */
     reg_value = ENET_DMA_CTL(enet_periph);
@@ -3512,262 +2066,17 @@ static void enet_default_init(uint32_t enet_periph)
     ENET_DMA_BCTL(enet_periph) = reg_value;
 }
 
-#ifndef USE_DELAY
 /*!
-    \brief      insert a delay time
-    \param[in]  ncount: specifies the delay time length
+    \brief      change subsecond to nanosecond
+    \param[in]  subsecond: subsecond value
     \param[out] none
-    \param[out] none
+    \retval     the nanosecond value
 */
-static void enet_delay(uint32_t ncount)
+static uint32_t enet_ptp_subsecond_2_nanosecond(uint32_t subsecond)
 {
-    __IO uint32_t delay_time = 0U;
-
-    for(delay_time = ncount; delay_time != 0U; delay_time--) {
-    }
-}
-#endif /* USE_DELAY */
-
-/*!
-    \brief      get the ENET MAC/MSC/PTP/DMA status flag
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  enet_flag: ENET status flag, refer to enet_flag_enum,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_MAC_FLAG_MPKR: magic packet received flag
-      \arg        ENET_MAC_FLAG_WUFR: wakeup frame received flag
-      \arg        ENET_MAC_FLAG_FLOWCONTROL: flow control status flag
-      \arg        ENET_MAC_FLAG_WUM: WUM status flag
-      \arg        ENET_MAC_FLAG_MSC: MSC status flag
-      \arg        ENET_MAC_FLAG_MSCR: MSC receive status flag
-      \arg        ENET_MAC_FLAG_MSCT: MSC transmit status flag
-      \arg        ENET_MAC_FLAG_TMST: time stamp trigger status flag
-      \arg        ENET_PTP_FLAG_TSSCO: timestamp second counter overflow flag
-      \arg        ENET_PTP_FLAG_TTM: target time match flag
-      \arg        ENET_MSC_FLAG_RFCE: received frames CRC error flag
-      \arg        ENET_MSC_FLAG_RFAE: received frames alignment error flag
-      \arg        ENET_MSC_FLAG_RGUF: received good unicast frames flag
-      \arg        ENET_MSC_FLAG_TGFSC: transmitted good frames single collision flag
-      \arg        ENET_MSC_FLAG_TGFMSC: transmitted good frames more single collision flag
-      \arg        ENET_MSC_FLAG_TGF: transmitted good frames flag
-      \arg        ENET_DMA_FLAG_TS: transmit status flag
-      \arg        ENET_DMA_FLAG_TPS: transmit process stopped status flag
-      \arg        ENET_DMA_FLAG_TBU: transmit buffer unavailable status flag
-      \arg        ENET_DMA_FLAG_TJT: transmit jabber timeout status flag
-      \arg        ENET_DMA_FLAG_RO: receive overflow status flag
-      \arg        ENET_DMA_FLAG_TU: transmit underflow status flag
-      \arg        ENET_DMA_FLAG_RS: receive status flag
-      \arg        ENET_DMA_FLAG_RBU: receive buffer unavailable status flag
-      \arg        ENET_DMA_FLAG_RPS: receive process stopped status flag
-      \arg        ENET_DMA_FLAG_RWT: receive watchdog timeout status flag
-      \arg        ENET_DMA_FLAG_ET: early transmit status flag
-      \arg        ENET_DMA_FLAG_FBE: fatal bus error status flag
-      \arg        ENET_DMA_FLAG_ER: early receive status flag
-      \arg        ENET_DMA_FLAG_AI: abnormal interrupt summary flag
-      \arg        ENET_DMA_FLAG_NI: normal interrupt summary flag
-      \arg        ENET_DMA_FLAG_EB_DMA_ERROR: DMA error flag
-      \arg        ENET_DMA_FLAG_EB_TRANSFER_ERROR: transfer error flag
-      \arg        ENET_DMA_FLAG_EB_ACCESS_ERROR: access error flag
-      \arg        ENET_DMA_FLAG_MSC: MSC status flag
-      \arg        ENET_DMA_FLAG_WUM: WUM status flag
-      \arg        ENET_DMA_FLAG_TST: timestamp trigger status flag
-    \param[out] none
-    \retval     FlagStatus: SET or RESET
-*/
-FlagStatus enet_flag_get(uint32_t enet_periph, enet_flag_enum enet_flag)
-{
-    if(RESET != (ENET_REG_VAL(enet_periph, enet_flag) & BIT(ENET_BIT_POS(enet_flag)))) {
-        return SET;
-    } else {
-        return RESET;
-    }
-}
-
-/*!
-    \brief      clear the ENET DMA status flag
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  enet_flag: ENET DMA flag clear, refer to enet_flag_clear_enum
-                only one parameter can be selected which is shown as below
-      \arg        ENET_DMA_FLAG_TS_CLR: transmit status flag clear
-      \arg        ENET_DMA_FLAG_TPS_CLR: transmit process stopped status flag clear
-      \arg        ENET_DMA_FLAG_TBU_CLR: transmit buffer unavailable status flag clear
-      \arg        ENET_DMA_FLAG_TJT_CLR: transmit jabber timeout status flag clear
-      \arg        ENET_DMA_FLAG_RO_CLR: receive overflow status flag clear
-      \arg        ENET_DMA_FLAG_TU_CLR: transmit underflow status flag clear
-      \arg        ENET_DMA_FLAG_RS_CLR: receive status flag clear
-      \arg        ENET_DMA_FLAG_RBU_CLR: receive buffer unavailable status flag clear
-      \arg        ENET_DMA_FLAG_RPS_CLR: receive process stopped status flag clear
-      \arg        ENET_DMA_FLAG_RWT_CLR: receive watchdog timeout status flag clear
-      \arg        ENET_DMA_FLAG_ET_CLR: early transmit status flag clear
-      \arg        ENET_DMA_FLAG_FBE_CLR: fatal bus error status flag clear
-      \arg        ENET_DMA_FLAG_ER_CLR: early receive status flag clear
-      \arg        ENET_DMA_FLAG_AI_CLR: abnormal interrupt summary flag clear
-      \arg        ENET_DMA_FLAG_NI_CLR: normal interrupt summary flag clear
-    \param[out] none
-    \retval     none
-*/
-void enet_flag_clear(uint32_t enet_periph, enet_flag_clear_enum enet_flag)
-{
-    /* write 1 to the corresponding bit in ENET_DMA_STAT, to clear it */
-    ENET_REG_VAL(enet_periph, enet_flag) = BIT(ENET_BIT_POS(enet_flag));
-}
-
-/*!
-    \brief      enable ENET MAC/MSC/DMA interrupt
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  enet_int: ENET interrupt,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_MAC_INT_WUMIM: WUM interrupt mask
-      \arg        ENET_MAC_INT_TMSTIM: timestamp trigger interrupt mask
-      \arg        ENET_MSC_INT_RFCEIM: received frame CRC error interrupt mask
-      \arg        ENET_MSC_INT_RFAEIM: received frames alignment error interrupt mask
-      \arg        ENET_MSC_INT_RGUFIM: received good unicast frames interrupt mask
-      \arg        ENET_MSC_INT_TGFSCIM: transmitted good frames single collision interrupt mask
-      \arg        ENET_MSC_INT_TGFMSCIM: transmitted good frames more single collision interrupt mask
-      \arg        ENET_MSC_INT_TGFIM: transmitted good frames interrupt mask
-      \arg        ENET_DMA_INT_TIE: transmit interrupt enable
-      \arg        ENET_DMA_INT_TPSIE: transmit process stopped interrupt enable
-      \arg        ENET_DMA_INT_TBUIE: transmit buffer unavailable interrupt enable
-      \arg        ENET_DMA_INT_TJTIE: transmit jabber timeout interrupt enable
-      \arg        ENET_DMA_INT_ROIE: receive overflow interrupt enable
-      \arg        ENET_DMA_INT_TUIE: transmit underflow interrupt enable
-      \arg        ENET_DMA_INT_RIE: receive interrupt enable
-      \arg        ENET_DMA_INT_RBUIE: receive buffer unavailable interrupt enable
-      \arg        ENET_DMA_INT_RPSIE: receive process stopped interrupt enable
-      \arg        ENET_DMA_INT_RWTIE: receive watchdog timeout interrupt enable
-      \arg        ENET_DMA_INT_ETIE: early transmit interrupt enable
-      \arg        ENET_DMA_INT_FBEIE: fatal bus error interrupt enable
-      \arg        ENET_DMA_INT_ERIE: early receive interrupt enable
-      \arg        ENET_DMA_INT_AIE: abnormal interrupt summary enable
-      \arg        ENET_DMA_INT_NIE: normal interrupt summary enable
-    \param[out] none
-    \retval     none
-*/
-void enet_interrupt_enable(uint32_t enet_periph, enet_int_enum enet_int)
-{
-    if(DMA_INTEN_REG_OFFSET == ((uint32_t)enet_int >> 6U)) {
-        /* ENET_DMA_INTEN register interrupt */
-        ENET_REG_VAL(enet_periph, enet_int) |= BIT(ENET_BIT_POS(enet_int));
-    } else {
-        /* other INTMSK register interrupt */
-        ENET_REG_VAL(enet_periph, enet_int) &= ~BIT(ENET_BIT_POS(enet_int));
-    }
-}
-
-/*!
-    \brief      disable ENET MAC/MSC/DMA interrupt
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  enet_int: ENET interrupt,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_MAC_INT_WUMIM: WUM interrupt mask
-      \arg        ENET_MAC_INT_TMSTIM: timestamp trigger interrupt mask
-      \arg        ENET_MSC_INT_RFCEIM: received frame CRC error interrupt mask
-      \arg        ENET_MSC_INT_RFAEIM: received frames alignment error interrupt mask
-      \arg        ENET_MSC_INT_RGUFIM: received good unicast frames interrupt mask
-      \arg        ENET_MSC_INT_TGFSCIM: transmitted good frames single collision interrupt mask
-      \arg        ENET_MSC_INT_TGFMSCIM: transmitted good frames more single collision interrupt mask
-      \arg        ENET_MSC_INT_TGFIM: transmitted good frames interrupt mask
-      \arg        ENET_DMA_INT_TIE: transmit interrupt enable
-      \arg        ENET_DMA_INT_TPSIE: transmit process stopped interrupt enable
-      \arg        ENET_DMA_INT_TBUIE: transmit buffer unavailable interrupt enable
-      \arg        ENET_DMA_INT_TJTIE: transmit jabber timeout interrupt enable
-      \arg        ENET_DMA_INT_ROIE: receive overflow interrupt enable
-      \arg        ENET_DMA_INT_TUIE: transmit underflow interrupt enable
-      \arg        ENET_DMA_INT_RIE: receive interrupt enable
-      \arg        ENET_DMA_INT_RBUIE: receive buffer unavailable interrupt enable
-      \arg        ENET_DMA_INT_RPSIE: receive process stopped interrupt enable
-      \arg        ENET_DMA_INT_RWTIE: receive watchdog timeout interrupt enable
-      \arg        ENET_DMA_INT_ETIE: early transmit interrupt enable
-      \arg        ENET_DMA_INT_FBEIE: fatal bus error interrupt enable
-      \arg        ENET_DMA_INT_ERIE: early receive interrupt enable
-      \arg        ENET_DMA_INT_AIE: abnormal interrupt summary enable
-      \arg        ENET_DMA_INT_NIE: normal interrupt summary enable
-    \param[out] none
-    \retval     none
-*/
-void enet_interrupt_disable(uint32_t enet_periph, enet_int_enum enet_int)
-{
-    if(DMA_INTEN_REG_OFFSET == ((uint32_t)enet_int >> 6U)) {
-        /* ENET_DMA_INTEN register interrupt */
-        ENET_REG_VAL(enet_periph, enet_int) &= ~BIT(ENET_BIT_POS(enet_int));
-    } else {
-        /* other INTMSK register interrupt */
-        ENET_REG_VAL(enet_periph, enet_int) |= BIT(ENET_BIT_POS(enet_int));
-    }
-}
-
-/*!
-    \brief      get ENET MAC/MSC/DMA interrupt flag
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  int_flag: ENET interrupt flag,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_MAC_INT_FLAG_WUM: WUM status flag
-      \arg        ENET_MAC_INT_FLAG_MSC: MSC status flag
-      \arg        ENET_MAC_INT_FLAG_MSCR: MSC receive status flag
-      \arg        ENET_MAC_INT_FLAG_MSCT: MSC transmit status flag
-      \arg        ENET_MAC_INT_FLAG_TMST: time stamp trigger status flag
-      \arg        ENET_MSC_INT_FLAG_RFCE: received frames CRC error flag
-      \arg        ENET_MSC_INT_FLAG_RFAE: received frames alignment error flag
-      \arg        ENET_MSC_INT_FLAG_RGUF: received good unicast frames flag
-      \arg        ENET_MSC_INT_FLAG_TGFSC: transmitted good frames single collision flag
-      \arg        ENET_MSC_INT_FLAG_TGFMSC: transmitted good frames more single collision flag
-      \arg        ENET_MSC_INT_FLAG_TGF: transmitted good frames flag
-      \arg        ENET_DMA_INT_FLAG_TS: transmit status flag
-      \arg        ENET_DMA_INT_FLAG_TPS: transmit process stopped status flag
-      \arg        ENET_DMA_INT_FLAG_TBU: transmit buffer unavailable status flag
-      \arg        ENET_DMA_INT_FLAG_TJT: transmit jabber timeout status flag
-      \arg        ENET_DMA_INT_FLAG_RO: receive overflow status flag
-      \arg        ENET_DMA_INT_FLAG_TU: transmit underflow status flag
-      \arg        ENET_DMA_INT_FLAG_RS: receive status flag
-      \arg        ENET_DMA_INT_FLAG_RBU: receive buffer unavailable status flag
-      \arg        ENET_DMA_INT_FLAG_RPS: receive process stopped status flag
-      \arg        ENET_DMA_INT_FLAG_RWT: receive watchdog timeout status flag
-      \arg        ENET_DMA_INT_FLAG_ET: early transmit status flag
-      \arg        ENET_DMA_INT_FLAG_FBE: fatal bus error status flag
-      \arg        ENET_DMA_INT_FLAG_ER: early receive status flag
-      \arg        ENET_DMA_INT_FLAG_AI: abnormal interrupt summary flag
-      \arg        ENET_DMA_INT_FLAG_NI: normal interrupt summary flag
-      \arg        ENET_DMA_INT_FLAG_MSC: MSC status flag
-      \arg        ENET_DMA_INT_FLAG_WUM: WUM status flag
-      \arg        ENET_DMA_INT_FLAG_TST: timestamp trigger status flag
-    \param[out] none
-    \retval     FlagStatus: SET or RESET
-*/
-FlagStatus enet_interrupt_flag_get(uint32_t enet_periph, enet_int_flag_enum int_flag)
-{
-    if(RESET != (ENET_REG_VAL(enet_periph, int_flag) & BIT(ENET_BIT_POS(int_flag)))) {
-        return SET;
-    } else {
-        return RESET;
-    }
-}
-
-/*!
-    \brief      clear ENET DMA interrupt flag
-    \param[in]  enet_periph: ENETx(x=0,1)
-    \param[in]  int_flag_clear: clear ENET interrupt flag,
-                only one parameter can be selected which is shown as below
-      \arg        ENET_DMA_INT_FLAG_TS_CLR: transmit status flag
-      \arg        ENET_DMA_INT_FLAG_TPS_CLR: transmit process stopped status flag
-      \arg        ENET_DMA_INT_FLAG_TBU_CLR: transmit buffer unavailable status flag
-      \arg        ENET_DMA_INT_FLAG_TJT_CLR: transmit jabber timeout status flag
-      \arg        ENET_DMA_INT_FLAG_RO_CLR: receive overflow status flag
-      \arg        ENET_DMA_INT_FLAG_TU_CLR: transmit underflow status flag
-      \arg        ENET_DMA_INT_FLAG_RS_CLR: receive status flag
-      \arg        ENET_DMA_INT_FLAG_RBU_CLR: receive buffer unavailable status flag
-      \arg        ENET_DMA_INT_FLAG_RPS_CLR: receive process stopped status flag
-      \arg        ENET_DMA_INT_FLAG_RWT_CLR: receive watchdog timeout status flag
-      \arg        ENET_DMA_INT_FLAG_ET_CLR: early transmit status flag
-      \arg        ENET_DMA_INT_FLAG_FBE_CLR: fatal bus error status flag
-      \arg        ENET_DMA_INT_FLAG_ER_CLR: early receive status flag
-      \arg        ENET_DMA_INT_FLAG_AI_CLR: abnormal interrupt summary flag
-      \arg        ENET_DMA_INT_FLAG_NI_CLR: normal interrupt summary flag
-    \param[out] none
-    \retval     none
-*/
-void enet_interrupt_flag_clear(uint32_t enet_periph, enet_int_flag_clear_enum int_flag_clear)
-{
-    /* write 1 to the corresponding bit in ENET_DMA_STAT, to clear it */
-    ENET_REG_VAL(enet_periph, int_flag_clear) = BIT(ENET_BIT_POS(int_flag_clear));
+    uint64_t val = subsecond * 1000000000ULL;
+    val >>= 31U;
+    return (uint32_t)val;
 }
 
 #endif /* GD32H7XX */

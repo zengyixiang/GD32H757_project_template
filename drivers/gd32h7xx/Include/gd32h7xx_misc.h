@@ -2,11 +2,11 @@
     \file    gd32h7xx_misc.h
     \brief   definitions for the MISC
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -40,8 +40,7 @@ OF SUCH DAMAGE.
 #if (__MPU_PRESENT == 1)
 
 /* MPU region init parameter struct definitions */
-typedef struct
-{
+typedef struct {
     uint32_t region_base_address;    /*!< region base address */
     uint8_t region_number;           /*!< region number */
     uint8_t region_size;             /*!< region size */
@@ -52,7 +51,7 @@ typedef struct
     uint8_t access_cacheable;        /*!< cacheable */
     uint8_t access_bufferable;       /*!< bufferable */
     uint8_t instruction_exec;        /*!< execute never */
-}mpu_region_init_struct;
+} mpu_region_init_struct;
 
 #endif /* __MPU_PRESENT */
 
@@ -84,7 +83,7 @@ typedef struct
 #define SCB_LPM_WAKE_BY_ALL_INT         SCB_SCR_SEVONPEND         /*!< wakeup by all interrupt */
 
 /* choose the systick clock source */
-#define SYSTICK_CLKSOURCE_CKSYS_DIV2    ((uint32_t)0xFFFFFFFBU)   /*!< systick clock source is from CK_SYS/2 */
+#define SYSTICK_CLKSOURCE_CKSYS_DIV8    ((uint32_t)0xFFFFFFFBU)   /*!< systick clock source is from CK_SYS/8 */
 #define SYSTICK_CLKSOURCE_CKSYS         ((uint32_t)0x00000004U)   /*!< systick clock source is from CK_SYS */
 
 #if (__MPU_PRESENT == 1)
@@ -173,12 +172,14 @@ typedef struct
 void nvic_priority_group_set(uint32_t nvic_prigroup);
 
 /* enable NVIC interrupt request */
-void nvic_irq_enable(uint8_t nvic_irq, uint8_t nvic_irq_pre_priority, uint8_t nvic_irq_sub_priority);
+void nvic_irq_enable(IRQn_Type nvic_irq, uint8_t nvic_irq_pre_priority, uint8_t nvic_irq_sub_priority);
 /* disable NVIC interrupt request */
-void nvic_irq_disable(uint8_t nvic_irq);
+void nvic_irq_disable(IRQn_Type nvic_irq);
+/* initiates a system reset request to reset the MCU */
+void nvic_system_reset(void);
 
 /* set the NVIC vector table base address */
-void nvic_vector_table_set(uint32_t nvic_vict_tab, uint32_t offset);
+void nvic_vector_table_set(uint32_t nvic_vect_tab, uint32_t offset);
 
 /* set the state of the low power mode */
 void system_lowpower_set(uint8_t lowpower_mode);

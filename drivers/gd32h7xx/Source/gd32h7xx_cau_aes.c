@@ -2,11 +2,11 @@
     \file    gd32h7xx_cau_aes.c
     \brief   CAU AES driver
     
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -38,7 +38,8 @@ OF SUCH DAMAGE.
 #define AESBSY_TIMEOUT    ((uint32_t)0x00010000U)
 #define BLOCK_B0_MASK     ((uint8_t)0x07U)
 #define BLOCK_DATA_SIZE   ((uint32_t)0x00000010U)
-#define MAX_CCM_IV_SIZE   ((uint32_t)0x0000000FU)
+#define MIN_CCM_IV_SIZE   ((uint32_t)0x00000007U)
+#define MAX_CCM_IV_SIZE   ((uint32_t)0x0000000DU)
 
 /* configure AES key structure parameter */
 static void cau_aes_key_config(uint8_t *key, uint32_t keysize, cau_key_parameter_struct *cau_key_initpara);
@@ -461,7 +462,6 @@ ErrStatus cau_aes_gcm(cau_parameter_struct *cau_parameter, uint8_t *output, uint
     *(uint32_t *)(tagaddr) = cau_data_read();
     tagaddr += 4U;
     *(uint32_t *)(tagaddr) = cau_data_read();
-    tagaddr += 4U;
 
     /* disable the CAU peripheral */
     cau_disable();
@@ -482,7 +482,7 @@ ErrStatus cau_aes_gcm(cau_parameter_struct *cau_parameter, uint8_t *output, uint
                   in_length: input data length in bytes
                   aad: additional authentication data
                   aad_size: aad size
-    \param[in]  mac_size: mac size (in bytes)
+    \param[in]  tag_size: tag size (in bytes)
     \param[out] output: pointer to the returned output data buffer
     \param[out] tag: pointer to the returned tag buffer
     \param[out] aad_buf: pointer to the user buffer used when formatting aad block
@@ -550,7 +550,7 @@ ErrStatus cau_aes_ccm(cau_parameter_struct *cau_parameter, uint8_t *output, uint
     /* flags byte */
     blockb0[0] |= (0U | (((((uint8_t) tag_size - 2U) / 2U) & 0x07U) << 3U) | (((uint8_t)(15U - ivsize) - 1U) & 0x07U));
 
-    if(ivsize > MAX_CCM_IV_SIZE) {
+    if((MIN_CCM_IV_SIZE > ivsize) || (MAX_CCM_IV_SIZE < ivsize)) {
         return ERROR;
     }
 
@@ -573,7 +573,7 @@ ErrStatus cau_aes_ccm(cau_parameter_struct *cau_parameter, uint8_t *output, uint
     } else {
         /* the payload length is expressed in plen bytes */
         for(; i < 15U; i++) {
-            blockb0[i + 1U] = (uint8_t)((inputsize >> ((plen - 1U) * 8U)) & 0xFFU);
+            blockb0[i + 1U] = (uint8_t)((inputsize >> ((uint8_t)((plen - 1U) * 8U))) & 0xFFU);
             plen--;
         }
     }

@@ -2,11 +2,11 @@
     \file    gd32h7xx_syscfg.c
     \brief   SYSCFG driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -119,7 +119,7 @@ void syscfg_analog_switch_disable(uint32_t gpio_answ)
 
 /*!
     \brief      configure the PHY interface for the ethernet MAC
-    \param[in]  enet_periph: ENETx(x=0,1)
+    \param[in]  ethernet: ENETx(x=0,1)
     \param[in]  phy_interface: specifies the media interface mode
                 only one parameter can be selected which is shown as below:
       \arg        SYSCFG_ENET_PHY_MII: MII mode is selected
@@ -164,25 +164,25 @@ void syscfg_exti_line_config(uint8_t exti_port, uint8_t exti_pin)
     case EXTISS0:
         /* clear EXTI source line(0..3) */
         SYSCFG_EXTISS0 &= clear_exti_mask;
-        /* configure EXTI soure line(0..3) */
+        /* configure EXTI source line(0..3) */
         SYSCFG_EXTISS0 |= config_exti_mask;
         break;
     case EXTISS1:
-        /* clear EXTI soure line(4..7) */
+        /* clear EXTI source line(4..7) */
         SYSCFG_EXTISS1 &= clear_exti_mask;
-        /* configure EXTI soure line(4..7) */
+        /* configure EXTI source line(4..7) */
         SYSCFG_EXTISS1 |= config_exti_mask;
         break;
     case EXTISS2:
-        /* clear EXTI soure line(8..11) */
+        /* clear EXTI source line(8..11) */
         SYSCFG_EXTISS2 &= clear_exti_mask;
-        /* configure EXTI soure line(8..11) */
+        /* configure EXTI source line(8..11) */
         SYSCFG_EXTISS2 |= config_exti_mask;
         break;
     case EXTISS3:
-        /* clear EXTI soure line(12..15) */
+        /* clear EXTI source line(12..15) */
         SYSCFG_EXTISS3 &= clear_exti_mask;
-        /* configure EXTI soure line(12..15) */
+        /* configure EXTI source line(12..15) */
         SYSCFG_EXTISS3 |= config_exti_mask;
         break;
     default:
@@ -288,10 +288,10 @@ void syscfg_lockup_enable(uint32_t lockup)
       \arg        TIMER40_CI0_INPUT_LXTAL: select LXTAL as TIMER40 CI0
       \arg        TIMER40_CI0_INPUT_LPIRC4M: select LPIRC4M as TIMER40 CI0
       \arg        TIMER40_CI0_INPUT_CKOUT1: select CKOUT1 as TIMER40 CI0
-      \arg        TIMER40_CI1_INPUT_TIMER40_CH1: select TIMER40 CH1 as TIMER40 CI0
-      \arg        TIMER40_CI1_INPUT_TIMER2_CH1: select TIMER2 CH1 as TIMER40 CI0
-      \arg        TIMER40_CI1_INPUT_TIMER3_CH1: select TIMER3 CH1 as TIMER40 CI0
-      \arg        TIMER40_CI1_INPUT_TIMER4_CH1: select TIMER4 CH1 as TIMER40 CI0
+      \arg        TIMER40_CI1_INPUT_TIMER40_CH1: select TIMER40 CH1 as TIMER40 CI1
+      \arg        TIMER40_CI1_INPUT_TIMER2_CH1: select TIMER2 CH1 as TIMER40 CI1
+      \arg        TIMER40_CI1_INPUT_TIMER3_CH1: select TIMER3 CH1 as TIMER40 CI1
+      \arg        TIMER40_CI1_INPUT_TIMER4_CH1: select TIMER4 CH1 as TIMER40 CI1
       \arg        TIMER41_CI0_INPUT_TIMER41_CH0: select TIMER41 CH0 as TIMER41 CI0
       \arg        TIMER41_CI0_INPUT_TIMER3_CH0: select TIMER3 CH0 as TIMER41 CI0
       \arg        TIMER41_CI0_INPUT_TIMER4_CH0: select TIMER4 CH0 as TIMER41 CI0
@@ -319,6 +319,7 @@ void syscfg_lockup_enable(uint32_t lockup)
       \arg        TIMER15_CI0_INPUT_LXTAL: select LXTAL as TIMER15 CI0
       \arg        TIMER15_CI0_INPUT_WKUP_IT: select WKUP IT as TIMER15 CI0
       \arg        TIMER16_CI0_INPUT_TIMER16_CH0: select TIMER16 CH0 as TIMER16 CI0
+      \arg        TIMER16_CI0_INPUT_RSPDIF: select RSPDIF symbol ck as TIMER16 CI0
       \arg        TIMER16_CI0_INPUT_HXTAL_RTCDIV: select HXTAL/RTCDIV 1M as TIMER16 CI0
       \arg        TIMER16_CI0_INPUT_CKOUT0: select CKOUT0 as TIMER16 CI0
       \arg        TIMER43_CI0_INPUT_TIMER43_CH0: select TIMER43 CH0 as TIMER43 CI0
@@ -466,7 +467,7 @@ void syscfg_pnmos_compensation_code_set(uint32_t mos, uint32_t code)
 
 /*!
     \brief      set secure SRAM size
-    \param[in]  SRAM size
+    \param[in]  size: SRAM size
                 only one parameter can be selected which is shown as below:
       \arg        SECURE_SRAM_SIZE_0KB: secure SRAM size is 0KB
       \arg        SECURE_SRAM_SIZE_32KB: secure SRAM size is 32KB
@@ -579,11 +580,13 @@ void syscfg_fpu_interrupt_disable(uint32_t fpu_int)
 */
 FlagStatus syscfg_compensation_flag_get(uint32_t cps_flag)
 {
+    FlagStatus retval = RESET;
     if(SYSCFG_CPSCTL & cps_flag) {
-        return SET;
+        retval = SET;
     } else {
-        return RESET;
+        /* do nothing */
     }
+    return retval;
 }
 
 /*!
@@ -617,10 +620,10 @@ uint32_t syscfg_cpu_cache_status_get(uint32_t cache, uint32_t status)
     case DCACHE_STATUS:
         if(CPU_CACHE_ERROR_DETECTION == status) {
             /* return detection information */
-            value = (uint32_t)((SYSCFG_CPUDCAC & SYSCFG_CPUICAC_CPU_ICDET) >> 28U);
+            value = (uint32_t)((SYSCFG_CPUDCAC & SYSCFG_CPUDCAC_CPU_DCDET) >> 28U);
         } else {
             /* return error bank information */
-            value = (uint32_t)((SYSCFG_CPUDCAC & SYSCFG_CPUICAC_CPU_ICERR) >> 6U);
+            value = (uint32_t)((SYSCFG_CPUDCAC & SYSCFG_CPUDCAC_CPU_DCERR) >> 6U);
         }
         break;
     default:

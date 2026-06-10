@@ -2,12 +2,12 @@
     \file    gd32h7xx.h
     \brief   general definitions for GD32H7xx
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
  * Copyright (c) 2009-2021 Arm Limited. All rights reserved.
- * Copyright (c) 2024, GigaDevice Semiconductor Inc.
+ * Copyright (c) 2026, GigaDevice Semiconductor Inc.
  *
  * SPDX-License-Identifier: Apache-2.0
  *
@@ -97,9 +97,9 @@ extern "C" {
 #define LXTAL_STARTUP_TIMEOUT   ((uint32_t)0x0FFFFFFF)
 #endif /* low speed crystal oscillator startup timeout */
 
-/* GD32H7xx firmware library version number V1.0 */
+/* GD32H7xx firmware library version number V1.5.0 */
 #define __GD32H7XX_STDPERIPH_VERSION_MAIN   (0x01) /*!< [31:24] main version     */
-#define __GD32H7XX_STDPERIPH_VERSION_SUB1   (0x00) /*!< [23:16] sub1 version     */
+#define __GD32H7XX_STDPERIPH_VERSION_SUB1   (0x05) /*!< [23:16] sub1 version     */
 #define __GD32H7XX_STDPERIPH_VERSION_SUB2   (0x00) /*!< [15:8]  sub2 version     */
 #define __GD32H7XX_STDPERIPH_VERSION_RC     (0x00) /*!< [7:0]  release candidate */
 #define __GD32H7XX_STDPERIPH_VERSION        ((__GD32H7XX_STDPERIPH_VERSION_MAIN << 24)\
@@ -130,7 +130,7 @@ typedef enum IRQn {
     SysTick_IRQn                = -1,     /*!< 15 Cortex-M7 system tick interrupt                               */
     /* interruput numbers */
     WWDGT_IRQn                  = 0,      /*!< window watchdog timer interrupt                                   */
-    AVD_LVD_OVD_IRQn            = 1,      /*!< AVD/LVD/OVD through EXTI line detect interrupt                    */
+    VAVD_LVD_VOVD_IRQn          = 1,      /*!< AVD_LVD_OVD_IRQn through EXTI line detect interrupt                    */
     TAMPER_STAMP_LXTAL_IRQn     = 2,      /*!< RTC tamper and timestamp interrupt/LXTAL clock stuck interrupt    */
     RTC_WKUP_IRQn               = 3,      /*!< RTC Wakeup interrupt                                              */
     FMC_IRQn                    = 4,      /*!< FMC interrupt                                                     */

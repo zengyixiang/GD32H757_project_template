@@ -2,11 +2,11 @@
     \file    gd32h7xx_sdio.c
     \brief   SDIO driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -153,7 +153,7 @@ void sdio_bus_mode_set(uint32_t sdio_periph, uint32_t bus_mode)
 /*!
     \brief      set SDIO bus speed
     \param[in]  sdio_periph: SDIOx(x=0,1)
-    \param[in]  bus_mode: SDIO card bus speed
+    \param[in]  bus_speed: SDIO card bus speed
                 only one parameter can be selected which is shown as below:
       \arg        SDIO_BUSSPEED_LOW: DS, HS, SDR12, SDR25 bus speed
       \arg        SDIO_BUSSPEED_HIGH: SDR50, SDR104, DDR50 bus speed
@@ -504,7 +504,6 @@ void sdio_data_transfer_config(uint32_t sdio_periph, uint32_t transfer_mode, uin
 /*!
     \brief      enable the DSM(data state machine) for data transfer
     \param[in]  sdio_periph: SDIOx(x=0,1)
-    \param[in]  none
     \param[out] none
     \retval     none
 */
@@ -516,7 +515,6 @@ void sdio_dsm_enable(uint32_t sdio_periph)
 /*!
     \brief      disable the DSM(data state machine) for data transfer
     \param[in]  sdio_periph: SDIOx(x=0,1)
-    \param[in]  none
     \param[out] none
     \retval     none
 */

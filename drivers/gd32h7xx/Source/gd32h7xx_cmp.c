@@ -2,11 +2,11 @@
     \file    gd32h7xx_cmp.c
     \brief   CMP driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -72,8 +72,8 @@ void cmp_deinit(cmp_enum cmp_periph)
       \arg        CMP_INVERTING_INPUT_1_2VREFINT: VREFINT *1/2 input
       \arg        CMP_INVERTING_INPUT_3_4VREFINT: VREFINT *3/4 input
       \arg        CMP_INVERTING_INPUT_VREFINT: VREFINT input
-      \arg        CMP_INVERTING_INPUT_DAC0_OUT0: PA4 (DAC) input
-      \arg        CMP_INVERTING_INPUT_DAC0_OUT1: PA5 (DAC) input
+      \arg        CMP_INVERTING_INPUT_DAC0_OUT0: CMP inverting input DAC0_OUT0
+      \arg        CMP_INVERTING_INPUT_DAC0_OUT1: CMP inverting input DAC0_OUT1
       \arg        CMP_INVERTING_INPUT_PB1_PE10: PB1 for CMP0 or PE10 for CMP1 as inverting input
       \arg        CMP_INVERTING_INPUT_PC4_PE7: PC4 for CMP0 or PE7 for CMP1 as inverting input
     \param[in]  hysteresis
@@ -396,21 +396,24 @@ void cmp_scaler_bridge_disable(cmp_enum cmp_periph)
 */
 uint32_t cmp_output_level_get(cmp_enum cmp_periph)
 {
-    if(CMP0 == cmp_periph){
+    uint32_t output_level;
+
+    if(CMP0 == cmp_periph) {
         /* get output level of CMP0 */
         if((uint32_t)RESET != (CMP_STAT & CMP_STAT_CMP0O)) {
-            return CMP_OUTPUTLEVEL_HIGH;
-        }else{
-            return CMP_OUTPUTLEVEL_LOW;
+            output_level = CMP_OUTPUTLEVEL_HIGH;
+        } else {
+            output_level = CMP_OUTPUTLEVEL_LOW;
         }
-    }else{
+    } else {
         /* get output level of CMP1 */
         if((uint32_t)RESET != (CMP_STAT & CMP_STAT_CMP1O)) {
-            return CMP_OUTPUTLEVEL_HIGH;
-        }else{
-            return CMP_OUTPUTLEVEL_LOW;
+            output_level = CMP_OUTPUTLEVEL_HIGH;
+        } else {
+            output_level = CMP_OUTPUTLEVEL_LOW;
         }
     }
+    return output_level;
 }
 
 /*!
@@ -439,6 +442,8 @@ FlagStatus cmp_flag_get(cmp_enum cmp_periph, uint32_t flag)
                 reval = SET;
             }
         }
+    } else {
+        /* illegal parameters */
     }
     return reval;
 }
@@ -526,9 +531,10 @@ void cmp_interrupt_disable(cmp_enum cmp_periph, uint32_t interrupt)
 FlagStatus cmp_interrupt_flag_get(cmp_enum cmp_periph, uint32_t flag)
 {
     uint32_t intstatus = 0U, flagstatus = 0U;
-
-    if(CMP0 == cmp_periph){
-        if(CMP_INT_FLAG_COMPARE == flag){
+    FlagStatus status;
+    
+    if(CMP0 == cmp_periph) {
+        if(CMP_INT_FLAG_COMPARE == flag) {
             /* get the corresponding flag bit status */
             flagstatus = CMP_STAT & CMP_STAT_CMP0IF;
             /* get the interrupt enable bit status */
@@ -541,14 +547,16 @@ FlagStatus cmp_interrupt_flag_get(cmp_enum cmp_periph, uint32_t flag)
             /* get the interrupt enable bit status */
             intstatus = CMP1_CS & CMP_CS_CMPXINTEN;
         }
-    }else{
+    } else {
+        /* illegal parameters */
     }
 
-    if((0U != flagstatus) && (0U != intstatus)){
-        return SET;
-    }else{
-        return RESET;
+    if((0U != flagstatus) && (0U != intstatus)) {
+        status = SET;
+    } else {
+        status = RESET;
     }
+    return status;
 }
 
 /*!

@@ -2,11 +2,11 @@
     \file    gd32h7xx_i2c.c
     \brief   I2C driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -446,17 +446,6 @@ void i2c_nack_enable(uint32_t i2c_periph)
 }
 
 /*!
-    \brief      generate an ACK in slave mode
-    \param[in]  i2c_periph: I2Cx(x=0,1,2,3)
-    \param[out] none
-    \retval     none
-*/
-void i2c_nack_disable(uint32_t i2c_periph)
-{
-    I2C_CTL1(i2c_periph) &= ~I2C_CTL1_NACKEN;
-}
-
-/*!
     \brief      enable wakeup from deep-sleep mode
     \param[in]  i2c_periph: I2Cx(x=0,1,2,3)
     \param[out] none
@@ -574,10 +563,10 @@ void i2c_reload_disable(uint32_t i2c_periph)
     \param[out] none
     \retval     none
 */
-void i2c_transfer_byte_number_config(uint32_t i2c_periph, uint32_t byte_number)
+void i2c_transfer_byte_number_config(uint32_t i2c_periph, uint8_t byte_number)
 {
     I2C_CTL1(i2c_periph) &= (uint32_t)(~I2C_CTL1_BYTENUM);
-    I2C_CTL1(i2c_periph) |= (uint32_t)(byte_number << CTL1_BYTENUM_OFFSET);
+    I2C_CTL1(i2c_periph) |= (uint32_t)((uint32_t)byte_number << CTL1_BYTENUM_OFFSET);
 }
 
 /*!

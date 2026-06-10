@@ -2,11 +2,11 @@
     \file    gd32h7xx_mdma.c
     \brief   MDMA driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -93,7 +93,7 @@ void mdma_para_struct_init(mdma_parameter_struct *init_struct)
     init_struct->source_inc               = MDMA_SOURCE_INCREASE_DISABLE;
     init_struct->dest_inc                 = MDMA_DESTINATION_INCREASE_DISABLE;
     init_struct->source_data_size         = MDMA_SOURCE_DATASIZE_8BIT;
-    init_struct->dest_data_dize           = MDMA_DESTINATION_DATASIZE_8BIT;
+    init_struct->dest_data_size           = MDMA_DESTINATION_DATASIZE_8BIT;
     init_struct->data_alignment           = MDMA_DATAALIGN_RIGHT;
     init_struct->buff_trans_len           = 0U;
     init_struct->source_burst             = MDMA_SOURCE_BURST_SINGLE;
@@ -164,7 +164,7 @@ void mdma_link_node_para_struct_init(mdma_link_node_parameter_struct *node)
                   dest_inc: MDMA_DESTINATION_INCREASE_DISABLE, MDMA_DESTINATION_INCREASE_8BIT, MDMA_DESTINATION_INCREASE__16BIT, MDMA_DESTINATION_INCREASE_32BIT, MDMA_DESTINATION_INCREASE_64BIT,
                             MDMA_DESTINATION_DECREASE_8BIT, MDMA_DESTINATION_DECREASE_16BIT, MDMA_DESTINATION_DECREASE_32BIT, MDMA_DESTINATION_DECREASE_64BIT
                   source_data_size: MDMA_SOURCE_DATASIZE_8BIT, MDMA_SOURCE_DATASIZE_16BIT, MDMA_SOURCE_DATASIZE_32BIT, MDMA_SOURCE_DATASIZE_64BIT
-                  dest_data_dize: MDMA_DESTINATION_DATASIZE_8BIT, MDMA_DESTINATION_DATASIZE_16BIT, MDMA_DESTINATION_DATASIZE_32BIT, MDMA_DESTINATION_DATASIZE_64BIT
+                  dest_data_size: MDMA_DESTINATION_DATASIZE_8BIT, MDMA_DESTINATION_DATASIZE_16BIT, MDMA_DESTINATION_DATASIZE_32BIT, MDMA_DESTINATION_DATASIZE_64BIT
                   data_alignment: MDMA_DATAALIGN_PKEN, MDMA_DATAALIGN_RIGHT, MDMA_DATAALIGN_RIGHT_SIGNED, MDMA_DATAALIGN_LEFT
                   buff_trans_len: the number of bytes to be transferred is (buff_trans_len+1), buff_trans_len ranges from 0 to 127
                   source_burst: MDMA_SOURCE_BURST_SINGLE, MDMA_SOURCE_BURST_2BEATS, MDMA_SOURCE_BURST_4BEATS, MDMA_SOURCE_BURST_8BEATS, MDMA_SOURCE_BURST_16BEATS,
@@ -191,7 +191,7 @@ void mdma_init(mdma_channel_enum channelx, mdma_parameter_struct *init_struct)
     MDMA_CHXCTL0(channelx) |= (init_struct->endianness | init_struct->priority);
 
     /* configure MDMA transfer width, memory transfer width, channel priority */
-    MDMA_CHXCFG(channelx) = (init_struct->data_alignment | init_struct->dest_burst | init_struct->dest_data_dize | init_struct->dest_inc | \
+    MDMA_CHXCFG(channelx) = (init_struct->data_alignment | init_struct->dest_burst | init_struct->dest_data_size | init_struct->dest_inc | \
             init_struct->source_burst | init_struct->source_data_size | init_struct->source_inc | init_struct->trans_trig_mode | \
             ((init_struct->buff_trans_len << CHXCFG_BTLEN_OFFSET) & MDMA_CHXCFG_BTLEN) | init_struct->bufferable_write_mode);
     /* configure mask address, mask data */
@@ -329,7 +329,7 @@ void mdma_multi_block_mode_config(mdma_channel_enum channelx, uint32_t tbnum, md
                   dest_inc: MDMA_DESTINATION_INCREASE_DISABLE, MDMA_DESTINATION_INCREASE_8BIT, MDMA_DESTINATION_INCREASE__16BIT, MDMA_DESTINATION_INCREASE_32BIT, MDMA_DESTINATION_INCREASE_64BIT,
                             MDMA_DESTINATION_DECREASE_8BIT, MDMA_DESTINATION_DECREASE_16BIT, MDMA_DESTINATION_DECREASE_32BIT, MDMA_DESTINATION_DECREASE_64BIT
                   source_data_size: MDMA_SOURCE_DATASIZE_8BIT, MDMA_SOURCE_DATASIZE_16BIT, MDMA_SOURCE_DATASIZE_32BIT, MDMA_SOURCE_DATASIZE_64BIT
-                  dest_data_dize: MDMA_DESTINATION_DATASIZE_8BIT, MDMA_DESTINATION_DATASIZE_16BIT, MDMA_DESTINATION_DATASIZE_32BIT, MDMA_DESTINATION_DATASIZE_64BIT
+                  dest_data_size: MDMA_DESTINATION_DATASIZE_8BIT, MDMA_DESTINATION_DATASIZE_16BIT, MDMA_DESTINATION_DATASIZE_32BIT, MDMA_DESTINATION_DATASIZE_64BIT
                   data_alignment: MDMA_DATAALIGN_PKEN, MDMA_DATAALIGN_RIGHT, MDMA_DATAALIGN_RIGHT_SIGNED, MDMA_DATAALIGN_LEFT
                   buff_trans_len: the number of bytes to be transferred is (buff_trans_len+1), buff_trans_len ranges from 0 to 127
                   source_burst: MDMA_SOURCE_BURST_SINGLE, MDMA_SOURCE_BURST_2BEATS, MDMA_SOURCE_BURST_4BEATS, MDMA_SOURCE_BURST_8BEATS, MDMA_SOURCE_BURST_16BEATS,
@@ -351,7 +351,7 @@ void mdma_node_create(mdma_link_node_parameter_struct *node, mdma_multi_block_pa
     uint32_t cfg, blockoffset;
 
     /* configure channel configure register */
-    cfg = (init_struct->data_alignment | init_struct->dest_burst | init_struct->dest_data_dize | init_struct->dest_inc | \
+    cfg = (init_struct->data_alignment | init_struct->dest_burst | init_struct->dest_data_size | init_struct->dest_inc | \
            init_struct->source_burst | init_struct->source_data_size | init_struct->source_inc | init_struct->trans_trig_mode | \
            ((init_struct->buff_trans_len << CHXCFG_BTLEN_OFFSET) & MDMA_CHXCFG_BTLEN) | init_struct->bufferable_write_mode);
     node->chxcfg_reg = cfg;
@@ -462,14 +462,16 @@ void mdma_node_add(mdma_link_node_parameter_struct *pre_node, mdma_link_node_par
 */
 ErrStatus mdma_node_delete(mdma_link_node_parameter_struct *pre_node, mdma_link_node_parameter_struct *unused_node)
 {
+    ErrStatus ret = ERROR;
     if(pre_node->chxladdr_reg != (uint32_t)unused_node) {
         /* link address unmatched */
-        return ERROR;
+        ret = ERROR;
     } else {
         /* link address matched, disconnect the unused node from link list */
         pre_node->chxladdr_reg = 0U;
-        return SUCCESS;
+        ret = SUCCESS;
     }
+    return ret;
 }
 
 /*!
@@ -603,14 +605,14 @@ void mdma_alignment_config(mdma_channel_enum channelx, uint32_t alignment)
                 only one parameter can be selected which is shown as below:
       \arg        MDMA_CHx(x=0..15)
     \param[in]  sbeat: source transfer burst beats
-      \arg        MDMA_SOURCE_BURST_SINGLE: source transfer single burst
-      \arg        MDMA_SOURCE_BURST_2BEATS: source transfer 2-beat burst
-      \arg        MDMA_SOURCE_BURST_4BEATS: source transfer 4-beat burst
-      \arg        MDMA_SOURCE_BURST_8BEATS: source transfer 8-beat burst
-      \arg        MDMA_SOURCE_BURST_16BEATS: source transfer 16-beat burst
-      \arg        MDMA_SOURCE_BURST_32BEATS: source transfer 32-beat burst
-      \arg        MDMA_SOURCE_BURST_64BEATS: source transfer 64-beat burst
-      \arg        MDMA_SOURCE_BURST_128BEATS: source transfer 128-beat burst
+      \arg        MDMA_SOURCE_BURST_SINGLE: single burst
+      \arg        MDMA_SOURCE_BURST_2BEATS: 2-beat incrementing burst
+      \arg        MDMA_SOURCE_BURST_4BEATS: 4-beat incrementing burst
+      \arg        MDMA_SOURCE_BURST_8BEATS: 8-beat incrementing burst
+      \arg        MDMA_SOURCE_BURST_16BEATS: 16-beat incrementing burst
+      \arg        MDMA_SOURCE_BURST_32BEATS: 32-beat incrementing burst
+      \arg        MDMA_SOURCE_BURST_64BEATS: 64-beat incrementing burst
+      \arg        MDMA_SOURCE_BURST_128BEATS: 128-beat incrementing burst
     \param[out] none
     \retval     none
 */
@@ -628,14 +630,14 @@ void mdma_source_burst_beats_config(mdma_channel_enum channelx, uint32_t sbeat)
       \arg        MDMA_CHx(x=0..15)
     \param[in] dbeat: destination transfer burst beats
                 only one parameter can be selected which is shown as below:
-      \arg        MDMA_DESTINATION_BURST_SINGLE: destination transfer single burst
-      \arg        MDMA_DESTINATION_BURST_2BEATS: destination transfer 2-beat burst
-      \arg        MDMA_DESTINATION_BURST_4BEATS: destination transfer 4-beat burst
-      \arg        MDMA_DESTINATION_BURST_8BEATS: destination transfer 8-beat burst
-      \arg        MDMA_DESTINATION_BURST_16BEATS: destination transfer 16-beat burst
-      \arg        MDMA_DESTINATION_BURST_32BEATS: destination transfer 32-beat burst
-      \arg        MDMA_DESTINATION_BURST_64BEATS: destination transfer 64-beat burst
-      \arg        MDMA_DESTINATION_BURST_128BEATS: destination transfer 128-beat burst
+      \arg        MDMA_DESTINATION_BURST_SINGLE: single burst
+      \arg        MDMA_DESTINATION_BURST_2BEATS: 2-beat incrementing burst
+      \arg        MDMA_DESTINATION_BURST_4BEATS: 4-beat incrementing burst
+      \arg        MDMA_DESTINATION_BURST_8BEATS: 8-beat incrementing burst
+      \arg        MDMA_DESTINATION_BURST_16BEATS: 16-beat incrementing burst
+      \arg        MDMA_DESTINATION_BURST_32BEATS: 32-beat incrementing burst
+      \arg        MDMA_DESTINATION_BURST_64BEATS: 64-beat incrementing burst
+      \arg        MDMA_DESTINATION_BURST_128BEATS: 128-beat incrementing burst
     \param[out] none
     \retval     none
 */
@@ -653,10 +655,10 @@ void mdma_destination_burst_beats_config(mdma_channel_enum channelx, uint32_t db
       \arg        MDMA_CHx(x=0..15)
     \param[in]  swidth: source data size
                 only one parameter can be selected which is shown as below:
-      \arg        MDMA_SOURCE_DATASIZE_8BIT: source data size is byte
-      \arg        MDMA_SOURCE_DATASIZE_16BIT: source data size is half word
-      \arg        MDMA_SOURCE_DATASIZE_32BIT: source data size is word
-      \arg        MDMA_SOURCE_DATASIZE_64BIT: source data size is double word
+      \arg        MDMA_SOURCE_DATASIZE_8BIT: data size of source is 8-bit
+      \arg        MDMA_SOURCE_DATASIZE_16BIT: data size of source is 16-bit
+      \arg        MDMA_SOURCE_DATASIZE_32BIT: data size of source is 32-bit
+      \arg        MDMA_SOURCE_DATASIZE_64BIT: data size of source is 64-bit
     \param[out] none
     \retval     none
 */
@@ -674,10 +676,10 @@ void mdma_source_width_config(mdma_channel_enum channelx, uint32_t swidth)
       \arg        MDMA_CHx(x=0..15)
     \param[in]  dwidth: destination data size
                 only one parameter can be selected which is shown as below:
-      \arg        MDMA_DESTINATION_DATASIZE_8BIT: destination data size is byte
-      \arg        MDMA_DESTINATION_DATASIZE_16BIT: destination data size is half word
-      \arg        MDMA_DESTINATION_DATASIZE_32BIT: destination data size is word
-      \arg        MDMA_DESTINATION_DATASIZE_64BIT: destination data size is double word
+      \arg        MDMA_DESTINATION_DATASIZE_8BIT: data size of destination is 8-bit
+      \arg        MDMA_DESTINATION_DATASIZE_16BIT: data size of destination is 16-bit
+      \arg        MDMA_DESTINATION_DATASIZE_32BIT: data size of destination is 32-bit
+      \arg        MDMA_DESTINATION_DATASIZE_64BIT: data size of destination is 64-bit
     \param[out] none
     \retval     none
 */
@@ -696,14 +698,14 @@ void mdma_destination_width_config(mdma_channel_enum channelx, uint32_t dwidth)
     \param[in]  sinc: source adress increment mode
                 only one parameter can be selected which is shown as below:
       \arg        MDMA_SOURCE_INCREASE_DISABLE: no increment
-      \arg        MDMA_SOURCE_INCREASE_8BIT: source address pointer is incremented by a byte (8 bits)
-      \arg        MDMA_SOURCE_INCREASE_16BIT: source address pointer is incremented by a half word (16 bits)
-      \arg        MDMA_SOURCE_INCREASE_32BIT: source address pointer is incremented by a word (32 bits)
-      \arg        MDMA_SOURCE_INCREASE_64BIT: source address pointer is incremented by a double word (64 bits)
-      \arg        MDMA_SOURCE_DECREASE_8BIT: source address pointer is decremented by a byte (8 bits)
-      \arg        MDMA_SOURCE_DECREASE_16BIT: source address pointer is decremented by a half word (16 bits)
-      \arg        MDMA_SOURCE_DECREASE_32BIT: source address pointer is decremented by a word (32 bits)
-      \arg        MDMA_SOURCE_DECREASE_64BIT: source address pointer is decremented by a double word (64 bits)
+      \arg        MDMA_SOURCE_INCREASE_8BIT: source address is increased by 8-bit
+      \arg        MDMA_SOURCE_INCREASE_16BIT: source address is increased by 16-bit
+      \arg        MDMA_SOURCE_INCREASE_32BIT: source address is increased by 32-bit
+      \arg        MDMA_SOURCE_INCREASE_64BIT: source address is increased by 64-bit
+      \arg        MDMA_SOURCE_DECREASE_8BIT: source address is decreased by 8-bit
+      \arg        MDMA_SOURCE_DECREASE_16BIT: source address is decreased by 16-bit
+      \arg        MDMA_SOURCE_DECREASE_32BIT: source address is decreased by 32-bit
+      \arg        MDMA_SOURCE_DECREASE_64BIT: source address is decreased by 64-bit
     \param[out] none
     \retval     none
 */
@@ -722,14 +724,14 @@ void mdma_source_increment_config(mdma_channel_enum channelx, uint32_t sinc)
     \param[in]  dinc: destination adress increment mode
                 only one parameter can be selected which is shown as below:
       \arg        MDMA_DESTINATION_INCREASE_DISABLE: no increment
-      \arg        MDMA_DESTINATION_INCREASE_8BIT: destination address pointer is incremented by a byte (8 bits)
-      \arg        MDMA_DESTINATION_INCREASE_16BIT: destination address pointer is incremented by a half word (16 bits)
-      \arg        MDMA_DESTINATION_INCREASE_32BIT: destination address pointer is incremented by a word (32 bits)
-      \arg        MDMA_DESTINATION_INCREASE_64BIT: destination address pointer is incremented by a double word (64 bits))
-      \arg        MDMA_DESTINATION_DECREASE_8BIT: destination address pointer is decremented by a byte (8 bits)
-      \arg        MDMA_DESTINATION_DECREASE_16BIT: destination address pointer is decremented by a half word (16 bits)
-      \arg        MDMA_DESTINATION_DECREASE_32BIT: destination address pointer is decremented by a word (32 bits)
-      \arg        MDMA_DESTINATION_DECREASE_64BIT: destination address pointer is decremented by a double word (64 bits)
+      \arg        MDMA_DESTINATION_INCREASE_8BIT: destination address is increased by 8-bit
+      \arg        MDMA_DESTINATION_INCREASE_16BIT: destination address is increased by 16-bit
+      \arg        MDMA_DESTINATION_INCREASE_32BIT: destination address is increased by 32-bit
+      \arg        MDMA_DESTINATION_INCREASE_64BIT: destination address is increased by 64-bit
+      \arg        MDMA_DESTINATION_DECREASE_8BIT: destination address is decreased by 8-bit
+      \arg        MDMA_DESTINATION_DECREASE_16BIT: destination address is decreased by 16-bit
+      \arg        MDMA_DESTINATION_DECREASE_32BIT: destination address is decreased by 32-bit
+      \arg        MDMA_DESTINATION_DECREASE_64BIT: destination address is decreased by 64-bit
     \param[out] none
     \retval     none
 */
@@ -854,23 +856,25 @@ uint32_t mdma_transfer_error_address_get(mdma_channel_enum channelx)
 FlagStatus mdma_flag_get(mdma_channel_enum channelx, uint32_t flag)
 {
     uint32_t flag_pos = 0U;
+    FlagStatus ret = RESET;
 
     if(STAT1_FLAG & flag) {
         /* get the flag in CHXSTAT1 */
         flag_pos = (flag & STAT1_FLAG_MASK);
         if(MDMA_CHXSTAT1(channelx) & flag_pos) {
-            return SET;
+            ret = SET;
         } else {
-            return RESET;
+            ret = RESET;
         }
     } else {
         /* get the flag in CHXSTAT0 */
         if(MDMA_CHXSTAT0(channelx) & flag) {
-            return SET;
+            ret = SET;
         } else {
-            return RESET;
+            ret = RESET;
         }
     }
+    return ret;
 }
 
 /*!
@@ -959,6 +963,7 @@ void mdma_interrupt_disable(mdma_channel_enum channelx, uint32_t interrupt)
 FlagStatus mdma_interrupt_flag_get(mdma_channel_enum channelx, uint32_t int_flag)
 {
     uint32_t interrupt_enable = 0U, interrupt_flag = 0U;
+    FlagStatus ret = RESET;
 
     switch(int_flag) {
     case MDMA_INT_FLAG_ERR:
@@ -991,10 +996,11 @@ FlagStatus mdma_interrupt_flag_get(mdma_channel_enum channelx, uint32_t int_flag
     }
 
     if(interrupt_flag && interrupt_enable) {
-        return SET;
+        ret = SET;
     } else {
-        return RESET;
+        ret = RESET;
     }
+    return ret;
 }
 
 /*!

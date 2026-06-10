@@ -2,11 +2,11 @@
     \file    gd32h7xx_usart.c
     \brief   USART driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -1269,7 +1269,8 @@ void usart_transmit_fifo_threshold_config(uint32_t usart_periph, uint32_t txthre
 
 /*!
     \brief      configure receive FIFO threshold
-    \param[in]  usart_periph: receive FIFO threshold
+    \param[in]  usart_periph: USARTx(x=0,1,2,5), UARTx(x=3,4,6,7)
+    \param[in]  rxthreshold: receive FIFO threshold
                 only one parameter can be selected which is shown as below:
       \arg        USART_RFTCFG_THRESHOLD_1_8: receive FIFO reaches 1/8 of its depth
       \arg        USART_RFTCFG_THRESHOLD_1_4: receive FIFO reaches 1/4 of its depth
@@ -1498,7 +1499,7 @@ FlagStatus usart_interrupt_flag_get(uint32_t usart_periph, usart_interrupt_flag_
 /*!
     \brief      clear USART interrupt flag
     \param[in]  usart_periph: USARTx(x=0,1,2,5), UARTx(x=3,4,6,7)
-    \param[in]  flag: USART interrupt flag
+    \param[in]  int_flag: USART interrupt flag
                 only one parameter can be selected which is shown as below:
       \arg        USART_INT_FLAG_PERR: parity error flag
       \arg        USART_INT_FLAG_ERR_FERR: frame error flag

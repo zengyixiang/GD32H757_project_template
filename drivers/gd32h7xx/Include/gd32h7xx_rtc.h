@@ -2,11 +2,11 @@
     \file    gd32h7xx_rtc.h
     \brief   definitions for the RTC
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -216,8 +216,8 @@ OF SUCH DAMAGE.
 #define RTC_TAMP_TP0EN                     BIT(0)                                      /*!< tamper 0 detection enable */
 #define RTC_TAMP_TP0EG                     BIT(1)                                      /*!< tamper 0 event trigger edge for RTC tamp 0 input */
 #define RTC_TAMP_TPIE                      BIT(2)                                      /*!< enable tamper interrupt */
-#define RTC_TAMP_TP2EN                     BIT(5)                                      /*!< tamper 2 detection enable */
-#define RTC_TAMP_TP2EG                     BIT(6)                                      /*!< tamper 2 event trigger edge for RTC tamp 2 input */
+#define RTC_TAMP_TP1EN                     BIT(5)                                      /*!< tamper 1 detection enable */
+#define RTC_TAMP_TP1EG                     BIT(6)                                      /*!< tamper 1 event trigger edge for RTC tamp 1 input */
 #define RTC_TAMP_TPTS                      BIT(7)                                      /*!< make tamper function used for timestamp function */
 #define RTC_TAMP_FREQ                      BITS(8,10)                                  /*!< sample frequency of tamper event detection */
 #define RTC_TAMP_FLT                       BITS(11,12)                                 /*!< RTC tamp x filter count setting */
@@ -427,7 +427,7 @@ typedef struct {
 #define GET_DATE_YR(regval)                GET_BITS((regval),16,23)                    /*!< get value of RTC_DATE_YR bit field */
 
 #define RTC_OUT_PC13                       ((uint32_t)0x00000000U)                     /*!< RTC_OUT is connected to PC13 */
-#define RTC_OUT_PB2                        RTC_CTL_OUT2EN                              /*!< RTC_OUT is connected to PB2 */
+#define RTC_OUT_PB2                        RTC_CFG_OUT2EN                              /*!< RTC_OUT is connected to PB2 */
 
 #define CTL_OS(regval)                     (BITS(21,22) & ((uint32_t)(regval) << 21))  /*!< write value to RTC_CTL_OS bit field */
 #define RTC_OS_DISABLE                     CTL_OS(0)                                   /*!< disable output RTC_ALARM */
@@ -559,7 +559,7 @@ typedef struct {
 #define RTC_FREQ_DIV256                    TAMP_FREQ(7)                                /*!< sample once every 256 RTCCLK(128Hz if RTCCLK=32.768KHz) */
 
 #define RTC_TAMPER0                        RTC_TAMP_TP0EN                              /*!< tamper 0 detection enable */
-#define RTC_TAMPER2                        RTC_TAMP_TP2EN                              /*!< tamper 2 detection enable */
+#define RTC_TAMPER1                        RTC_TAMP_TP1EN                              /*!< tamper 1 detection enable */
 
 #define RTC_TAMPER_TRIGGER_EDGE_RISING     ((uint32_t)0x00000000U)                     /*!< tamper detection is in rising edge mode */
 #define RTC_TAMPER_TRIGGER_EDGE_FALLING    RTC_TAMP_TP0EG                              /*!< tamper detection is in falling edge mode */
@@ -569,7 +569,7 @@ typedef struct {
 #define RTC_TAMPER_TRIGGER_POS             ((uint32_t)0x00000001U)                     /* shift position of trigger relative to source */
 
 #define RTC_ALARM_OUTPUT_OD                ((uint32_t)0x00000000U)                     /*!< RTC alarm output open-drain mode */
-#define RTC_ALARM_OUTPUT_PP                RTC_CTL_ALRMOUTTYPE                         /*!< RTC alarm output push-pull mode */
+#define RTC_ALARM_OUTPUT_PP                RTC_CFG_ALRMOUTTYPE                         /*!< RTC alarm output push-pull mode */
 
 /* alrm0ss register value */
 #define ALRMXSS_SSC(regval)                (BITS(0,14) & ((uint32_t)(regval)<< 0))     /*!< write value to RTC_ALRMXSS_SSC bit field */
@@ -623,14 +623,15 @@ typedef struct {
 #define RTC_FLAG_YCM                       RTC_STAT_YCM                                /*!< year parameter configured event flag */
 #define RTC_FLAG_RSYN                      RTC_STAT_RSYNF                              /*!< registers synchronized flag */
 #define RTC_FLAG_INIT                      RTC_STAT_INITF                              /*!< init mode event flag */
-#define RTC_FLAG_SCP                       RTC_STAT_SOPF                               /*!< smooth calibration pending flag */
-#define RTC_FLAG_ALARM0                    RTC_STAT_ALRM0F                             /*!< alarm event flag */
+#define RTC_FLAG_SCP                       RTC_STAT_SCPF                               /*!< smooth calibration pending flag */
+#define RTC_FLAG_ALARM0                    RTC_STAT_ALRM0F                             /*!< alarm0 occurs flag */
 #define RTC_FLAG_ALARM1                    RTC_STAT_ALRM1F                             /*!< alarm1 occurs flag */
 #define RTC_FLAG_WT                        RTC_STAT_WTF                                /*!< wakeup timer occurs flag */
 #define RTC_FLAG_TS                        RTC_STAT_TSF                                /*!< time-stamp flag */
 #define RTC_FLAG_TSOVR                     RTC_STAT_TSOVRF                             /*!< time-stamp overflow flag */
 #define RTC_FLAG_TP0                       RTC_STAT_TP0F                               /*!< RTC tamper 0 detected flag */
-#define RTC_FLAG_TP2                       RTC_STAT_TP2F                               /*!< RTC tamper 2 detected flag */
+#define RTC_FLAG_TP1                       RTC_STAT_TP1F                               /*!< RTC tamper 2 detected flag */
+#define RTC_FLAG_ITS                       RTC_STAT_ITSF                               /*!< Internal timestamp flag */
 
 /* function declarations */
 /* initialization and configuration functions */

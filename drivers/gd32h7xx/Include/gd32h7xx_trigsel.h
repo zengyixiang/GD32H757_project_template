@@ -2,11 +2,11 @@
     \file    gd32h7xx_trigsel.h
     \brief   definitions for the TRIGSEL
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -48,8 +48,8 @@ OF SUCH DAMAGE.
 #define TRIGSEL_ADC0                      REG32((TRIGSEL) + 0x00000010U)    /*!< TRIGSEL trigger selection for ADC0 register */
 #define TRIGSEL_ADC1                      REG32((TRIGSEL) + 0x00000014U)    /*!< TRIGSEL trigger selection for ADC1 register */
 #define TRIGSEL_ADC2                      REG32((TRIGSEL) + 0x00000018U)    /*!< TRIGSEL trigger selection for ADC2 register */
-#define TRIGSEL_DACOUT0                   REG32((TRIGSEL) + 0x0000001CU)    /*!< TRIGSEL trigger selection for DAC_OUT0 register */
-#define TRIGSEL_DACOUT1                   REG32((TRIGSEL) + 0x00000020U)    /*!< TRIGSEL trigger selection for DAC_OUT1 register */
+#define TRIGSEL_DAC0OUT0                  REG32((TRIGSEL) + 0x0000001CU)    /*!< TRIGSEL trigger selection for DAC0_OUT0 register */
+#define TRIGSEL_DAC0OUT1                  REG32((TRIGSEL) + 0x00000020U)    /*!< TRIGSEL trigger selection for DAC0_OUT1 register */
 #define TRIGSEL_TIMER0BRKIN               REG32((TRIGSEL) + 0x00000024U)    /*!< TRIGSEL trigger selection for TIMER0_BRKIN register */
 #define TRIGSEL_TIMER7BRKIN               REG32((TRIGSEL) + 0x00000028U)    /*!< TRIGSEL trigger selection for TIMER7_BRKIN register */
 #define TRIGSEL_TIMER14BRKIN              REG32((TRIGSEL) + 0x0000002CU)    /*!< TRIGSEL trigger selection for TIMER14_BRKIN register */
@@ -179,13 +179,13 @@ typedef enum
     TRIGSEL_INPUT_TIMER14_CH0             = ((uint8_t)0x54U),               /*!< trigger input source TIMER14 CH0 */
     TRIGSEL_INPUT_TIMER14_CH1             = ((uint8_t)0x55U),               /*!< trigger input source TIMER14 CH1 */
     TRIGSEL_INPUT_TIMER14_MCH0            = ((uint8_t)0x56U),               /*!< trigger input source TIMER14 MCH0 */
-    TRIGSEL_INPUT_TIMER14_BRKIN           = ((uint8_t)0x59U),               /*!< trigger input source TIMER14 BRKIN */
+    TRIGSEL_INPUT_TIMER14_BRKIN0          = ((uint8_t)0x59U),               /*!< trigger input source TIMER14 BRKIN0 */
     TRIGSEL_INPUT_TIMER15_CH0             = ((uint8_t)0x5AU),               /*!< trigger input source TIMER15 CH0 */
     TRIGSEL_INPUT_TIMER15_MCH0            = ((uint8_t)0x5BU),               /*!< trigger input source TIMER15 MCH0 */
-    TRIGSEL_INPUT_TIMER15_BRKIN           = ((uint8_t)0x5EU),               /*!< trigger input source TIMER15 BRKIN */
+    TRIGSEL_INPUT_TIMER15_BRKIN0          = ((uint8_t)0x5EU),               /*!< trigger input source TIMER15 BRKIN0 */
     TRIGSEL_INPUT_TIMER16_CH0             = ((uint8_t)0x5FU),               /*!< trigger input source TIMER16 CH0 */
     TRIGSEL_INPUT_TIMER16_MCH0            = ((uint8_t)0x60U),               /*!< trigger input source TIMER16 MCH0 */
-    TRIGSEL_INPUT_TIMER16_BRKIN           = ((uint8_t)0x63U),               /*!< trigger input source TIMER16 BRKIN */
+    TRIGSEL_INPUT_TIMER16_BRKIN0          = ((uint8_t)0x63U),               /*!< trigger input source TIMER16 BRKIN0 */
     TRIGSEL_INPUT_TIMER22_TRGO0           = ((uint8_t)0x64U),               /*!< trigger input source TIMER22 TRGO0 */
     TRIGSEL_INPUT_TIMER22_CH0             = ((uint8_t)0x65U),               /*!< trigger input source TIMER22 CH0 */
     TRIGSEL_INPUT_TIMER22_CH1             = ((uint8_t)0x66U),               /*!< trigger input source TIMER22 CH1 */
@@ -214,31 +214,31 @@ typedef enum
     TRIGSEL_INPUT_TIMER40_CH0             = ((uint8_t)0x7DU),               /*!< trigger input source TIMER40 CH0 */
     TRIGSEL_INPUT_TIMER40_CH1             = ((uint8_t)0x7EU),               /*!< trigger input source TIMER40 CH1 */
     TRIGSEL_INPUT_TIMER40_MCH0            = ((uint8_t)0x7FU),               /*!< trigger input source TIMER40 MCH0 */
-    TRIGSEL_INPUT_TIMER40_BRKIN           = ((uint8_t)0x82U),               /*!< trigger input source TIMER40 BRKIN */
+    TRIGSEL_INPUT_TIMER40_BRKIN0          = ((uint8_t)0x82U),               /*!< trigger input source TIMER40 BRKIN0 */
     TRIGSEL_INPUT_TIMER41_TRGO0           = ((uint8_t)0x83U),               /*!< trigger input source TIMER41 TRGO0 */
     TRIGSEL_INPUT_TIMER41_CH0             = ((uint8_t)0x84U),               /*!< trigger input source TIMER41 CH0 */
     TRIGSEL_INPUT_TIMER41_CH1             = ((uint8_t)0x85U),               /*!< trigger input source TIMER41 CH1 */
     TRIGSEL_INPUT_TIMER41_MCH0            = ((uint8_t)0x86U),               /*!< trigger input source TIMER41 MCH0 */
-    TRIGSEL_INPUT_TIMER41_BRKIN           = ((uint8_t)0x89U),               /*!< trigger input source TIMER41 BRKIN */
+    TRIGSEL_INPUT_TIMER41_BRKIN0          = ((uint8_t)0x89U),               /*!< trigger input source TIMER41 BRKIN0 */
     TRIGSEL_INPUT_TIMER42_TRGO0           = ((uint8_t)0x8AU),               /*!< trigger input source TIMER42 TRGO0 */
     TRIGSEL_INPUT_TIMER42_CH0             = ((uint8_t)0x8BU),               /*!< trigger input source TIMER42 CH0 */
     TRIGSEL_INPUT_TIMER42_CH1             = ((uint8_t)0x8CU),               /*!< trigger input source TIMER42 CH1 */
     TRIGSEL_INPUT_TIMER42_MCH0            = ((uint8_t)0x8DU),               /*!< trigger input source TIMER42 MCH0 */
-    TRIGSEL_INPUT_TIMER42_BRKIN           = ((uint8_t)0x90U),               /*!< trigger input source TIMER42 BRKIN */
+    TRIGSEL_INPUT_TIMER42_BRKIN0          = ((uint8_t)0x90U),               /*!< trigger input source TIMER42 BRKIN0 */
     TRIGSEL_INPUT_TIMER43_TRGO0           = ((uint8_t)0x91U),               /*!< trigger input source TIMER43 TRGO0 */
     TRIGSEL_INPUT_TIMER43_CH0             = ((uint8_t)0x92U),               /*!< trigger input source TIMER43 CH0 */
     TRIGSEL_INPUT_TIMER43_CH1             = ((uint8_t)0x93U),               /*!< trigger input source TIMER43 CH1 */
     TRIGSEL_INPUT_TIMER43_MCH0            = ((uint8_t)0x94U),               /*!< trigger input source TIMER43 MCH0 */
-    TRIGSEL_INPUT_TIMER43_BRKIN           = ((uint8_t)0x97U),               /*!< trigger input source TIMER43 BRKIN */
+    TRIGSEL_INPUT_TIMER43_BRKIN0          = ((uint8_t)0x97U),               /*!< trigger input source TIMER43 BRKIN0 */
     TRIGSEL_INPUT_TIMER44_TRGO0           = ((uint8_t)0x98U),               /*!< trigger input source TIMER44 TRGO0 */
     TRIGSEL_INPUT_TIMER44_CH0             = ((uint8_t)0x99U),               /*!< trigger input source TIMER44 CH0 */
     TRIGSEL_INPUT_TIMER44_CH1             = ((uint8_t)0x9AU),               /*!< trigger input source TIMER44 CH1 */
     TRIGSEL_INPUT_TIMER44_MCH0            = ((uint8_t)0x9BU),               /*!< trigger input source TIMER44 MCH0 */
-    TRIGSEL_INPUT_TIMER44_BRKIN           = ((uint8_t)0x9EU),               /*!< trigger input source TIMER44 BRKIN */
+    TRIGSEL_INPUT_TIMER44_BRKIN0          = ((uint8_t)0x9EU),               /*!< trigger input source TIMER44 BRKIN0 */
     TRIGSEL_INPUT_TIMER50_TRGO0           = ((uint8_t)0x9FU),               /*!< trigger input source TIMER50 TRGO0 */
     TRIGSEL_INPUT_TIMER51_TRGO0           = ((uint8_t)0xA0U),               /*!< trigger input source TIMER51 TRGO0 */
     TRIGSEL_INPUT_RTC_ALARM               = ((uint8_t)0xA1U),               /*!< trigger input source RTC alarm */
-    TRIGSEL_INPUT_RTC_TPTS                = ((uint8_t)0xA2U),               /*!< trigger input source RTC TPTS */
+    TRIGSEL_INPUT_RTC_TPTS                = ((uint8_t)0xA2U),               /*!< trigger input source RTC tamper and time-stamp */
     TRIGSEL_INPUT_ADC0_WD0_OUT            = ((uint8_t)0xA3U),               /*!< trigger input source ADC0 watchdog0 output */
     TRIGSEL_INPUT_ADC0_WD1_OUT            = ((uint8_t)0xA4U),               /*!< trigger input source ADC0 watchdog1 output */
     TRIGSEL_INPUT_ADC0_WD2_OUT            = ((uint8_t)0xA5U),               /*!< trigger input source ADC0 watchdog2 output */
@@ -250,10 +250,10 @@ typedef enum
     TRIGSEL_INPUT_ADC2_WD2_OUT            = ((uint8_t)0xABU),               /*!< trigger input source ADC2 watchdog2 output */
     TRIGSEL_INPUT_CMP0_OUT                = ((uint8_t)0xACU),               /*!< trigger input source CMP0_OUT */
     TRIGSEL_INPUT_CMP1_OUT                = ((uint8_t)0xADU),               /*!< trigger input source CMP1_OUT */
-    TRIGSEL_INPUT_SAI0_AFS_OUT            = ((uint8_t)0xAEU),               /*!< trigger input source SAI0_AFS_OUT */
-    TRIGSEL_INPUT_SAI0_BFS_OUT            = ((uint8_t)0xAFU),               /*!< trigger input source SAI0_BFS_OUT */
-    TRIGSEL_INPUT_SAI2_AFS_OUT            = ((uint8_t)0xB0U),               /*!< trigger input source SAI2_AFS_OUT */
-    TRIGSEL_INPUT_SAI2_BFS_OUT            = ((uint8_t)0xB1U),               /*!< trigger input source SAI2_BFS_OUT */
+    TRIGSEL_INPUT_SAI0_FS0                = ((uint8_t)0xAEU),               /*!< trigger input source SAI0_FS0 */
+    TRIGSEL_INPUT_SAI0_FS1                = ((uint8_t)0xAFU),               /*!< trigger input source SAI0_FS1 */
+    TRIGSEL_INPUT_SAI2_FS0                = ((uint8_t)0xB0U),               /*!< trigger input source SAI2_FS0 */
+    TRIGSEL_INPUT_SAI2_FS1                = ((uint8_t)0xB1U),               /*!< trigger input source SAI2_FS1 */
 }trigsel_source_enum;
 
 /* target peripheral definitions */
@@ -267,14 +267,14 @@ typedef enum
     TRIGSEL_OUTPUT_TRIGSEL_OUT5           = ((uint8_t)0x09U),               /*!< output target peripheral TRIGSEL_OUT5 pin */
     TRIGSEL_OUTPUT_TRIGSEL_OUT6           = ((uint8_t)0x0CU),               /*!< output target peripheral TRIGSEL_OUT6 pin */
     TRIGSEL_OUTPUT_TRIGSEL_OUT7           = ((uint8_t)0x0DU),               /*!< output target peripheral TRIGSEL_OUT7 pin */
-    TRIGSEL_OUTPUT_ADC0_REGTRG            = ((uint8_t)0x10U),               /*!< output target peripheral ADC0_REGTRG */
+    TRIGSEL_OUTPUT_ADC0_ROUTRG            = ((uint8_t)0x10U),               /*!< output target peripheral ADC0_ROUTRG */
     TRIGSEL_OUTPUT_ADC0_INSTRG            = ((uint8_t)0x11U),               /*!< output target peripheral ADC0_INSTRG */
-    TRIGSEL_OUTPUT_ADC1_REGTRG            = ((uint8_t)0x14U),               /*!< output target peripheral ADC1_REGTRG */
+    TRIGSEL_OUTPUT_ADC1_ROUTRG            = ((uint8_t)0x14U),               /*!< output target peripheral ADC1_ROUTRG */
     TRIGSEL_OUTPUT_ADC1_INSTRG            = ((uint8_t)0x15U),               /*!< output target peripheral ADC1_INSTRG */
-    TRIGSEL_OUTPUT_ADC2_REGTRG            = ((uint8_t)0x18U),               /*!< output target peripheral ADC2_REGTRG */
+    TRIGSEL_OUTPUT_ADC2_ROUTRG            = ((uint8_t)0x18U),               /*!< output target peripheral ADC2_ROUTRG */
     TRIGSEL_OUTPUT_ADC2_INSTRG            = ((uint8_t)0x19U),               /*!< output target peripheral ADC2_INSTRG */
-    TRIGSEL_OUTPUT_DAC_OUT0_EXTRG         = ((uint8_t)0x1CU),               /*!< output target peripheral DAC_OUT0_EXTRG */
-    TRIGSEL_OUTPUT_DAC_OUT1_EXTRG         = ((uint8_t)0x20U),               /*!< output target peripheral DAC_OUT1_EXTRG */
+    TRIGSEL_OUTPUT_DAC0_OUT0_EXTRG        = ((uint8_t)0x1CU),               /*!< output target peripheral DAC0_OUT0_EXTRG */
+    TRIGSEL_OUTPUT_DAC0_OUT1_EXTRG        = ((uint8_t)0x20U),               /*!< output target peripheral DAC0_OUT1_EXTRG */
     TRIGSEL_OUTPUT_TIMER0_BRKIN0          = ((uint8_t)0x24U),               /*!< output target peripheral TIMER0_BRKIN0 */
     TRIGSEL_OUTPUT_TIMER0_BRKIN1          = ((uint8_t)0x25U),               /*!< output target peripheral TIMER0_BRKIN1 */
     TRIGSEL_OUTPUT_TIMER0_BRKIN2          = ((uint8_t)0x26U),               /*!< output target peripheral TIMER0_BRKIN2 */

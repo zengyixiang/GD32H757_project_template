@@ -2,11 +2,11 @@
     \file    gd32h7xx_syscfg.h
     \brief   definitions for the SYSCFG
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -433,6 +433,7 @@ typedef enum {
     TIMER15_CI0_INPUT_LXTAL             = TIMER_REGIDX_BIT(TIMERCISEL6, 0U, 2U),        /*!< select LXTAL as TIMER15 CI0 */
     TIMER15_CI0_INPUT_WKUP_IT           = TIMER_REGIDX_BIT(TIMERCISEL6, 0U, 3U),        /*!< select WKUP IT as TIMER15 CI0 */
     TIMER16_CI0_INPUT_TIMER16_CH0       = TIMER_REGIDX_BIT(TIMERCISEL6, 4U, 0U),        /*!< select TIMER16 CH0 as TIMER16 CI0 */
+    TIMER16_CI0_INPUT_RSPDIF            = TIMER_REGIDX_BIT(TIMERCISEL6, 4U, 1U),        /*!< select RSPDIF symbol ck as TIMER16 CI0 */
     TIMER16_CI0_INPUT_HXTAL_RTCDIV      = TIMER_REGIDX_BIT(TIMERCISEL6, 4U, 2U),        /*!< select HXTAL/RTCDIV 1M as TIMER16 CI0 */
     TIMER16_CI0_INPUT_CKOUT0            = TIMER_REGIDX_BIT(TIMERCISEL6, 4U, 3U),        /*!< select CKOUT0 as TIMER16 CI0 */
     TIMER43_CI0_INPUT_TIMER43_CH0       = TIMER_REGIDX_BIT(TIMERCISEL6, 8U, 0U),        /*!< select TIMER43 CH0 as TIMER43 CI0 */

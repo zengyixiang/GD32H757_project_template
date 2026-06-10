@@ -2,11 +2,11 @@
     \file    gd32h7xx_rameccmu.c
     \brief   RAMECCMU driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -300,11 +300,13 @@ void rameccmu_monitor_interrupt_disable(rameccmu_monitor_enum rameccmu_monitor, 
 */
 FlagStatus rameccmu_monitor_flag_get(rameccmu_monitor_enum rameccmu_monitor, uint32_t flag)
 {
-    if(RESET != ((RAMECCMU_MXSTAT(rameccmu_monitor)) & flag)){
-        return SET;
-    }else{
-        return RESET;
+    FlagStatus retval = RESET;
+    if(RESET != ((RAMECCMU_MXSTAT(rameccmu_monitor)) & flag)) {
+        retval = SET;
+    } else {
+        /* do nothing */
     }
+    return retval;
 }
 
 /*!
@@ -356,6 +358,7 @@ FlagStatus rameccmu_monitor_interrupt_flag_get(rameccmu_monitor_enum rameccmu_mo
 {
     uint32_t ret1 = RESET;
     uint32_t ret2 = RESET;
+    FlagStatus retval = RESET;
 
     /* get the status of interrupt enable bit */
     ret1 = RAMECCMU_MXCTL(rameccmu_monitor) & (uint32_t)(int_flag << 2U);
@@ -363,10 +366,10 @@ FlagStatus rameccmu_monitor_interrupt_flag_get(rameccmu_monitor_enum rameccmu_mo
     ret2 = RAMECCMU_MXSTAT(rameccmu_monitor) & int_flag;
 
     if(ret1 && ret2) {
-        return SET;
+        retval = SET;
     } else {
-        return RESET;
     }
+    return retval;
 }
 
 /*!

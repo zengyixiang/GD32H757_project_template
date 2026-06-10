@@ -2,11 +2,11 @@
     \file    gd32h7xx_tmu.h
     \brief   definitions for the TMU
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -48,7 +48,6 @@ OF SUCH DAMAGE.
 /* bits definitions */
 /* TMU_CS */
 #define TMU_CS_MODE                 BITS(0,3)                   /*!< TMU operation mode selection */
-#define TMU_CS_ITRTNUM              BITS(4,7)                   /*!< number of iterations selection */
 #define TMU_CS_FACTOR               BITS(8,10)                  /*!< scaling factor */
 #define TMU_CS_RIE                  BIT(16)                     /*!< read TMU_ODATA interrupt enable */
 #define TMU_CS_RDEN                 BIT(17)                     /*!< read TMU_ODATA DMA request enable */
@@ -70,7 +69,6 @@ OF SUCH DAMAGE.
 typedef struct
 {
     uint32_t mode;                                              /*!< mode of TMU operation */
-    uint32_t iterations_number;                                 /*!< number of iterations selection */
     uint32_t scale;                                             /*!< scaling factor */
     uint32_t dma_read;                                          /*!< DMA request to read TMU_ODATA */
     uint32_t dma_write;                                         /*!< DMA request to write TMU_IDATA */
@@ -92,15 +90,6 @@ typedef struct
 #define TMU_MODE_ATANH              TMU_MODE(7)                 /*!< mode7: atanh(x) */
 #define TMU_MODE_LN                 TMU_MODE(8)                 /*!< mode8: ln(x) */
 #define TMU_MODE_SQRT               TMU_MODE(9)                 /*!< mode9: sqrt(x) */
-
-/* TMU number of iterations definitions */
-#define ITERATIONS(regval)          (BITS(4,7) & ((uint32_t)(regval) << 4))
-#define TMU_ITERATION_STEPS_4       ITERATIONS(1)               /*!< 4 iteration steps */
-#define TMU_ITERATION_STEPS_8       ITERATIONS(2)               /*!< 8 iteration steps */
-#define TMU_ITERATION_STEPS_12      ITERATIONS(3)               /*!< 12 iteration steps */
-#define TMU_ITERATION_STEPS_16      ITERATIONS(4)               /*!< 16 iteration steps */
-#define TMU_ITERATION_STEPS_20      ITERATIONS(5)               /*!< 20 iteration steps */
-#define TMU_ITERATION_STEPS_24      ITERATIONS(6)               /*!< 24 iteration steps */
 
 /* TMU scaling factor definitions */
 #define SCALE(regval)               (BITS(8,10) & ((uint32_t)(regval) << 8))
@@ -136,6 +125,9 @@ typedef struct
 /* TMU input data width definitions */
 #define TMU_INPUT_WIDTH_32          ((uint32_t)0x00000000U)     /*!< TMU_IDATA contains the input data in q1.31 format */
 #define TMU_INPUT_WIDTH_16          TMU_CS_IWIDTH               /*!< TMU_IDATA contains the input data in q1.15 format */
+
+/* TMU flag */
+#define TMU_FLAG_END                TMU_CS_ENDF                 /*!< end of TMU operation flag */
 
 /* function declarations */
 /* initialization functions */
@@ -174,4 +166,7 @@ void tmu_two_q31_read(uint32_t* p1, uint32_t* p2);
 /* read two data in q1.15 format */
 void tmu_two_q15_read(uint16_t* p1, uint16_t* p2);
 
-#endif /* GD32H7XX_TMU_H */
+/* get TMU flag */
+FlagStatus tmu_flag_get(uint32_t flag);
+
+#endif /* GD32H75E_TMU_H */

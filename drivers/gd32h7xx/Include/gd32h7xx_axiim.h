@@ -2,11 +2,11 @@
     \file    gd32h7xx_axiim.h
     \brief   definitions for AXIIM(AXI interconnect matrix)
     
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -48,10 +48,10 @@ OF SUCH DAMAGE.
 #define AXI_PERIPH_ID2                      REG32(AXIIM + 0x00001FE8U)                              /*!< AXI peripheral ID2 register */
 #define AXI_PERIPH_ID3                      REG32(AXIIM + 0x00001FECU)                              /*!< AXI peripheral ID3 register */
 
-#define AXI_COMP_ID0                        REG32(AXIIM + 0x00001FF0U)                              /*!< AXI componet ID0 register */
-#define AXI_COMP_ID1                        REG32(AXIIM + 0x00001FF4U)                              /*!< AXI componet ID1 register */
-#define AXI_COMP_ID2                        REG32(AXIIM + 0x00001FF8U)                              /*!< AXI componet ID2 register */
-#define AXI_COMP_ID3                        REG32(AXIIM + 0x00001FFCU)                              /*!< AXI componet ID3 register */  
+#define AXI_COMP_ID0                        REG32(AXIIM + 0x00001FF0U)                              /*!< AXI component ID0 register */
+#define AXI_COMP_ID1                        REG32(AXIIM + 0x00001FF4U)                              /*!< AXI component ID1 register */
+#define AXI_COMP_ID2                        REG32(AXIIM + 0x00001FF8U)                              /*!< AXI component ID2 register */
+#define AXI_COMP_ID3                        REG32(AXIIM + 0x00001FFCU)                              /*!< AXI component ID3 register */  
 
 #define AXI_MPXBM_ISS_CTL(mportx)           REG32(AXIIM + 0x00002008U + 0x00001000U * (mportx))     /*!< AXI master port x bus matrix issuing functionality control register */
 #define AXI_MP0BM_ISS_CTL                   REG32(AXIIM + 0x00002008U)                              /*!< AXI master port 0 bus matrix issuing functionality control register */
@@ -162,14 +162,14 @@ typedef enum
     SLAVE_PORT5                                          /*!< AXI slave port 5 */
 } slave_port_enum;
 
-/* AXI master port x bus mutrix read issuing capability is set to 1, mportx: MASTER_PORTx (x=0..7) */
+/* AXI master port x bus matrix read issuing capability is set to 1, mportx: MASTER_PORTx (x=0..7) */
 #define __AXI_MPXBM_READ_ISSOV_ENABLE(mportx)                         {AXI_MPXBM_ISS_CTL(mportx) |= AXI_MPXBM_ISS_CTL_RD_ISSOV}
-/* AXI master port x bus mutrix read issuing capability is normal, mportx: MASTER_PORTx (x=0..7) */
+/* AXI master port x bus matrix read issuing capability is normal, mportx: MASTER_PORTx (x=0..7) */
 #define __AXI_MPXBM_READ_ISSOV_DISABLE(mportx)                        {AXI_MPXBM_ISS_CTL(mportx) &= ~AXI_MPXBM_ISS_CTL_RD_ISSOV}
 
-/* AXI master port x bus mutrix write issuing capability is set to 1, mportx: MASTER_PORTx (x=0..7) */
+/* AXI master port x bus matrix write issuing capability is set to 1, mportx: MASTER_PORTx (x=0..7) */
 #define __AXI_MPXBM_WRITE_ISSOV_ENABLE(mportx)                        {AXI_MPXBM_ISS_CTL(mportx) |= AXI_MPXBM_ISS_CTL_WR_ISSOV}
-/* AXI master port x bus mutrix write issuing capability is normal, mportx: MASTER_PORTx (x=0..7) */
+/* AXI master port x bus matrix write issuing capability is normal, mportx: MASTER_PORTx (x=0..7) */
 #define __AXI_MPXBM_WRITE_ISSOV_DISABLE(mportx)                       {AXI_MPXBM_ISS_CTL(mportx) &= ~AXI_MPXBM_ISS_CTL_WR_ISSOV}
 
 /* enable AXI master port x beats packing function, mportx: MASTER_PORTx (x=0,1,6,7) */

@@ -2,11 +2,11 @@
     \file    gd32h7xx_ipa.c
     \brief   IPA driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -577,10 +577,10 @@ void ipa_interval_clock_num_config(uint8_t clk_num)
 
 /*!
     \brief      configure the color space conversion parameter
-    \param[out] conversion_struct: the data needed to configure color conversion parameters
-    \param[in]  ipa_colorspace_enum: the color space
+    \param[in]  colorspace: the color space
                   IPA_COLORSPACE_YUV: using default YUV parameter to initialization struct
                   IPA_COLORSPACE_YCBCR: using default YCbCr parameter to initialization struct
+    \param[out] conversion_struct: the data needed to configure color conversion parameters
     \retval     none
 */
 void ipa_color_conversion_struct_para_init(ipa_conversion_parameter_struct* conversion_struct, ipa_colorspace_enum colorspace)
@@ -721,11 +721,13 @@ void ipa_destination_scaling_config(uint32_t dest_scaling_width, uint32_t dest_s
 */
 FlagStatus ipa_flag_get(uint32_t flag)
 {
-    if(RESET != (IPA_INTF & flag)){
-        return SET;
-    }else{
-        return RESET;
+    FlagStatus retval = RESET;
+    if(RESET != (IPA_INTF & flag)) {
+        retval = SET;
+    } else {
+        /* do nothing */
     }
+    return retval;
 }
 
 /*!
@@ -797,11 +799,13 @@ void ipa_interrupt_disable(uint32_t int_flag)
 */
 FlagStatus ipa_interrupt_flag_get(uint32_t int_flag)
 {
-    if(RESET != (IPA_INTF & int_flag)){
-        return SET;
-    }else{
-        return RESET;
+    FlagStatus retval = RESET;
+    if(RESET != (IPA_INTF & int_flag)) {
+        retval = SET;
+    } else {
+        /* do nothing */
     }
+    return retval;
 }
 
 /*!

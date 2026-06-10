@@ -2,11 +2,11 @@
     \file    gd32h7xx_hwsem.c
     \brief   HWSEM driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -208,7 +208,7 @@ FlagStatus hwsem_flag_get(hwsem_semaphore_enum semaphore)
     FlagStatus ret = RESET;
 
     if(RESET != ((HWSEM_STAT >> semaphore) & 0x1U)) {
-        return SET;
+        ret = SET;
     }
 
     return ret;

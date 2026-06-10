@@ -2,11 +2,11 @@
     \file    gd32h7xx_timer.c
     \brief   TIMER driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -569,7 +569,7 @@ void timer_delayable_single_pulse_mode_config(uint32_t timer_periph, uint16_t ch
     timer_single_pulse_mode_config(timer_periph, TIMER_SP_MODE_SINGLE);
     /* set the CHxCOMCTL/MCHxCOMCTL bits */
     timer_channel_output_mode_config(timer_periph, channel, dspmode);
-    /* set the Restart + event slave mode */
+    /* set the restart + event slave mode */
     timer_slave_mode_select(timer_periph, TIMER_SLAVE_MODE_RESTART_EVENT);
     /* set the counter direction in edge-aligned mode*/
     TIMER_CTL0(timer_periph) &= (~(uint32_t)(TIMER_CTL0_DIR | TIMER_CTL0_CAM));
@@ -889,12 +889,12 @@ void timer_break_config(uint32_t timer_periph, timer_break_parameter_struct *bre
                                               ((uint32_t)(breakpara->outputautostate)) |
                                               ((uint32_t)(breakpara->protectmode)) |
                                               ((uint32_t)(breakpara->break0state)) |
-                                              ((uint32_t)(breakpara->break0filter)) |
+                                              ((uint32_t)(breakpara->break0filter) << 16U) |
                                               ((uint32_t)(breakpara->break0polarity)) |
                                               ((uint32_t)(breakpara->break0lock)) |
                                               ((uint32_t)(breakpara->break0release)) |
                                               ((uint32_t)(breakpara->break1state)) |
-                                              ((uint32_t)(breakpara->break1filter)) |
+                                              ((uint32_t)(breakpara->break1filter) << 20U) |
                                               ((uint32_t)(breakpara->break1polarity)) |
                                               ((uint32_t)(breakpara->break1lock)) |
                                               ((uint32_t)(breakpara->break1release)));
@@ -906,7 +906,7 @@ void timer_break_config(uint32_t timer_periph, timer_break_parameter_struct *bre
                                               ((uint32_t)(breakpara->outputautostate)) |
                                               ((uint32_t)(breakpara->protectmode)) |
                                               ((uint32_t)(breakpara->break0state)) |
-                                              ((uint32_t)(breakpara->break0filter)) |
+                                              ((uint32_t)(breakpara->break0filter) << 16U) |
                                               ((uint32_t)(breakpara->break0polarity)) |
                                               ((uint32_t)(breakpara->break0lock)) |
                                               ((uint32_t)(breakpara->break0release)));
@@ -2598,8 +2598,8 @@ void timer_master_output1_trigger_source_select(uint32_t timer_periph, uint32_t 
       \arg        TIMER_SLAVE_MODE_EVENT: event mode(x=0~4,7,14,22,23,30,31,40~44)
       \arg        TIMER_SLAVE_MODE_EXTERNAL0: external clock mode 0(x=0~4,7,14,22,23,30,31,40~44)
       \arg        TIMER_SLAVE_MODE_RESTART_EVENT: restart + event mode(x=0~4,7,14,22,23,30,31,40~44)
-      \arg        TIMER_NONQUAD_MODE0: non-quadrature decoder mode 0(x=0~4,7,22,23,30,31)
-      \arg        TIMER_NONQUAD_MODE1: non-quadrature decoder mode 1(x=0~4,7,22,23,30,31)
+      \arg        TIMER_NONQUAD_DECODER_MODE0: non-quadrature decoder mode 0(x=0~4,7,22,23,30,31)
+      \arg        TIMER_NONQUAD_DECODER_MODE1: non-quadrature decoder mode 1(x=0~4,7,22,23,30,31)
     \param[out] none
     \retval     none
 */
@@ -2745,7 +2745,7 @@ void timer_slave_mode_select(uint32_t timer_periph, uint32_t slavemode)
 
 /*!
     \brief      configure TIMER master slave mode
-    \param[in]  TIMERx(x=0~4,7,14,22,23,30,31,40~44)
+    \param[in]  timer_periph: TIMERx(x=0~4,7,14,22,23,30,31,40~44)
     \param[in]  masterslave: master slave mode
                 only one parameter can be selected which is shown as below:
       \arg        TIMER_MASTER_SLAVE_MODE_ENABLE: master slave mode enable
@@ -3190,7 +3190,7 @@ void timer_output_value_selection_config(uint32_t timer_periph, uint16_t outsel)
 /*!
     \brief      configure commutation control shadow register update selection
     \param[in]  timer_periph: TIMERx(x=0,7,14~16,40~44)
-    \param[in]  cssel: commutation control shadow register selection
+    \param[in]  ccssel: commutation control shadow register selection
                 only one parameter can be selected which is shown as below:
       \arg        TIMER_CCUSEL_DISABLE: the shadow registers update when the counter generates an overflow/ underflow event
       \arg        TIMER_CCUSEL_ENABLE: the shadow registers update when the counter generates an overflow/ underflow event and the repetition counter value is zero

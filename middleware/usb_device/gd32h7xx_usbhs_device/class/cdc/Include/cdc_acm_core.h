@@ -2,11 +2,11 @@
     \file    cdc_acm_core.h
     \brief   the header file of cdc acm driver
 
-    \version 2025-01-24, V1.4.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2025, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -44,7 +44,7 @@ typedef struct {
     __ALIGN_BEGIN uint8_t data[USB_CDC_RX_LEN] __ALIGN_END;                  /*< CDC data transfer buff */
     __ALIGN_BEGIN uint8_t cmd[USB_CDC_CMD_PACKET_SIZE] __ALIGN_END;          /*< CDC command packet buff */
 
-    volatile uint8_t packet_sent;                                                     /*< CDC data packet start send flag */
+    uint8_t packet_sent;                                                     /*< CDC data packet start send flag */
     uint8_t packet_receive;                                                  /*< CDC data packet start receive flag */
     uint32_t receive_length;                                                 /*< CDC data receive length */
 

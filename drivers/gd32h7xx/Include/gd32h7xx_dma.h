@@ -2,11 +2,11 @@
     \file    gd32h7xx_dma.h
     \brief   definitions for the DMA
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -291,7 +291,7 @@ OF SUCH DAMAGE.
 #define DMAMUX_RM_INTF_REG_OFFSET         ((uint32_t)0x00000080U)                                                      /*!< DMAMUX_RM_INTF register offset */
 #define DMAMUX_RG_INTF_REG_OFFSET         ((uint32_t)0x00000140U)                                                      /*!< DMAMUX_RG_INTF register offset */
 
-/* DMA multi-data mode initialize structrue */
+/* DMA multi-data mode initialize structure */
 typedef struct {
     uint32_t request;                                                                                                  /*!< channel input identification */
     uint32_t periph_addr;                                                                                              /*!< peripheral base address */
@@ -309,7 +309,7 @@ typedef struct {
     uint32_t priority;                                                                                                 /*!< channel priority level */
 } dma_multi_data_parameter_struct;
 
-/* DMA single-data mode initialize structrue */
+/* DMA single-data mode initialize structure */
 typedef struct {
     uint32_t request;                                                                                                  /*!< channel input identification */
     uint32_t periph_addr;                                                                                              /*!< peripheral base address */
@@ -675,7 +675,6 @@ typedef enum {
 #define DMA_REQUEST_TIMER4_CH2            RM_CHXCFG_MUXID(70U)                                                         /*!< DMAMUX TIMER4 CH2 request */
 #define DMA_REQUEST_TIMER4_CH3            RM_CHXCFG_MUXID(71U)                                                         /*!< DMAMUX TIMER4 CH3 request */
 #define DMA_REQUEST_TIMER4_UP             RM_CHXCFG_MUXID(72U)                                                         /*!< DMAMUX TIMER4 UP request */
-#define DMA_REQUEST_TIMER4_CMT            RM_CHXCFG_MUXID(73U)                                                         /*!< DMAMUX TIMER4 CMT request */
 #define DMA_REQUEST_TIMER4_TRG            RM_CHXCFG_MUXID(74U)                                                         /*!< DMAMUX TIMER4 TRG request */
 #define DMA_REQUEST_SPI2_RX               RM_CHXCFG_MUXID(75U)                                                         /*!< DMAMUX SPI2 RX request */
 #define DMA_REQUEST_SPI2_TX               RM_CHXCFG_MUXID(76U)                                                         /*!< DMAMUX SPI2 TX request */
@@ -918,9 +917,9 @@ void dma_periph_burst_beats_config(uint32_t dma_periph, dma_channel_enum channel
 void dma_memory_width_config(uint32_t dma_periph, dma_channel_enum channelx, uint32_t msize);
 /* configure transfer data size of peripheral */
 void dma_periph_width_config(uint32_t dma_periph, dma_channel_enum channelx, uint32_t psize);
-/* configure next address increasement algorithm of memory */
+/* configure memory address generation algorithm */
 void dma_memory_address_generation_config(uint32_t dma_periph, dma_channel_enum channelx, uint8_t generation_algorithm);
-/* configure next address increasement algorithm of peripheral */
+/* configure peripheral address generation algorithm */
 void dma_peripheral_address_generation_config(uint32_t dma_periph, dma_channel_enum channelx, uint8_t generation_algorithm);
 /* enable DMA circulation mode */
 void dma_circulation_enable(uint32_t dma_periph, dma_channel_enum channelx);

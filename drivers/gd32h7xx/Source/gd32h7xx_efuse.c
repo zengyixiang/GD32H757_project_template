@@ -2,11 +2,11 @@
     \file    gd32h7xx_efuse.c
     \brief   EFUSE driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -75,9 +75,7 @@ ErrStatus efuse_read(uint32_t ef_addr, uint32_t size, uint32_t buf[])
     uint32_t number = 0U;
     switch(ef_addr) {
     case USER_CTL_EFADDR:
-        /* read user control */
-        reg_addr = EFUSE_USER_CTL_REG_ADDR;
-        number = 1U;
+        status = ERROR;
         break;
     case MCU_RESERVED_EFADDR:
         /* read MCU reserved data */
@@ -107,26 +105,27 @@ ErrStatus efuse_read(uint32_t ef_addr, uint32_t size, uint32_t buf[])
         status = ERROR;
         break;
     }
-    if(ERROR == status) {
-        return status;
+
+    if(SUCCESS == status) {
+        /* clear the RDIF bit if it is SET */
+        efuse_flag_clear(EFUSE_FLAG_READ_COMPLETE_CLR);
+        /* reset the EFRW bit in EFUSE_CTL */
+        EFUSE_CTL &= ~EFUSE_CTL_EFRW;
+        /* write the desired efuse address and size to the EFUSE_ADDR register */
+        EFUSE_ADDR = (uint32_t)((size << EFUSE_ADDR_EFSIZE_OFFSET) | ef_addr);
+        /* start array read EFUSE operation */
+        EFUSE_CTL |= EFUSE_CTL_EFSTR;
+        /* wait for the operation to complete */
+        efuse_state = efuse_ready_wait(EFUSE_FLAG_READ_COMPLETE, timeout);
+        if(EFUSE_READY != efuse_state) {
+            status = ERROR;
+        }
+        /* read EFUSE register */
+        for(i = 0U; i < number; i++) {
+            buf[i] = REG32(reg_addr + (4U * i));
+        }
     }
-    /* clear the RDIF bit if it is SET */
-    efuse_flag_clear(EFUSE_FLAG_READ_COMPLETE_CLR);
-    /* reset the EFRW bit in EFUSE_CTL */
-    EFUSE_CTL &= ~EFUSE_CTL_EFRW;
-    /* write the desired efuse address and size to the EFUSE_ADDR register */
-    EFUSE_ADDR = (uint32_t)((size << EFUSE_ADDR_EFSIZE_OFFSET) | ef_addr);
-    /* start array read EFUSE operation */
-    EFUSE_CTL |= EFUSE_CTL_EFSTR;
-    /* wait for the operation to complete */
-    efuse_state = efuse_ready_wait(EFUSE_FLAG_READ_COMPLETE, timeout);
-    if(EFUSE_READY != efuse_state) {
-        status = ERROR;
-    }
-    /* read EFUSE register */
-    for(i = 0U; i < number; i++) {
-        buf[i] = REG32(reg_addr + (4U * i));
-    }
+
     return status;
 }
 
@@ -150,79 +149,83 @@ ErrStatus efuse_write(uint32_t ef_addr, uint32_t size, uint8_t *buf)
     uint32_t buf_addr;
     uint32_t timeout = EFUSE_TIMEOUT;
     efuse_state_enum efuse_state;
+    /* parameter validation */
     if(0U == size) {
-        return ERROR;
-    }
-    /* the address should be on byte address boundary */
-    if(ef_addr % 8U) {
-        return ERROR;
-    }
-    if(MAX_EFADDR < ef_addr) {
-        return ERROR;
-    }
-    for(i = EFUSE_PARA_CNT; i > 0U; i--) {
-        if(ef_addr >= para_start_efaddr[i - 1U]) {
-            break;
-        }
-    }
-    /* get the index of parameter to be programmed */
-    para_index = i - 1U;
-    /* program range should not over parameter boundary */
-    if(para_index == (EFUSE_PARA_CNT - 1U)) {
-        if((ef_addr + size * 8U - 1U) > MAX_EFADDR) {
-            return ERROR;
-        }
-    } else {
-        if((ef_addr + size * 8U - 1U) > para_start_efaddr[para_index + 1U]) {
-            return ERROR;
-        }
-    }
-    if((AES_KEY_IDX == para_index) && (AES_KEY_SIZE != size)) {
-        /* AES key should be programmed in one time */
-        return ERROR;
-    }
-    reg_addr = (unsigned int)para_reg_start_addr[para_index] + (ef_addr - para_start_efaddr[para_index]) / 32U * 4U;
-    byte_offset_in_reg = ((ef_addr - para_start_efaddr[para_index]) / 8U) % 4U;
-    /* clear the PGIF bit if it is SET */
-    efuse_flag_clear(EFUSE_FLAG_PROGRAM_COMPLETE_CLR);
-    /* set the EFRW bit in EFUSE_CTL */
-    EFUSE_CTL |= EFUSE_CTL_EFRW;
-    /* write the desired efuse address and size to the EFUSE_ADDR register */
-    EFUSE_ADDR = (uint32_t)((size << EFUSE_ADDR_EFSIZE_OFFSET) | ef_addr);
-    buf_addr = (uint32_t)buf;
-
-    while(size) {
-        if((0U != byte_offset_in_reg) || ((0U == byte_offset_in_reg) && (size < 4U))) {
-            cnt = size < (4U - byte_offset_in_reg) ? size : 4U - byte_offset_in_reg;
-            for(i = 0U; i < cnt; i++) {
-                tmp_buf_8 = buf_addr;
-                /* write the data to the corresponding register */
-                tmp_buf_8 += i;
-                REG32(reg_addr) |= (((uint32_t)(*(uint8_t *)(tmp_buf_8))) << ((byte_offset_in_reg + i) * 8U));
-            }
-            size -= cnt;
-            reg_addr += 4U;
-            byte_offset_in_reg = 0U;
-            buf_addr += cnt;
-        } else {
-            cnt = size / 4U;
-            for(i = 0U; i < cnt; i++) {
-                tmp_buf_8 = buf_addr;
-                /* write the data to the corresponding register */
-                tmp_buf_8 += (i * 4U);
-                REG32(reg_addr) = (uint32_t)(*(uint32_t *)(tmp_buf_8));
-                reg_addr += 4U;
-            }
-            size -= cnt * 4U;
-            buf_addr += cnt * 4U;
-        }
-    }
-    /* start EFUSE program operation */
-    EFUSE_CTL |= EFUSE_CTL_EFSTR;
-    /* wait for the operation to complete */
-    efuse_state = efuse_ready_wait(EFUSE_FLAG_PROGRAM_COMPLETE, timeout);
-    if(EFUSE_READY != efuse_state) {
         status = ERROR;
+    } else if(ef_addr % 8U) {
+        /* the address should be on byte address boundary */
+        status = ERROR;
+    } else if(MAX_EFADDR < ef_addr) {
+        status = ERROR;
+    } else {
+        for(i = EFUSE_PARA_CNT; i > 0U; i--) {
+            if(ef_addr >= para_start_efaddr[i - 1U]) {
+                break;
+            }
+        }
+        /* get the index of parameter to be programmed */
+        para_index = i - 1U;
+        /* program range should not over parameter boundary */
+        if(para_index == (EFUSE_PARA_CNT - 1U)) {
+            if((ef_addr + size * 8U - 1U) > MAX_EFADDR) {
+                status = ERROR;
+            }
+        } else {
+            if((ef_addr + size * 8U - 1U) > para_start_efaddr[para_index + 1U]) {
+                status = ERROR;
+            }
+        }
+        if((AES_KEY_IDX == para_index) && (AES_KEY_SIZE != size)) {
+            /* AES key should be programmed in one time */
+            status = ERROR;
+        }
+    }
+    
+    /* proceed with programming if validation passed */
+    if(SUCCESS == status) {
+        reg_addr = (unsigned int)para_reg_start_addr[para_index] + (ef_addr - para_start_efaddr[para_index]) / 32U * 4U;
+        byte_offset_in_reg = ((ef_addr - para_start_efaddr[para_index]) / 8U) % 4U;
+        /* clear the PGIF bit if it is SET */
+        efuse_flag_clear(EFUSE_FLAG_PROGRAM_COMPLETE_CLR);
+        /* set the EFRW bit in EFUSE_CTL */
+        EFUSE_CTL |= EFUSE_CTL_EFRW;
+        /* write the desired efuse address and size to the EFUSE_ADDR register */
+        EFUSE_ADDR = (uint32_t)((size << EFUSE_ADDR_EFSIZE_OFFSET) | ef_addr);
+        buf_addr = (uint32_t)buf;
+
+        while(size) {
+            if((0U != byte_offset_in_reg) || ((0U == byte_offset_in_reg) && (size < 4U))) {
+                cnt = size < (4U - byte_offset_in_reg) ? size : 4U - byte_offset_in_reg;
+                for(i = 0U; i < cnt; i++) {
+                    tmp_buf_8 = buf_addr;
+                    /* write the data to the corresponding register */
+                    tmp_buf_8 += i;
+                    REG32(reg_addr) |= (((uint32_t)(*(uint8_t *)(tmp_buf_8))) << ((byte_offset_in_reg + i) * 8U));
+                }
+                size -= cnt;
+                reg_addr += 4U;
+                byte_offset_in_reg = 0U;
+                buf_addr += cnt;
+            } else {
+                cnt = size / 4U;
+                for(i = 0U; i < cnt; i++) {
+                    tmp_buf_8 = buf_addr;
+                    /* write the data to the corresponding register */
+                    tmp_buf_8 += (i * 4U);
+                    REG32(reg_addr) = (uint32_t)(*(uint32_t *)(tmp_buf_8));
+                    reg_addr += 4U;
+                }
+                size -= cnt * 4U;
+                buf_addr += cnt * 4U;
+            }
+        }
+        /* start EFUSE program operation */
+        EFUSE_CTL |= EFUSE_CTL_EFSTR;
+        /* wait for the operation to complete */
+        efuse_state = efuse_ready_wait(EFUSE_FLAG_PROGRAM_COMPLETE, timeout);
+        if(EFUSE_READY != efuse_state) {
+            status = ERROR;
+        }
     }
     return status;
 }
@@ -372,11 +375,14 @@ FlagStatus efuse_ldo_ready_get(void)
 */
 FlagStatus efuse_flag_get(uint32_t flag)
 {
+    FlagStatus reval = RESET;
     if(EFUSE_STAT & (uint32_t)flag) {
-        return SET;
+        reval = SET;
     } else {
-        return RESET;
+        reval = RESET;
     }
+
+    return reval;
 }
 
 /*!
@@ -408,7 +414,7 @@ void efuse_flag_clear(uint32_t flag)
 */
 void efuse_interrupt_enable(uint32_t interrupt)
 {
-    EFUSE_CTL = (uint32_t)interrupt;
+    EFUSE_CTL |= (uint32_t)interrupt;
 }
 
 /*!
@@ -438,8 +444,9 @@ void efuse_interrupt_disable(uint32_t interrupt)
     \param[out] none
     \retval     FlagStatus: SET or RESET
 */
-FlagStatus efuse_interrupt_flag_get(uint32_t int_flag)
+FlagStatus efuse_interrupt_flag_get(efuse_interrupt_flag_enum int_flag)
 {
+    FlagStatus reval = RESET;
     uint32_t intenable = 0U, flagstatus = 0U;
     /* get the interrupt enable bit status */
     intenable = (EFUSE_REG_VAL(int_flag) & BIT(EFUSE_BIT_POS(int_flag)));
@@ -447,10 +454,12 @@ FlagStatus efuse_interrupt_flag_get(uint32_t int_flag)
     flagstatus = (EFUSE_REG_VAL2(int_flag) & BIT(EFUSE_BIT_POS2(int_flag)));
 
     if(flagstatus && intenable) {
-        return SET;
+        reval = SET;
     } else {
-        return RESET;
+        reval = RESET;
     }
+
+    return reval;
 }
 
 /*!

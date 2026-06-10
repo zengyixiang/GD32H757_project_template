@@ -2,11 +2,11 @@
     \file    gd32h7xx_tli.c
     \brief   TLI driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -66,9 +66,9 @@ void tli_deinit(void)
                   backcolor_red: background value red
                   backcolor_green: background value green
                   backcolor_blue: background value blue
-                  signalpolarity_hs: TLI_HSYN_ACTLIVE_LOW,TLI_HSYN_ACTLIVE_HIGHT
-                  signalpolarity_vs: TLI_VSYN_ACTLIVE_LOW,TLI_VSYN_ACTLIVE_HIGHT
-                  signalpolarity_de: TLI_DE_ACTLIVE_LOW,TLI_DE_ACTLIVE_HIGHT
+                  signalpolarity_hs: TLI_HSYN_ACTIVE_LOW,TLI_HSYN_ACTIVE_HIGH
+                  signalpolarity_vs: TLI_VSYN_ACTIVE_LOW,TLI_VSYN_ACTIVE_HIGH
+                  signalpolarity_de: TLI_DE_ACTIVE_LOW,TLI_DE_ACTIVE_HIGH
                   signalpolarity_pixelck: TLI_PIXEL_CLOCK_TLI,TLI_PIXEL_CLOCK_INVERTEDTLI
     \retval     none
 */
@@ -86,9 +86,9 @@ void tli_struct_para_init(tli_parameter_struct *tli_struct)
     tli_struct->backcolor_red = TLI_DEFAULT_VALUE;
     tli_struct->backcolor_green = TLI_DEFAULT_VALUE;
     tli_struct->backcolor_blue = TLI_DEFAULT_VALUE;
-    tli_struct->signalpolarity_hs = TLI_HSYN_ACTLIVE_LOW;
-    tli_struct->signalpolarity_vs = TLI_VSYN_ACTLIVE_LOW;
-    tli_struct->signalpolarity_de = TLI_DE_ACTLIVE_LOW;
+    tli_struct->signalpolarity_hs = TLI_HSYN_ACTIVE_LOW;
+    tli_struct->signalpolarity_vs = TLI_VSYN_ACTIVE_LOW;
+    tli_struct->signalpolarity_de = TLI_DE_ACTIVE_LOW;
     tli_struct->signalpolarity_pixelck = TLI_PIXEL_CLOCK_TLI;
 }
 
@@ -106,9 +106,9 @@ void tli_struct_para_init(tli_parameter_struct *tli_struct)
                   backcolor_red: background value red
                   backcolor_green: background value green
                   backcolor_blue: background value blue
-                  signalpolarity_hs: TLI_HSYN_ACTLIVE_LOW,TLI_HSYN_ACTLIVE_HIGH
-                  signalpolarity_vs: TLI_VSYN_ACTLIVE_LOW,TLI_VSYN_ACTLIVE_HIGH
-                  signalpolarity_de: TLI_DE_ACTLIVE_LOW,TLI_DE_ACTLIVE_HIGHT
+                  signalpolarity_hs: TLI_HSYN_ACTIVE_LOW,TLI_HSYN_ACTIVE_HIGH
+                  signalpolarity_vs: TLI_VSYN_ACTIVE_LOW,TLI_VSYN_ACTIVE_HIGH
+                  signalpolarity_de: TLI_DE_ACTIVE_LOW,TLI_DE_ACTIVE_HIGH
                   signalpolarity_pixelck: TLI_PIXEL_CLOCK_TLI,TLI_PIXEL_CLOCK_INVERTEDTLI
     \param[out] none
     \retval     none
@@ -321,27 +321,27 @@ void tli_layer_window_offset_modify(uint32_t layerx,uint16_t offset_x,uint16_t o
     vstart = (uint32_t)offset_y + ((TLI_BPSZ & TLI_BPSZ_VBPSZ) + 1U);
     line_num = (TLI_LXFTLN(layerx) & TLI_LXFTLN_FTLN);
     layer_ppf = (TLI_LXPPF(layerx) & TLI_LXPPF_PPF);
-    /* the bytes of a line equal TLI_LXFLLEN_FLL bits value minus 3 */
+    /* the bytes of a line equal TLI_LXFLLEN_FLL bits value minus 7 */
     switch(layer_ppf){
     case LAYER_PPF_ARGB8888:
         /* each pixel includes 4bytes, when pixel format is ARGB8888 */
-        line_length = (((TLI_LXFLLEN(layerx) & TLI_LXFLLEN_FLL) -3U) / 4U);
+        line_length = (((TLI_LXFLLEN(layerx) & TLI_LXFLLEN_FLL) -7U) / 4U);
         break;
     case LAYER_PPF_RGB888:
         /* each pixel includes 3bytes, when pixel format is RGB888 */
-        line_length = (((TLI_LXFLLEN(layerx) & TLI_LXFLLEN_FLL) - 3U) / 3U);
+        line_length = (((TLI_LXFLLEN(layerx) & TLI_LXFLLEN_FLL) - 7U) / 3U);
         break;
     case LAYER_PPF_RGB565:
     case LAYER_PPF_ARGB1555:
     case LAYER_PPF_ARGB4444:
     case LAYER_PPF_AL88:
         /* each pixel includes 2bytes, when pixel format is RGB565,ARG1555,ARGB4444 or AL88 */
-        line_length = (((TLI_LXFLLEN(layerx) & TLI_LXFLLEN_FLL) - 3U) / 2U);
+        line_length = (((TLI_LXFLLEN(layerx) & TLI_LXFLLEN_FLL) - 7U) / 2U);
         break;
     case LAYER_PPF_L8:
     case LAYER_PPF_AL44:
         /* each pixel includes 1byte, when pixel format is L8 or AL44 */
-        line_length = (((TLI_LXFLLEN(layerx) & TLI_LXFLLEN_FLL) - 3U));
+        line_length = (((TLI_LXFLLEN(layerx) & TLI_LXFLLEN_FLL) - 7U));
         break;
     default:
         break;

@@ -2,11 +2,11 @@
     \file    gd32h7xx_ospi.c
     \brief   OSPI driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -675,6 +675,7 @@ void ospi_wrap_instruction_mode_config(uint32_t ospi_periph, uint32_t imod)
 /*!
     \brief      configure wrap instruction size
     \param[in]  ospi_periph: OSPIx(x=0,1)
+    \param[in]  inssz: OSPI instruction size
                 only one parameter can be selected which is shown as below:
       \arg        OSPI_INSTRUCTION_8_BITS: instruction size on 8-bit address
       \arg        OSPI_INSTRUCTION_16_BITS: instruction size on 16-bit address
@@ -1318,7 +1319,7 @@ void ospi_autopolling_mode(uint32_t ospi_periph, ospi_parameter_struct *ospi_str
         OSPI_STATMATCH(ospi_periph) = autopl_cfg_struct->match;
         OSPI_STATMK(ospi_periph) = autopl_cfg_struct->mask;
         OSPI_INTERVAL(ospi_periph) = autopl_cfg_struct->interval;
-        OSPI_CTL(ospi_periph) = (OSPI_CTL(ospi_periph) & (~OSPI_CTL_SPMOD | ~OSPI_CTL_SPS | ~OSPI_CTL_FMOD)) | 
+        OSPI_CTL(ospi_periph) = (OSPI_CTL(ospi_periph) & ~(OSPI_CTL_SPMOD | OSPI_CTL_SPS | OSPI_CTL_FMOD)) | 
                                 (autopl_cfg_struct->match_mode | autopl_cfg_struct->automatic_stop | OSPI_STATUS_POLLING);
 
         /* trig the transfer by re-writing address or instruction register */
@@ -1414,7 +1415,7 @@ static void ospi_config(uint32_t ospi_periph, ospi_parameter_struct *ospi_struct
         /* configure the TCFG register with alternate bytes communication parameters */
         *tcfg_reg = (*tcfg_reg & ~(OSPI_TCFG_ALTEMOD | OSPI_TCFG_ABDTR | OSPI_TCFG_ALTESZ)) | 
                     (cmd_struct->alter_bytes_mode | cmd_struct->alter_bytes_dtr_mode | cmd_struct->alter_bytes_size);
-    }
+    }        
     
     /* configure the TIMCFG register with the number of dummy cycles */
     *timcfg_reg = (*timcfg_reg & ~OSPI_TIMCFG_DUMYC) | cmd_struct->dummy_cycles;
@@ -1424,9 +1425,7 @@ static void ospi_config(uint32_t ospi_periph, ospi_parameter_struct *ospi_struct
             /* configure the DTLEN register with the number of data */
             OSPI_DTLEN(ospi_periph) = (cmd_struct->nbdata - 1U);
         }
-    }    
-
-
+    }
     if(cmd_struct->ins_mode != OSPI_INSTRUCTION_NONE){
         if(cmd_struct->addr_mode != OSPI_ADDRESS_NONE){
             if(cmd_struct->data_mode != OSPI_DATA_NONE){
@@ -1436,16 +1435,17 @@ static void ospi_config(uint32_t ospi_periph, ospi_parameter_struct *ospi_struct
                             OSPI_TCFG_ADDRMOD | OSPI_TCFG_ADDRDTR | OSPI_TCFG_ADDRSZ |
                             OSPI_TCFG_DATAMOD | OSPI_TCFG_DADTR);
                 
-                *tcfg_reg = cmd_struct->ins_mode | cmd_struct->ins_size |
+                *tcfg_reg |= cmd_struct->ins_mode | cmd_struct->ins_size |
                             cmd_struct->addr_mode | cmd_struct->addr_dtr_mode | cmd_struct->addr_size |
                             cmd_struct->data_mode | cmd_struct->data_dtr_mode;
             }else{
                 /* command with instruction and address */
                 /* configure the TCFG register with all communication parameters */
                 *tcfg_reg &= ~(OSPI_TCFG_IMOD | OSPI_TCFG_INSSZ | 
-                            OSPI_TCFG_ADDRMOD | OSPI_TCFG_ADDRDTR | OSPI_TCFG_ADDRSZ);
+                            OSPI_TCFG_ADDRMOD | OSPI_TCFG_ADDRDTR | OSPI_TCFG_ADDRSZ |
+                            OSPI_TCFG_DATAMOD | OSPI_TCFG_DADTR);
 
-                *tcfg_reg = cmd_struct->ins_mode | cmd_struct->ins_size |
+                *tcfg_reg |= cmd_struct->ins_mode | cmd_struct->ins_size |
                             cmd_struct->addr_mode | cmd_struct->addr_dtr_mode | cmd_struct->addr_size;
 
                 /* the DHQC bit is linked with DDTR bit which should be activated */
@@ -1573,11 +1573,13 @@ uint32_t ospi_fifo_level_get(uint32_t ospi_periph)
 */
 FlagStatus ospi_flag_get(uint32_t ospi_periph, uint32_t flag)
 {
+    FlagStatus status = RESET;
     if(RESET != (OSPI_STAT(ospi_periph) & flag)){
-        return SET;
+        status = SET;
     }else{
-        return RESET;
+        status = RESET;
     }
+    return status;
 }
 
 /*!
@@ -1612,16 +1614,18 @@ FlagStatus ospi_interrupt_flag_get(uint32_t ospi_periph, uint32_t int_flag)
 {
     uint32_t ret1 = RESET;
     uint32_t ret2 = RESET;
+    FlagStatus status = RESET;
     
     /* get the status of interrupt enable bit */
     ret1 = (OSPI_REG_VAL(ospi_periph, int_flag) & BIT(OSPI_BIT_POS(int_flag)));
     /* get the status of interrupt flag */
     ret2 = (OSPI_REG_VAL2(ospi_periph, int_flag) & BIT(OSPI_BIT_POS2(int_flag)));
     if(ret1 && ret2) {
-        return SET;
+        status = SET;
     } else {
-        return RESET;
+        status = RESET;
     }
+    return status;
 }
 
 /*!

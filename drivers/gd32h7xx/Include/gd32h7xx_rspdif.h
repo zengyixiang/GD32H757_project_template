@@ -2,11 +2,11 @@
     \file    gd32h7xx_rspdif.h
     \brief   definitions for the RSPDIF
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -49,9 +49,9 @@ OF SUCH DAMAGE.
 #define RSPDIF_CHSTAT               REG32(RSPDIF + 0x00000014U)                     /*!< RSPDIF RX channel status register */
 #define RSPDIF_DTH                  REG32(RSPDIF + 0x00000018U)                     /*!< RSPDIF RX data threshold register */
 
-#define RSPDIF_DATA_F0              REG32(RSPDIF + 0x00000010U)                     /*!< RSPDIF RX data register fomat 0 */
-#define RSPDIF_DATA_F1              REG32(RSPDIF + 0x00000010U)                     /*!< RSPDIF RX data register fomat 1 */
-#define RSPDIF_DATA_F2              REG32(RSPDIF + 0x00000010U)                     /*!< RSPDIF RX data register fomat 2 */
+#define RSPDIF_DATA_F0              REG32(RSPDIF + 0x00000010U)                     /*!< RSPDIF RX data register format 0 */
+#define RSPDIF_DATA_F1              REG32(RSPDIF + 0x00000010U)                     /*!< RSPDIF RX data register format 1 */
+#define RSPDIF_DATA_F2              REG32(RSPDIF + 0x00000010U)                     /*!< RSPDIF RX data register format 2 */
 
 /* bits definitions */
 /* RSPDIF_CTL */
@@ -139,7 +139,7 @@ typedef struct {
     uint32_t channel_sel;                                                           /*!< whether swapping the channel status from channel A or B */
     uint32_t sample_format;                                                         /*!< the RSPDIF data samples format (LSB, MSB, ...) */
     uint32_t sound_mode;                                                            /*!< the RSPDIF is in stereo or mono mode */
-    uint32_t pre_type;                                                              /*!< whether opy the preamble type value into the RSPDIF_DATA */
+    uint32_t pre_type;                                                              /*!< whether copy the preamble type value into the RSPDIF_DATA */
     uint32_t channel_status_bit;                                                    /*!< whether the channel status and user bits are copied or not into the received frame */
     uint32_t validity_bit;                                                          /*!< whether the validity bit is copied or not into the received frame */
     uint32_t parity_error_bit;                                                      /*!< whether the parity error bit is copied or not into the received frame */
@@ -149,7 +149,7 @@ typedef struct {
 
 /* RSPDIF data parameter structure definitions */
 typedef struct {
-    uint32_t format;                                                                /*!< the data dormat */
+    uint32_t format;                                                                /*!< the data format */
     uint32_t preamble;                                                              /*!< the preamble type */
     uint32_t channel_status;                                                        /*!< channel status bit */
     uint32_t user_bit;                                                              /*!< user bit */

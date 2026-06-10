@@ -2,11 +2,11 @@
     \file    gd32h7xx_rtc.c
     \brief   RTC driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -408,15 +408,12 @@ void rtc_alarm_subsecond_config(uint8_t rtc_alarm, uint32_t mask_subsecond, uint
     RTC_WPK = RTC_UNLOCK_KEY1;
     RTC_WPK = RTC_UNLOCK_KEY2;
 
-    /* 2nd: enter init mode */
-    if(ERROR != (rtc_init_mode_enter()))
-    {
-        if(RTC_ALARM0 == rtc_alarm) {
-            RTC_ALRM0SS = mask_subsecond | subsecond;
-        } else {
-            RTC_ALRM1SS = mask_subsecond | subsecond;
-        }
+    if(RTC_ALARM0 == rtc_alarm) {
+        RTC_ALRM0SS = mask_subsecond | subsecond;
+    } else {
+        RTC_ALRM1SS = mask_subsecond | subsecond;
     }
+
     /* enable the write protection */
     RTC_WPK = RTC_LOCK_KEY;
 }
@@ -467,11 +464,13 @@ void rtc_alarm_get(uint8_t rtc_alarm, rtc_alarm_struct *rtc_alarm_time)
 */
 uint32_t rtc_alarm_subsecond_get(uint8_t rtc_alarm)
 {
+    uint32_t subsecond;
     if(RTC_ALARM0 == rtc_alarm) {
-        return ((uint32_t)(RTC_ALRM0SS & RTC_ALRM0SS_SSC));
+        subsecond = ((uint32_t)(RTC_ALRM0SS & RTC_ALRM0SS_SSC));
     } else {
-        return ((uint32_t)(RTC_ALRM1SS & RTC_ALRM1SS_SSC));
+        subsecond = ((uint32_t)(RTC_ALRM1SS & RTC_ALRM1SS_SSC));
     }
+    return subsecond;
 }
 
 /*!
@@ -1210,6 +1209,7 @@ void rtc_interrupt_disable(uint32_t interrupt)
 /*!
     \brief      check specified flag
     \param[in]  flag: specify which flag to check
+      \arg        RTC_FLAG_ITS: internal timestamp flag
       \arg        RTC_FLAG_SCP: smooth calibration pending flag
       \arg        RTC_FLAG_TP1: RTC tamper 1 detected flag
       \arg        RTC_FLAG_TP0: RTC tamper 0 detected flag
@@ -1241,6 +1241,7 @@ FlagStatus rtc_flag_get(uint32_t flag)
 /*!
     \brief      clear specified flag
     \param[in]  flag: specify which flag to clear
+      \arg        RTC_FLAG_ITS: internal timestamp flag
       \arg        RTC_FLAG_TP1: RTC tamper 1 detected flag
       \arg        RTC_FLAG_TP0: RTC tamper 0 detected flag
       \arg        RTC_FLAG_TSOVR: time-stamp overflow flag

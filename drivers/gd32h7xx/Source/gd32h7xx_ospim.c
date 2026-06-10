@@ -2,11 +2,11 @@
     \file    gd32h7xx_ospim.c
     \brief   OSPIM driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification, 
 are permitted provided that the following conditions are met:
@@ -150,7 +150,7 @@ void ospim_port_io3_0_config(uint8_t port, uint32_t ioconfig)
                 only one parameter can be selected which is shown as below:
       \arg        OSPIM_PORT0: port 0
       \arg        OSPIM_PORT1: port 1
-    \param[in]  csn_source: source of IO[3:0]
+    \param[in]  io_source: source of IO[3:0]
                 only one parameter can be selected which is shown as below:
       \arg        OSPIM_SRCPLIO_OSPI0_IO_LOW: select OSPI0_IO[3:0]
       \arg        OSPIM_SRCPLIO_OSPI0_IO_HIGH: select OSPI0_IO[7:4]
@@ -190,7 +190,7 @@ void ospim_port_io7_4_config(uint8_t port, uint32_t ioconfig)
                 only one parameter can be selected which is shown as below:
       \arg        OSPIM_PORT0: port 0
       \arg        OSPIM_PORT1: port 1
-    \param[in]  csn_source: source of IO[7:4]
+    \param[in]  io_source: source of IO[7:4]
                 only one parameter can be selected which is shown as below:
       \arg        OSPIM_SRCPHIO_OSPI0_IO_LOW: select OSPI0_IO[3:0]
       \arg        OSPIM_SRCPHIO_OSPI0_IO_HIGH: select OSPI0_IO[7:4]

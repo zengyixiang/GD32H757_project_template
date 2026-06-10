@@ -2,11 +2,11 @@
     \file    gd32h7xx_exmc.c
     \brief   EXMC driver
 
-    \version 2024-01-05, V1.2.0, firmware for GD32H7xx
+    \version 2026-02-04, V1.5.0, firmware for GD32H7xx
 */
 
 /*
-    Copyright (c) 2024, GigaDevice Semiconductor Inc.
+    Copyright (c) 2026, GigaDevice Semiconductor Inc.
 
     Redistribution and use in source and binary forms, with or without modification,
 are permitted provided that the following conditions are met:
@@ -172,7 +172,7 @@ void exmc_norsram_struct_para_init(exmc_norsram_parameter_struct *exmc_norsram_i
                   nwait_config: EXMC_NWAIT_CONFIG_BEFORE, EXMC_NWAIT_CONFIG_DURING
                   nwait_polarity: EXMC_NWAIT_POLARITY_LOW, EXMC_NWAIT_POLARITY_HIGH
                   burst_mode: ENABLE or DISABLE
-                  databus_width: EXMC_NOR_DATABUS_WIDTH_8B, EXMC_NOR_DATABUS_WIDTH_16B
+                  databus_width: EXMC_NOR_DATABUS_WIDTH_8B, EXMC_NOR_DATABUS_WIDTH_16B, EXMC_NOR_DATABUS_WIDTH_32B
                   memory_type: EXMC_MEMORY_TYPE_SRAM, EXMC_MEMORY_TYPE_PSRAM, EXMC_MEMORY_TYPE_NOR
                   address_data_mux: ENABLE or DISABLE
                   cram_page_size: EXMC_CRAM_AUTO_SPLIT, EXMC_CRAM_PAGE_SIZE_128_BYTES, EXMC_CRAM_PAGE_SIZE_256_BYTES,
@@ -298,7 +298,7 @@ void exmc_nand_deinit(void)
 /*!
     \brief      initialize exmc_nand_parameter_struct with the default values
     \param[in]  none
-    \param[out] the initialized struct exmc_nand_parameter_struct pointer
+    \param[out] exmc_nand_init_struct: the initialized struct exmc_nand_parameter_struct pointer
     \retval     none
 */
 void exmc_nand_struct_para_init(exmc_nand_parameter_struct *exmc_nand_init_struct)
@@ -322,7 +322,7 @@ void exmc_nand_struct_para_init(exmc_nand_parameter_struct *exmc_nand_init_struc
                   ctr_latency: EXMC_CLE_RE_DELAY_x_CK_EXMC,x=1~16
                   ecc_logic: ENABLE or DISABLE
                   databus_width: EXMC_NAND_DATABUS_WIDTH_8B,EXMC_NAND_DATABUS_WIDTH_16B
-                  wait_function: ENABLE or DISABLE
+                  wait_feature: ENABLE or DISABLE
                   common_space_timing: struct exmc_nand_timing_parameter_struct set the time
                     databus_hiztime: 1~255
                     holdtime: 1~254
@@ -390,10 +390,9 @@ void exmc_nand_disable(void)
 
 /*!
     \brief      deinitialize EXMC SDRAM device
-   \param[in]   exmc_sdram_device: select the SRAM device
+    \param[in]  exmc_sdram_device: select the SRAM device
                 only one parameter can be selected which is shown as below:
       \arg        EXMC_SDRAM_DEVICEx(x=0, 1)
-    \param[in]  none
     \param[out] none
     \retval     none
 */
@@ -410,7 +409,7 @@ void exmc_sdram_deinit(uint32_t exmc_sdram_device)
 /*!
     \brief      initialize exmc_sdram_parameter_struct with the default values
     \param[in]  none
-    \param[out] the initialized struct exmc_parameter_struct pointer
+    \param[out] exmc_sdram_init_struct: the initialized struct exmc_sdram_parameter_struct pointer
     \retval     none
 */
 void exmc_sdram_struct_para_init(exmc_sdram_parameter_struct *exmc_sdram_init_struct)
@@ -771,6 +770,7 @@ uint32_t exmc_sdram_bankstatus_get(uint32_t exmc_sdram_device)
 FlagStatus exmc_flag_get(uint32_t exmc_bank, uint32_t flag)
 {
     uint32_t status = 0x00000000U;
+    FlagStatus retval = RESET;
 
     if(EXMC_BANK2_NAND == exmc_bank) {
         /* NAND bank2 */
@@ -782,11 +782,11 @@ FlagStatus exmc_flag_get(uint32_t exmc_bank, uint32_t flag)
 
     if((status & flag) != (uint32_t)flag) {
         /* flag is reset */
-        return RESET;
     } else {
         /* flag is set */
-        return SET;
+        retval = SET;
     }
+    return retval;
 }
 
 /*!
@@ -826,10 +826,10 @@ void exmc_flag_clear(uint32_t exmc_bank, uint32_t flag)
       \arg        EXMC_SDRAM_DEVICE1: the SDRAM device1
     \param[in]  interrupt: specify get which interrupt flag
                 only one parameter can be selected which is shown as below:
-      \arg        EXMC_NAND_INT_FLAG_LEVEL: high-level interrupt flag
-      \arg        EXMC_NAND_INT_FLAG_RISE: rising edge interrupt flag
-      \arg        EXMC_NAND_INT_FLAG_FALL: falling edge interrupt flag
-      \arg        EXMC_SDRAM_INT_FLAG_REFRESH: refresh error interrupt flag
+      \arg        EXMC_NAND_INT_LEVEL: high-level interrupt
+      \arg        EXMC_NAND_INT_RISE: rising edge interrupt
+      \arg        EXMC_NAND_INT_FALL: falling edge interrupt
+      \arg        EXMC_SDRAM_INT_REFRESH: refresh error interrupt
     \param[out] none
     \retval     none
 */
@@ -892,6 +892,7 @@ FlagStatus exmc_interrupt_flag_get(uint32_t exmc_bank, uint32_t interrupt)
     uint32_t reg_value = 0x00000000U;
     uint32_t interrupt_enable = 0x00000000U;
     uint32_t interrupt_status = 0x00000000U;
+    FlagStatus retval = RESET;
 
     if(EXMC_BANK2_NAND == exmc_bank) {
         /* NAND bank2 */
@@ -907,11 +908,11 @@ FlagStatus exmc_interrupt_flag_get(uint32_t exmc_bank, uint32_t interrupt)
 
     if((interrupt_enable) && (interrupt_status)) {
         /* interrupt flag is set */
-        return SET;
+        retval = SET;
     } else {
         /* interrupt flag is reset */
-        return RESET;
     }
+    return retval;
 }
 
 /*!
