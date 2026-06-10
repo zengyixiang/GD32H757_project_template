@@ -1,11 +1,12 @@
-#define DEBUG_LEVEL LVL_DEBUG
+#define LOG_TAG "app.task"
+#define LOG_LVL ELOG_LVL_DEBUG
 
+#include "log.h"
 #include "app_task.h"
 
 #include "comm_service.h"
 #include "display_service.h"
 #include "gd32h7xx_fwdgt.h"
-#include "log.h"
 #include "sensor_service.h"
 #include "upgrade_service.h"
 
@@ -22,11 +23,11 @@ static void app_main_process(void)
     unsigned short sample = sensor_service_read_vbat();
     sensor_service_environment_t environment;
 
-    LOG_D("VBAT sample: %u", sample);
+    log_d("VBAT sample: %u", sample);
     (void)sample;
 
     if(sensor_service_read_environment(&environment) == 0) {
-        LOG_D("GXHT30: %ld mC, %lu m%%",
+        log_d("GXHT30: %ld mC, %lu m%%",
               (long)environment.temperature_mc,
               (unsigned long)environment.humidity_milli_percent);
     }
@@ -42,7 +43,6 @@ static void app_display_process(void)
 
 void vApplicationIdleHook(void)
 {
-    log_flush();
     fwdgt_counter_reload();
 }
 

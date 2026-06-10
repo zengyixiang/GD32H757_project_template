@@ -2,3 +2,6 @@
 [submodule "middleware/freertos/FreeRTOS-Kernel"]
 	path = middleware/freertos/FreeRTOS-Kernel
 	url = https://github.com/FreeRTOS/FreeRTOS-Kernel.git
+[submodule "middleware/log/EasyLogger"]
+	path = middleware/log/EasyLogger
+	url = https://github.com/zengyixiang/EasyLogger.git

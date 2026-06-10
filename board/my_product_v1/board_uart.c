@@ -5,9 +5,22 @@
 static bsp_uart_t board_debug_uart;
 
 static const bsp_uart_config_t board_debug_uart_config = {
-    .usart_periph = USART1,
-    .clock = RCU_USART1,
-    .baudrate = 921600U,
+    .usart_periph = USART2,
+    .clock = RCU_USART2,
+    .baudrate = 115200U,
+    .tx = {
+        .port = GPIOB,
+        .pin = GPIO_PIN_10,
+        .alternate = GPIO_AF_7,
+        .clock = RCU_GPIOB,
+    },
+    .rx = {
+        .port = GPIOB,
+        .pin = GPIO_PIN_11,
+        .alternate = GPIO_AF_7,
+        .clock = RCU_GPIOB,
+    },
+    .enable_rx = 1U,
 };
 
 void board_uart_init(void)

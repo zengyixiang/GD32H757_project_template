@@ -71,8 +71,8 @@ drivers
 | `drivers/` | 芯片厂商驱动 | GD32 标准外设库、CMSIS Core、GD32 device 头文件、USBHS 底层 driver |
 | `startup/` | 启动和系统入口 | startup 汇编、`system_gd32h7xx.c`、中断入口、syscalls |
 | `linker/` | 链接脚本 | Flash/SDRAM 链接脚本、公共 section 片段 |
-| `middleware/` | 第三方中间件 | FreeRTOS、FatFs、lwIP、LVGL、USB device/host/common、MicroPython、cJSON |
-| `components/` | 自研通用组件 | ringbuffer、protocol、shell、logger/debug、cli、storage、hardware_version |
+| `middleware/` | 第三方中间件 | FreeRTOS、EasyLogger、FatFs、lwIP、LVGL、USB device/host/common、MicroPython、cJSON |
+| `components/` | 自研通用组件 | common、ringbuffer、protocol、shell、cli、storage、hardware_version |
 | `services/` | 业务服务层 | 通信服务、传感器服务、显示服务、升级服务、应用事件 |
 | `app/` | 应用入口 | `main()`、应用初始化、任务创建、版本、配置 |
 | `config/` | 配置头文件 | `FreeRTOSConfig.h`、`lv_conf.h`、`ffconf.h`、`lwipopts.h`、项目配置 |
@@ -122,7 +122,7 @@ cmake --build --preset Debug --target flash_openocd
 | `gd32h757_eval` | `board_gd32h757_eval` | 默认评估板 |
 | `my_product_v1` | `board_my_product_v1` | 自定义产品板示例 |
 
-两块板可以有不同硬件映射。例如默认板用 `USART0` 做 debug UART，`my_product_v1` 用 `USART1`；默认板用 `I2C0/I2C1` 连接 EEPROM/传感器，`my_product_v1` 用 `I2C2/I2C3`。
+两块板可以有不同硬件映射。当前调试 UART 按旧工程配置使用 `USART2`，TX 为 `PB10`、RX 为 `PB11`、复用功能为 `GPIO_AF_7`、波特率 `115200`；默认板用 `I2C0/I2C1` 连接 EEPROM/传感器，`my_product_v1` 用 `I2C2/I2C3`。
 
 ### 硬件版本识别
 
@@ -200,6 +200,7 @@ cmake --build --preset Debug --target flash_openocd
 | 子目录 | 当前内容 |
 | --- | --- |
 | `freertos/` | FreeRTOS Kernel 接入，当前使用 `GCC_ARM_CM7` port 和 `heap_4` |
+| `log/` | EasyLogger 子仓库和本工程 FreeRTOS/UART 适配层 |
 | `fatfs/` | FatFs 占位 |
 | `lwip/` | lwIP port 占位 |
 | `lvgl/` | LVGL port 占位 |
@@ -208,6 +209,10 @@ cmake --build --preset Debug --target flash_openocd
 | `usb_host/` | USB host 协议栈占位，官方 USBHS host stack 暂存于此 |
 | `micropython/` | MicroPython port 占位 |
 | `cjson/` | cJSON 占位 |
+
+`middleware/log/EasyLogger/` 是第三方子仓库，不在里面放本工程配置或 port。EasyLogger 的配置放在 `config/elog_cfg.h`，FreeRTOS 异步输出任务和平台 port 放在 `middleware/log/`。`middleware/log/CMakeLists.txt` 会把 `config/` include 目录放在 EasyLogger 官方 `easylogger/inc` 前面，保证 `elog.h` 里的 `<elog_cfg.h>` 先找到本工程配置。
+
+业务代码直接使用 EasyLogger 接口。源文件在包含 `log.h` 或 `elog.h` 前定义自己的 `LOG_TAG` 和 `LOG_LVL`，然后调用 `log_i()`、`log_d()` 等短接口。
 
 `middleware/lvgl/lvgl/` 放 LVGL 官方源码，当前只有占位 stub；`middleware/lvgl/port/` 放 `lv_port_disp`、`lv_port_indev` 这类显示和输入 port；`middleware/lvgl/lvgl_port.c` 是本工程对 LVGL 的统一初始化和刷新入口。
 
@@ -221,17 +226,15 @@ FreeRTOS port 接管 SVC、PendSV 和 SysTick。`startup/gd32h7xx_it.c` 里的 S
 
 | 子目录 | 当前内容 |
 | --- | --- |
+| `common/` | 平台无关的轻量通用宏和 inline 工具函数 |
 | `ringbuffer/` | 环形缓冲区接口占位 |
 | `protocol/` | 协议编解码/轮询占位 |
 | `shell/` | shell 占位 |
-| `logger/` | 你的 `debug` 模块和一个 `log` 包装层 |
 | `cli/` | CLI 占位 |
 | `storage/` | 存储抽象占位 |
 | `hardware_version/` | 通用硬件版本识别组件，板级代码提供 mV 采样回调 |
 | `devices/eeprom/at24c02/` | 24C02 通用器件驱动，不绑定具体 I2C 外设 |
 | `devices/sensors/gxht30/` | GXHT30 通用器件驱动，不绑定具体板子连接 |
-
-`components/logger/debug.c/.h` 来自你的 `D:\code\ChipDriver\debug` 模块。平台适配在 `app/app_debug.c`，所以 debug 核心仍然保持可移植。
 
 `components/hardware_version/hardware_version.c/.h` 来自你的 `D:\code\ChipDriver\hardware_version` 模块。当前接口只保留初始化、检测、版本码读取和有效性判断。
 
@@ -271,7 +274,7 @@ App 负责启动和调度，Services 负责承载业务模块。
 | `main.c` | 固件主入口，执行 `board_early_init()`，创建 `app_start` 启动任务并启动 FreeRTOS 调度器 |
 | `app_init.c/.h` | 应用初始化，初始化 services、middleware、logger |
 | `app_task.c/.h` | FreeRTOS 应用任务创建和 RTOS hook |
-| `app_debug.c/.h` | debug 模块的平台适配 |
+| `app_debug.c/.h` | 日志输出注册，把 EasyLogger 输出接到当前板卡的调试 UART |
 | `app_config.h` | 应用配置 |
 | `app_version.h` | 应用版本 |
 

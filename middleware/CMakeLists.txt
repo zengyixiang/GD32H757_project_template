@@ -1,4 +1,5 @@
 add_subdirectory(freertos)
+add_subdirectory(log)
 add_subdirectory(fatfs)
 add_subdirectory(cjson)
 add_subdirectory(lwip)
@@ -11,6 +12,7 @@ add_subdirectory(micropython)
 add_library(middleware_lib INTERFACE)
 target_link_libraries(middleware_lib INTERFACE
     freertos_kernel_stub
+    log_lib
     fatfs_stub
     cjson_stub
     lwip_stub

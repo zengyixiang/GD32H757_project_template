@@ -4,7 +4,7 @@ set(FREERTOS_PORT "GCC_ARM_CM7" CACHE STRING "FreeRTOS port name" FORCE)
 set(FREERTOS_HEAP "4" CACHE STRING "FreeRTOS heap implementation" FORCE)
 
 add_library(freertos_config INTERFACE)
-target_include_directories(freertos_config SYSTEM INTERFACE
+target_include_directories(freertos_config INTERFACE
     ${CMAKE_SOURCE_DIR}/config
 )
 

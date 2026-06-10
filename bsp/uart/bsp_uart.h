@@ -6,9 +6,19 @@
 #include <stdint.h>
 
 typedef struct {
+    uint32_t port;
+    uint32_t pin;
+    uint32_t alternate;
+    rcu_periph_enum clock;
+} bsp_uart_pin_config_t;
+
+typedef struct {
     uint32_t usart_periph;
     rcu_periph_enum clock;
     uint32_t baudrate;
+    bsp_uart_pin_config_t tx;
+    bsp_uart_pin_config_t rx;
+    uint8_t enable_rx;
 } bsp_uart_config_t;
 
 typedef struct {
