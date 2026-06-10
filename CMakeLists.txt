@@ -24,7 +24,6 @@ add_subdirectory(drivers)
 add_subdirectory(startup)
 add_subdirectory(bsp)
 add_subdirectory(middleware)
-add_subdirectory(osal)
 add_subdirectory(components)
 add_subdirectory(board)
 add_subdirectory(services)
@@ -37,7 +36,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     bsp_lib
     components_lib
     middleware_lib
-    osal_lib
     drivers_lib
     ${TOOLCHAIN_LINK_LIBRARIES}
 )

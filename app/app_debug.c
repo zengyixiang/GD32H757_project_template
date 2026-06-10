@@ -2,7 +2,9 @@
 
 #include "board_uart.h"
 #include "debug.h"
-#include "osal.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
 
 static void app_debug_write(char *str, debug_printf_len_t size)
 {
@@ -11,17 +13,19 @@ static void app_debug_write(char *str, debug_printf_len_t size)
 
 static debug_critical_t app_debug_enter_critical(void)
 {
-    return (debug_critical_t)osal_enter_critical();
+    taskENTER_CRITICAL();
+    return (debug_critical_t)0U;
 }
 
 static void app_debug_exit_critical(debug_critical_t state)
 {
-    osal_exit_critical((unsigned int)state);
+    (void)state;
+    taskEXIT_CRITICAL();
 }
 
 static debug_time_t app_debug_get_time_ms(void)
 {
-    return (debug_time_t)osal_millis();
+    return (debug_time_t)(xTaskGetTickCount() * portTICK_PERIOD_MS);
 }
 
 void app_debug_init(void)

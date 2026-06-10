@@ -2,7 +2,9 @@
 
 #include "at24c02.h"
 #include "board_i2c.h"
-#include "osal.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
 
 #include <stdint.h>
 
@@ -28,7 +30,7 @@ static int board_at24c02_mem_read(void *context, uint8_t device_address,
 
 static void board_at24c02_delay_ms(uint32_t timeout_ms)
 {
-    osal_delay_ms(timeout_ms);
+    vTaskDelay(pdMS_TO_TICKS(timeout_ms));
 }
 
 void board_eeprom_init(void)

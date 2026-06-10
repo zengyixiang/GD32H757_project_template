@@ -34,7 +34,6 @@ app
   -> board/gd32h757_eval
   -> middleware
   -> components
-  -> osal
 
 services
   -> board/gd32h757_eval
@@ -43,13 +42,15 @@ services
 
 board/gd32h757_eval
   -> bsp
-  -> osal
+  -> components
+  -> middleware/freertos
 
 bsp
   -> drivers
 
 startup
-  -> osal
+  -> drivers
+  -> middleware/freertos
 
 drivers
   -> CMSIS / GD32 StdPeriph
@@ -74,7 +75,6 @@ drivers
 | `components/` | 自研通用组件 | ringbuffer、protocol、shell、logger/debug、cli、storage、hardware_version |
 | `services/` | 业务服务层 | 通信服务、传感器服务、显示服务、升级服务、应用事件 |
 | `app/` | 应用入口 | `main()`、应用初始化、任务创建、版本、配置 |
-| `osal/` | 操作系统抽象 | 裸机/FreeRTOS 的 delay、tick、临界区接口 |
 | `config/` | 配置头文件 | `FreeRTOSConfig.h`、`lv_conf.h`、`ffconf.h`、`lwipopts.h`、项目配置 |
 | `scripts/` | 构建/烧录/调试脚本 | OpenOCD、J-Link、GDB、PowerShell 构建脚本 |
 | `tools/` | 辅助工具 | 资源转换、bin 转数组等脚本 |
@@ -105,20 +105,15 @@ cmake --build --preset Debug --target flash_openocd
 
 原来的 `cmake/gd32h757.cmake` 已删除。它里面真正被使用的只有 `GD32H7XX` 和 `USE_STDPERIPH_DRIVER` 两个编译宏，现在已经移动到 `drivers/CMakeLists.txt`，其余芯片名/内核/FPU 变量没有被使用，保留文件反而会误导。
 
-`config/project_config.h` 里的 `PROJECT_USE_FREERTOS` 用来选择 OSAL 后端：
+本工程固定使用 FreeRTOS，不再保留裸机/RTOS 切换宏。RTOS 配置统一放在 `config/FreeRTOSConfig.h`，工程公共配置只保留与板卡、业务相关的内容。
 
-| 值 | 作用 |
-| --- | --- |
-| `0` | 使用裸机 SysTick、主循环轮询、PRIMASK 临界区 |
-| `1` | 使用 FreeRTOS 后端；接入真实 FreeRTOS 后在 `osal_freertos.c` 中对接 `xTaskCreate`、`vTaskDelay`、`vTaskStartScheduler` |
-
-这个宏属于工程配置，不放在 preset 里，也不从 CMake 命令行覆盖。具体工程是否使用 RTOS 只由 `config/project_config.h` 决定；需要切换裸机/RTOS 时，直接修改该配置头文件。
+启动顺序是：启动文件完成栈、data/bss、`SystemInit()` 和 libc 初始化后进入 `main()`；`main()` 先调用 `board_early_init()` 完成 Cache、NVIC 优先级分组这类必须在调度器启动前稳定下来的系统配置，然后创建 `app_start` 启动任务并调用 `vTaskStartScheduler()`；`app_start` 任务里再执行 `board_init()`、`app_init()`、`app_task_create()`，完成后 `vTaskDelete(NULL)` 删除自己。
 
 ## Board 层
 
 `board/gd32h757_eval` 表示一块具体板子。
 
-`board/CMakeLists.txt` 负责选择当前板卡。每块板提供同一套公开接口，例如 `board_init()`、`board_uart_write_buffer()`、`board_adc_read()`、`board_display_init()`。上层只链接 `project_board`，不直接关心当前编译的是哪块板。
+`board/CMakeLists.txt` 负责选择当前板卡。每块板提供同一套公开接口，例如 `board_early_init()`、`board_init()`、`board_uart_write_buffer()`、`board_adc_read()`、`board_display_init()`。上层只链接 `project_board`，不直接关心当前编译的是哪块板。
 
 当前示例板：
 
@@ -161,7 +156,7 @@ cmake --build --preset Debug --target flash_openocd
 
 | 文件 | 作用 |
 | --- | --- |
-| `board.c/.h` | 板级总初始化入口 |
+| `board.c/.h` | 板级 early init 和普通外设初始化入口 |
 | `board_system.c/.h` | Cache、NVIC 优先级组、MPU 等芯片/板级系统初始化 |
 | `board_clock.c/.h` | 具体板子的时钟树、HXTAL、PLL、外设时钟策略 |
 | `board_pin.c/.h` | 引脚复用和板级 pinmux |
@@ -204,7 +199,7 @@ cmake --build --preset Debug --target flash_openocd
 
 | 子目录 | 当前内容 |
 | --- | --- |
-| `freertos/` | FreeRTOS 占位封装，当前 delay 走 `osal_delay_ms()` |
+| `freertos/` | FreeRTOS Kernel 接入，当前使用 `GCC_ARM_CM7` port 和 `heap_4` |
 | `fatfs/` | FatFs 占位 |
 | `lwip/` | lwIP port 占位 |
 | `lvgl/` | LVGL port 占位 |
@@ -218,7 +213,7 @@ cmake --build --preset Debug --target flash_openocd
 
 LVGL port 不直接 include `bsp` 或 `board`。显示屏和触摸由 `display_service` 把 `board_display`、`board_touch` 的回调注册给 `lvgl_port`，这样依赖方向保持为 `services -> board + middleware`。
 
-真实 FreeRTOS 接入后，通常由 FreeRTOS port 接管 SysTick。那时 `osal` 切换到 FreeRTOS 后端，App 不需要大改。
+FreeRTOS port 接管 SVC、PendSV 和 SysTick。`startup/gd32h7xx_it.c` 里的 SVC/PendSV 入口只做裸函数跳转，SysTick 在调度器启动后转发给 `xPortSysTickHandler()`。
 
 ## Components 层
 
@@ -273,27 +268,16 @@ App 负责启动和调度，Services 负责承载业务模块。
 
 | 文件 | 作用 |
 | --- | --- |
-| `main.c` | 固件主入口，调用 `board_init()`、`osal_init()`、`app_init()`、`app_task_create()`，再进入 OSAL 调度 |
+| `main.c` | 固件主入口，执行 `board_early_init()`，创建 `app_start` 启动任务并启动 FreeRTOS 调度器 |
 | `app_init.c/.h` | 应用初始化，初始化 services、middleware、logger |
-| `app_task.c/.h` | 任务创建和裸机主循环示例 |
+| `app_task.c/.h` | FreeRTOS 应用任务创建和 RTOS hook |
 | `app_debug.c/.h` | debug 模块的平台适配 |
 | `app_config.h` | 应用配置 |
 | `app_version.h` | 应用版本 |
 
-任务创建建议继续放在 `app_task.c` 或拆到 `app/<feature>_task.c`。FreeRTOS 模式下 App 通过 `osal_task_create()` 创建任务；裸机模式下不创建任务，`main()` 直接循环调用 `app_task_run()`。
+任务创建建议继续放在 `app_task.c` 或拆到 `app/<feature>_task.c`。本工程直接使用 FreeRTOS API：任务用 `xTaskCreate()`，延时用 `vTaskDelay()`，临界区用 `taskENTER_CRITICAL()` / `taskEXIT_CRITICAL()`，时间戳用 `xTaskGetTickCount()`。
 
-## OSAL 层
-
-| 文件 | 作用 |
-| --- | --- |
-| `osal.h` | 对上层暴露统一 OS 接口 |
-| `osal.c` | 根据 `PROJECT_USE_FREERTOS` 转发到裸机或 FreeRTOS 后端 |
-| `osal_baremetal.c/.h` | 裸机 SysTick、delay、millis、临界区 |
-| `osal_freertos.c/.h` | FreeRTOS 后端占位，保留真实 FreeRTOS API 替换点 |
-
-App、components、debug 适配层优先调用 OSAL，不直接依赖裸机或 FreeRTOS。
-
-如果之前 FreeRTOS 代码里任务函数是 `while(1)`，切回裸机时不能把这些任务原样塞进裸机主循环。正确做法是把任务里的主体拆成一次执行函数，例如 `xxx_process()`，FreeRTOS 任务里 `while(1)` 调它，裸机主循环里按时间片调它。
+周期任务里仍然建议把一次业务逻辑拆成 `xxx_process()` 这种短函数，再由 FreeRTOS task 的 `while(1)` 调用它。这样任务结构清楚，也方便以后把某个模块改成事件驱动或队列驱动。
 
 ## 新增代码放哪
 

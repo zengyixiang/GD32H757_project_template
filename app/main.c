@@ -1,26 +1,37 @@
 #include "app_init.h"
 #include "app_task.h"
 #include "board.h"
-#include "osal.h"
-#include "project_config.h"
 
-int main(void)
+#include "FreeRTOS.h"
+#include "task.h"
+
+#define APP_START_TASK_STACK_WORDS 1024U
+#define APP_START_TASK_PRIORITY    4U
+
+static void app_start_task(void *argument)
 {
+    (void)argument;
+
     board_init();
-    osal_init();
     app_init();
     app_task_create();
 
-#if PROJECT_USE_FREERTOS
-    osal_kernel_start();
-#endif
+    vTaskDelete(NULL);
+}
 
-#if PROJECT_USE_FREERTOS
+int main(void)
+{
+    board_early_init();
+
+    if(xTaskCreate(app_start_task,
+                   "app_start",
+                   APP_START_TASK_STACK_WORDS,
+                   NULL,
+                   APP_START_TASK_PRIORITY,
+                   NULL) == pdPASS) {
+        vTaskStartScheduler();
+    }
+
     while(1) {
     }
-#else
-    while(1) {
-        app_task_run();
-    }
-#endif
 }

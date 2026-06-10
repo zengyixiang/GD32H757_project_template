@@ -3,7 +3,9 @@
 #include "board_hw_version.h"
 #include "board_i2c.h"
 #include "gxht30.h"
-#include "osal.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
 
 #include <stdint.h>
 
@@ -54,7 +56,7 @@ static int board_gxht30_read(void *context, uint8_t device_address,
 
 static void board_gxht30_delay_ms(uint32_t timeout_ms)
 {
-    osal_delay_ms(timeout_ms);
+    vTaskDelay(pdMS_TO_TICKS(timeout_ms));
 }
 
 void board_sensor_init(void)

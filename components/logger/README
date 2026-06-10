@@ -37,7 +37,7 @@
 
     debug_time_t get_time_ms(void)
     {
-        return osal_millis();
+        return xTaskGetTickCount() * portTICK_PERIOD_MS;
     }
 
     int main(void)

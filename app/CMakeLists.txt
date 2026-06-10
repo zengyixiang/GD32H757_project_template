@@ -21,5 +21,4 @@ target_link_libraries(app_lib PUBLIC
     project_board
     components_lib
     middleware_lib
-    osal_lib
 )

@@ -7,9 +7,13 @@
 
 void board_hw_version_init(void);
 
-void board_init(void)
+void board_early_init(void)
 {
     board_system_init();
+}
+
+void board_init(void)
+{
     board_clock_init();
     board_hw_version_init();
     board_pin_init();

@@ -12,5 +12,5 @@ target_include_directories(board_my_product_v1 PUBLIC
 target_link_libraries(board_my_product_v1 PUBLIC
     bsp_lib
     components_lib
-    osal_lib
+    middleware_lib
 )

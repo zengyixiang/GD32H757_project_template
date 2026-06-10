@@ -4,11 +4,18 @@
 
 #include "comm_service.h"
 #include "display_service.h"
+#include "gd32h7xx_fwdgt.h"
 #include "log.h"
-#include "osal.h"
-#include "project_config.h"
 #include "sensor_service.h"
 #include "upgrade_service.h"
+
+#include "FreeRTOS.h"
+#include "task.h"
+
+#define APP_MAIN_TASK_STACK_WORDS    1024U
+#define APP_MAIN_TASK_PRIORITY       2U
+#define APP_DISPLAY_TASK_STACK_WORDS 1024U
+#define APP_DISPLAY_TASK_PRIORITY    3U
 
 static void app_main_process(void)
 {
@@ -26,7 +33,6 @@ static void app_main_process(void)
 
     comm_service_poll();
     upgrade_service_poll();
-    log_flush();
 }
 
 static void app_display_process(void)
@@ -34,14 +40,23 @@ static void app_display_process(void)
     display_service_poll();
 }
 
-#if PROJECT_USE_FREERTOS
+void vApplicationIdleHook(void)
+{
+    log_flush();
+    fwdgt_counter_reload();
+}
+
+void vApplicationTickHook(void)
+{
+}
+
 static void app_main_task(void *argument)
 {
     (void)argument;
 
     while(1) {
         app_main_process();
-        osal_task_delay_ms(1000U);
+        vTaskDelay(pdMS_TO_TICKS(1000U));
     }
 }
 
@@ -51,54 +66,23 @@ static void app_display_task(void *argument)
 
     while(1) {
         app_display_process();
-        osal_task_delay_ms(5U);
+        vTaskDelay(pdMS_TO_TICKS(5U));
     }
 }
-#endif
 
 void app_task_create(void)
 {
-#if PROJECT_USE_FREERTOS
-    const osal_task_config_t main_task = {
-        .name = "app_main",
-        .entry = app_main_task,
-        .argument = 0,
-        .stack_size = 1024U,
-        .priority = 2U,
-    };
-    const osal_task_config_t display_task = {
-        .name = "display",
-        .entry = app_display_task,
-        .argument = 0,
-        .stack_size = 1024U,
-        .priority = 3U,
-    };
+    (void)xTaskCreate(app_main_task,
+                      "app_main",
+                      APP_MAIN_TASK_STACK_WORDS,
+                      NULL,
+                      APP_MAIN_TASK_PRIORITY,
+                      NULL);
 
-    (void)osal_task_create(&main_task);
-    (void)osal_task_create(&display_task);
-#endif
-}
-
-void app_task_run(void)
-{
-    static uint32_t last_display_ms;
-    static uint32_t last_main_ms;
-    static uint8_t initialized;
-    uint32_t now = osal_millis();
-
-    if(initialized == 0U) {
-        last_display_ms = now - 5U;
-        last_main_ms = now - 1000U;
-        initialized = 1U;
-    }
-
-    if((uint32_t)(now - last_display_ms) >= 5U) {
-        last_display_ms = now;
-        app_display_process();
-    }
-
-    if((uint32_t)(now - last_main_ms) >= 1000U) {
-        last_main_ms = now;
-        app_main_process();
-    }
+    (void)xTaskCreate(app_display_task,
+                      "display",
+                      APP_DISPLAY_TASK_STACK_WORDS,
+                      NULL,
+                      APP_DISPLAY_TASK_PRIORITY,
+                      NULL);
 }

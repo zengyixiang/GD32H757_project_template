@@ -12,6 +12,7 @@
 #include "board_touch.h"
 #include "board_uart.h"
 
+void board_early_init(void);
 void board_init(void);
 void board_tick(void);
 

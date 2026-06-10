@@ -12,5 +12,5 @@ target_include_directories(board_gd32h757_eval PUBLIC
 target_link_libraries(board_gd32h757_eval PUBLIC
     bsp_lib
     components_lib
-    osal_lib
+    middleware_lib
 )

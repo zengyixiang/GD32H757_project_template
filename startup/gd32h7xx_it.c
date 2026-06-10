@@ -33,17 +33,13 @@ OF SUCH DAMAGE.
 */
 
 #include "gd32h7xx_it.h"
-#include "osal.h"
-#include "project_config.h"
 
-#if PROJECT_USE_FREERTOS
 #include "FreeRTOS.h"
 #include "task.h"
 
 void vPortSVCHandler(void);
 void xPortPendSVHandler(void);
 void xPortSysTickHandler(void);
-#endif
 
 /*!
     \brief      this function handles NMI exception
@@ -129,18 +125,10 @@ void DebugMon_Handler(void)
     \param[out] none
     \retval     none
 */
-#if PROJECT_USE_FREERTOS
 __attribute__((naked)) void SVC_Handler(void)
 {
     __asm volatile ("b vPortSVCHandler");
 }
-#else
-void SVC_Handler(void)
-{
-    while(1) {
-    }
-}
-#endif
 
 /*!
     \brief      this function handles PendSV exception
@@ -148,18 +136,10 @@ void SVC_Handler(void)
     \param[out] none
     \retval     none
 */
-#if PROJECT_USE_FREERTOS
 __attribute__((naked)) void PendSV_Handler(void)
 {
     __asm volatile ("b xPortPendSVHandler");
 }
-#else
-void PendSV_Handler(void)
-{
-    while(1) {
-    }
-}
-#endif
 
 /*!
     \brief      this function handles FPU exception
@@ -182,12 +162,7 @@ void FPU_IRQHandler(void)
 */
 void SysTick_Handler(void)
 {
-#if PROJECT_USE_FREERTOS
     if(xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
         xPortSysTickHandler();
-    } else
-#endif
-    {
-        osal_tick_isr();
     }
 }
