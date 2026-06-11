@@ -133,9 +133,9 @@ cmake --build --preset Debug --target flash_openocd
 | 层 | 职责 |
 | --- | --- |
 | `components/hardware_version/` | 通用识别算法，固定按 `0~3000mV`、每 `100mV` 一档输出版本码 `1~30` |
-| `board/my_product_v1/board_hw_version.c` | 具体板子的适配，只配置 ADC2 channel 12、ADC raw 到 mV 的转换、不同版本码下的板级映射 |
+| `board/<board>/board_hw_version.c` | 具体板子的适配，只配置 ADC2 channel 12、ADC raw 到 mV 的转换、不同版本码下的板级映射 |
 
-`board/my_product_v1/board_hw_version.c` 当前示例通过 ADC2 channel 12 读取硬件版本 ADC，将 12bit ADC raw 按 `3000mV` 参考电压换算成 mV，再交给 `components/hardware_version` 分类：
+`board/gd32h757_eval/board_hw_version.c` 和 `board/my_product_v1/board_hw_version.c` 当前示例通过 ADC2 channel 12 读取硬件版本 ADC，将 12bit ADC raw 按 `3000mV` 参考电压换算成 mV，再交给 `components/hardware_version` 分类：
 
 | 电压范围 | 版本码 |
 | --- | --- |
