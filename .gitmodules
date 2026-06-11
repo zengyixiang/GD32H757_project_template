@@ -5,3 +5,6 @@
 [submodule "middleware/log/EasyLogger"]
 	path = middleware/log/EasyLogger
 	url = https://github.com/zengyixiang/EasyLogger.git
+[submodule "middleware/flashdb/FlashDB"]
+	path = middleware/flashdb/FlashDB
+	url = https://github.com/armink/FlashDB.git
