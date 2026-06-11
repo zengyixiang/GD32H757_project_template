@@ -1,16 +1,83 @@
 #include "board_system.h"
 
 #include "gd32h7xx.h"
+#include "gd32h7xx_fmc.h"
 
+#define BOARD_SYSTEM_ITCM_SIZE_KB 64U
+#define BOARD_SYSTEM_DTCM_SIZE_KB 128U
+
+static void board_system_tcm_shared_ram_init(void);
+static uint32_t board_system_itcm_ob_from_size(uint32_t size_kb);
+static uint32_t board_system_dtcm_ob_from_size(uint32_t size_kb);
 static void board_system_cache_enable(void);
 static void board_system_interrupt_priority_init(void);
 static void board_system_mpu_init(void);
 
 void board_system_init(void)
 {
+    board_system_tcm_shared_ram_init();
     board_system_mpu_init();
     board_system_cache_enable();
     board_system_interrupt_priority_init();
+}
+
+static void board_system_tcm_shared_ram_init(void)
+{
+    uint32_t current_itcm_ob = FMC_OBSTAT1_EFT & FMC_OBSTAT1_EFT_ITCM_SZ_SHRRAM;
+    uint32_t current_dtcm_ob = FMC_OBSTAT1_EFT & FMC_OBSTAT1_EFT_DTCM_SZ_SHRRAM;
+    uint32_t target_itcm_ob = board_system_itcm_ob_from_size(BOARD_SYSTEM_ITCM_SIZE_KB);
+    uint32_t target_dtcm_ob = board_system_dtcm_ob_from_size(BOARD_SYSTEM_DTCM_SIZE_KB);
+
+    if((current_itcm_ob == target_itcm_ob) && (current_dtcm_ob == target_dtcm_ob)) {
+        return;
+    }
+
+    ob_unlock();
+    if(ob_tcm_shared_ram_config(target_itcm_ob, target_dtcm_ob) == FMC_READY) {
+        if(ob_start() == FMC_READY) {
+            while((FMC_STAT & FMC_STAT_BUSY) != 0U) {
+            }
+            ob_lock();
+            NVIC_SystemReset();
+        }
+    }
+    ob_lock();
+}
+
+static uint32_t board_system_itcm_ob_from_size(uint32_t size_kb)
+{
+    switch(size_kb) {
+    case 0U:
+        return OB_ITCM_SHARED_RAM_0KB;
+    case 64U:
+        return OB_ITCM_SHARED_RAM_64KB;
+    case 128U:
+        return OB_ITCM_SHARED_RAM_128KB;
+    case 256U:
+        return OB_ITCM_SHARED_RAM_256KB;
+    case 512U:
+        return OB_ITCM_SHARED_RAM_512KB;
+    default:
+        return OB_ITCM_SHARED_RAM_64KB;
+    }
+}
+
+static uint32_t board_system_dtcm_ob_from_size(uint32_t size_kb)
+{
+    switch(size_kb) {
+    case 0U:
+        return OB_DTCM_SHARED_RAM_0KB;
+    case 64U:
+        return OB_DTCM_SHARED_RAM_64KB;
+    case 128U:
+        return OB_DTCM_SHARED_RAM_128KB;
+    case 256U:
+        return OB_DTCM_SHARED_RAM_256KB;
+    case 512U:
+        return OB_DTCM_SHARED_RAM_512KB;
+    default:
+        return OB_DTCM_SHARED_RAM_128KB;
+    }
 }
 
 static void board_system_cache_enable(void)
