@@ -24,7 +24,7 @@ int main(void)
     board_early_init();
 
     if(xTaskCreate(app_start_task,
-                   "app_start",
+                   "app_start_task",
                    APP_START_TASK_STACK_WORDS,
                    NULL,
                    APP_START_TASK_PRIORITY,

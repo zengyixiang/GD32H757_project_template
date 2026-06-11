@@ -73,14 +73,14 @@ static void app_display_task(void *argument)
 void app_task_create(void)
 {
     (void)xTaskCreate(app_main_task,
-                      "app_main",
+                      "app_main_task",
                       APP_MAIN_TASK_STACK_WORDS,
                       NULL,
                       APP_MAIN_TASK_PRIORITY,
                       NULL);
 
     (void)xTaskCreate(app_display_task,
-                      "display",
+                      "display_task",
                       APP_DISPLAY_TASK_STACK_WORDS,
                       NULL,
                       APP_DISPLAY_TASK_PRIORITY,
