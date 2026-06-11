@@ -8,6 +8,7 @@ target_sources(services_lib PRIVATE
 )
 target_include_directories(services_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/comm_service
+    ${CMAKE_CURRENT_SOURCE_DIR}/key_service
     ${CMAKE_CURRENT_SOURCE_DIR}/sensor_service
     ${CMAKE_CURRENT_SOURCE_DIR}/display_service
     ${CMAKE_CURRENT_SOURCE_DIR}/upgrade_service

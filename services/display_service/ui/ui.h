@@ -8,6 +8,7 @@ typedef enum {
 
 void ui_init(void);
 void ui_show_screen(ui_screen_id_t screen);
+void ui_set_message_text(const char *text);
 void ui_tick(void);
 
 #endif

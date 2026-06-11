@@ -11,6 +11,7 @@
 #include "comm_service.h"
 #include "display_service.h"
 #include "fatfs_stub.h"
+#include "key_service.h"
 #include "project_config.h"
 #include "sensor_service.h"
 #include "shell.h"
@@ -30,6 +31,7 @@ void app_init(void)
     shell_init();
     cli_init();
     fatfs_mount("0:");
+    key_service_init();
     comm_service_init();
     storage_service_init();
     sensor_service_init();

@@ -4,41 +4,41 @@
 #include "log.h"
 #include "app_task.h"
 
+#include "app_event.h"
 #include "comm_service.h"
 #include "display_service.h"
 #include "gd32h7xx_fwdgt.h"
-#include "sensor_service.h"
-#include "upgrade_service.h"
+#include "key_service.h"
+#include "lvgl_port.h"
 
 #include "FreeRTOS.h"
 #include "task.h"
 
-#define APP_MAIN_TASK_STACK_WORDS    1024U
-#define APP_MAIN_TASK_PRIORITY       2U
-#define APP_DISPLAY_TASK_STACK_WORDS 1024U
-#define APP_DISPLAY_TASK_PRIORITY    3U
+#define APP_EVENT_TASK_STACK_WORDS 1024U
+#define APP_EVENT_TASK_PRIORITY 2U
 
-static void app_main_process(void)
+static void app_dispatch_event(const app_event_t *event)
 {
-    unsigned short sample = sensor_service_read_vbat();
-    sensor_service_environment_t environment;
-
-    log_d("VBAT sample: %u", sample);
-    (void)sample;
-
-    if(sensor_service_read_environment(&environment) == 0) {
-        log_d("GXHT30: %ld mC, %lu m%%",
-              (long)environment.temperature_mc,
-              (unsigned long)environment.humidity_milli_percent);
+    if(event == 0) {
+        return;
     }
 
-    comm_service_poll();
-    upgrade_service_poll();
-}
-
-static void app_display_process(void)
-{
-    display_service_poll();
+    switch(event->id) {
+    case APP_EVENT_KEY_USER_PRESSED:
+        (void)display_service_request_screen(DISPLAY_SCREEN_SETTINGS);
+        break;
+    case APP_EVENT_UI_SEND_CMD:
+        (void)comm_service_request_send_demo();
+        break;
+    case APP_EVENT_COMM_SHOW_TEXT:
+        (void)display_service_request_text(event->data.text);
+        break;
+    case APP_EVENT_SENSOR_READY:
+    case APP_EVENT_COMM_RX:
+    case APP_EVENT_UPGRADE_REQUEST:
+    default:
+        break;
+    }
 }
 
 void vApplicationIdleHook(void)
@@ -48,41 +48,32 @@ void vApplicationIdleHook(void)
 
 void vApplicationTickHook(void)
 {
+    lvgl_port_tick();
 }
 
-static void app_main_task(void *argument)
+static void app_event_task(void *argument)
 {
     (void)argument;
 
     while(1) {
-        app_main_process();
-        vTaskDelay(pdMS_TO_TICKS(1000U));
-    }
-}
+        app_event_t event;
 
-static void app_display_task(void *argument)
-{
-    (void)argument;
-
-    while(1) {
-        app_display_process();
-        vTaskDelay(pdMS_TO_TICKS(5U));
+        if(app_event_get(&event, APP_EVENT_WAIT_FOREVER) == 0) {
+            app_dispatch_event(&event);
+        }
     }
 }
 
 void app_task_create(void)
 {
-    (void)xTaskCreate(app_main_task,
-                      "app_main_task",
-                      APP_MAIN_TASK_STACK_WORDS,
+    (void)xTaskCreate(app_event_task,
+                      "app_event_task",
+                      APP_EVENT_TASK_STACK_WORDS,
                       NULL,
-                      APP_MAIN_TASK_PRIORITY,
+                      APP_EVENT_TASK_PRIORITY,
                       NULL);
 
-    (void)xTaskCreate(app_display_task,
-                      "display_task",
-                      APP_DISPLAY_TASK_STACK_WORDS,
-                      NULL,
-                      APP_DISPLAY_TASK_PRIORITY,
-                      NULL);
+    (void)display_service_start();
+    (void)comm_service_start();
+    (void)key_service_start();
 }

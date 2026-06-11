@@ -7,7 +7,8 @@ typedef enum {
 } display_screen_t;
 
 void display_service_init(void);
-void display_service_poll(void);
-void display_service_switch_screen(display_screen_t screen);
+int display_service_start(void);
+int display_service_request_screen(display_screen_t screen);
+int display_service_request_text(const char *text);
 
 #endif

@@ -29,6 +29,12 @@ void ui_show_screen(ui_screen_id_t screen)
     }
 }
 
+void ui_set_message_text(const char *text)
+{
+    (void)text;
+    (void)ui_current_screen;
+}
+
 void ui_tick(void)
 {
     ui_status_bar_update();
