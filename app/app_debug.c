@@ -15,8 +15,3 @@ void app_debug_init(void)
     log_set_output(app_debug_write);
     (void)log_init();
 }
-
-void app_debug_flush(void)
-{
-    log_flush();
-}

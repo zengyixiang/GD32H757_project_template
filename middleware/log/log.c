@@ -6,7 +6,6 @@
 #include <stdbool.h>
 
 extern int log_port_start_async_task(void);
-extern void log_port_flush_async_output(void);
 
 static bool log_started;
 
@@ -49,7 +48,3 @@ int log_init(void)
     return 0;
 }
 
-void log_flush(void)
-{
-    log_port_flush_async_output();
-}
