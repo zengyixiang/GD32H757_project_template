@@ -10,7 +10,7 @@
 #include "gd32h7xx_fwdgt.h"
 #include "key_service.h"
 #include "lvgl_port.h"
-
+#include "app_debug.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -76,4 +76,5 @@ void app_task_create(void)
     (void)display_service_start();
     (void)comm_service_start();
     (void)key_service_start();
+    (void)app_debug_start();
 }
