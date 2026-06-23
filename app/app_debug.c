@@ -6,16 +6,15 @@
 #include "board_uart.h"
 #include "common.h"
 #include "FreeRTOS.h"
+#include "FreeRTOS_CLI.h"
 #include "log.h"
 #include "task.h"
-#include <string.h>
+
 #include <stddef.h>
+#include <stdint.h>
+#include <stdio.h>
 
 #define APP_DEBUG_DIAGNOSTICS_ENABLE 1
-
-#define APP_DEBUG_TASK_STACK_WORDS 1024U
-#define APP_DEBUG_TASK_PRIORITY    1U
-#define APP_DEBUG_PERIOD_MS        5000U
 
 static void app_debug_write(const char *data, size_t size)
 {
@@ -23,20 +22,49 @@ static void app_debug_write(const char *data, size_t size)
 }
 
 #if APP_DEBUG_DIAGNOSTICS_ENABLE
-static char app_debug_task_list[configSTATS_BUFFER_MAX_LENGTH];
+static CLI_Definition_List_Item_t app_debug_tasks_command_item;
+static uint8_t app_debug_tasks_command_registered;
 
-static void app_debug_task(void *argument)
+static BaseType_t app_debug_tasks_command(char *pcWriteBuffer,
+                                          size_t xWriteBufferLen,
+                                          const char *pcCommandString)
 {
-    unused(argument);
+    int written;
 
-    while(1) {
-        memset(app_debug_task_list, 0, sizeof(app_debug_task_list));
-        vTaskList(app_debug_task_list);
-        log_i("RTOS heap free=%u min=%u",
-              (unsigned int)xPortGetFreeHeapSize(),
-              (unsigned int)xPortGetMinimumEverFreeHeapSize());
-        log_i("Task list:\r\n%s", app_debug_task_list);
-        vTaskDelay(pdMS_TO_TICKS(APP_DEBUG_PERIOD_MS));
+    unused(pcCommandString);
+
+    written = snprintf(pcWriteBuffer,
+                       xWriteBufferLen,
+                       "RTOS heap free=%u min=%u\r\n"
+                       "Task list:\r\n",
+                       (unsigned int)xPortGetFreeHeapSize(),
+                       (unsigned int)xPortGetMinimumEverFreeHeapSize());
+
+    if((written < 0) || ((size_t)written >= xWriteBufferLen)) {
+        pcWriteBuffer[0] = '\0';
+        return pdFALSE;
+    }
+
+    vTaskList(pcWriteBuffer + written);
+    return pdFALSE;
+}
+
+static const CLI_Command_Definition_t app_debug_tasks_command_definition = {
+    "tasks",
+    "\r\ntasks:\r\n Lists FreeRTOS heap and task state information\r\n\r\n",
+    app_debug_tasks_command,
+    0
+};
+
+static void app_debug_register_cli_commands(void)
+{
+    if(app_debug_tasks_command_registered != 0U) {
+        return;
+    }
+
+    if(FreeRTOS_CLIRegisterCommandStatic(&app_debug_tasks_command_definition,
+                                         &app_debug_tasks_command_item) == pdPASS) {
+        app_debug_tasks_command_registered = 1U;
     }
 }
 #endif
@@ -45,18 +73,12 @@ void app_debug_init(void)
 {
     log_set_output(app_debug_write);
     unused(log_init());
+#if APP_DEBUG_DIAGNOSTICS_ENABLE
+    app_debug_register_cli_commands();
+#endif
 }
 
 int app_debug_start(void)
 {
-#if APP_DEBUG_DIAGNOSTICS_ENABLE
-    return xTaskCreate(app_debug_task,
-                       "debug_task",
-                       APP_DEBUG_TASK_STACK_WORDS,
-                       NULL,
-                       APP_DEBUG_TASK_PRIORITY,
-                       NULL) == pdPASS ? 0 : -1;
-#else
     return 0;
-#endif
 }

@@ -65,3 +65,17 @@ void bsp_uart_write_buffer(const bsp_uart_t *uart, const char *data, int size)
     while(RESET == usart_flag_get(uart->config.usart_periph, USART_FLAG_TC)) {
     }
 }
+
+int bsp_uart_read_byte(const bsp_uart_t *uart, char *data)
+{
+    if((uart == 0) || (data == 0) || (uart->config.enable_rx == 0U)) {
+        return 0;
+    }
+
+    if(RESET == usart_flag_get(uart->config.usart_periph, USART_FLAG_RBNE)) {
+        return 0;
+    }
+
+    *data = (char)(usart_data_receive(uart->config.usart_periph) & 0xFFU);
+    return 1;
+}

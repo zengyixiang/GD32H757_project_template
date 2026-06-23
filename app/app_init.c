@@ -7,6 +7,7 @@
 #include "app_debug.h"
 #include "app_event.h"
 #include "board.h"
+#include "board_uart.h"
 #include "cli.h"
 #include "comm_service.h"
 #include "display_service.h"
@@ -19,6 +20,21 @@
 #include "storage_service.h"
 #include "upgrade_service.h"
 
+static int app_cli_read_byte(char *data)
+{
+    return board_uart_read_byte(data);
+}
+
+static void app_cli_write(const char *data, size_t size)
+{
+    board_uart_write_buffer(data, (int)size);
+}
+
+static const cli_port_t app_cli_port = {
+    .read_byte = app_cli_read_byte,
+    .write = app_cli_write,
+};
+
 void app_init(void)
 {
     app_debug_init();
@@ -29,7 +45,7 @@ void app_init(void)
     app_event_init();
     storage_init();
     shell_init();
-    cli_init();
+    cli_init(&app_cli_port);
     fatfs_mount("0:");
     key_service_init();
     comm_service_init();

@@ -37,3 +37,8 @@ void board_uart_write_buffer(const char *data, int size)
 {
     bsp_uart_write_buffer(&board_debug_uart, data, size);
 }
+
+int board_uart_read_byte(char *data)
+{
+    return bsp_uart_read_byte(&board_debug_uart, data);
+}

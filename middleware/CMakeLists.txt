@@ -12,6 +12,7 @@ add_subdirectory(micropython)
 add_library(middleware_lib INTERFACE)
 target_link_libraries(middleware_lib INTERFACE
     freertos_kernel_stub
+    freertos_cli
     log_lib
     fatfs_stub
     cjson_stub

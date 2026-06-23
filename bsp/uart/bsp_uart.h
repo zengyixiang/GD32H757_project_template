@@ -28,5 +28,6 @@ typedef struct {
 void bsp_uart_init(bsp_uart_t *uart, const bsp_uart_config_t *config);
 void bsp_uart_write(const bsp_uart_t *uart, const char *text);
 void bsp_uart_write_buffer(const bsp_uart_t *uart, const char *data, int size);
+int bsp_uart_read_byte(const bsp_uart_t *uart, char *data);
 
 #endif

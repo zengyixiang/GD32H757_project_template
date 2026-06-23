@@ -4,6 +4,7 @@
 #include "log.h"
 #include "app_task.h"
 
+#include "cli.h"
 #include "app_event.h"
 #include "comm_service.h"
 #include "display_service.h"
@@ -76,5 +77,6 @@ void app_task_create(void)
     (void)display_service_start();
     (void)comm_service_start();
     (void)key_service_start();
+    (void)cli_start();
     (void)app_debug_start();
 }
