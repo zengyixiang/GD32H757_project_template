@@ -5,20 +5,20 @@
 static bsp_uart_t board_debug_uart;
 
 static const bsp_uart_config_t board_debug_uart_config = {
-    .usart_periph = USART2,
-    .clock = RCU_USART2,
+    .usart_periph = USART5,
+    .clock = RCU_USART5,
     .baudrate = 115200U,
     .tx = {
-        .port = GPIOB,
-        .pin = GPIO_PIN_10,
+        .port = GPIOG,
+        .pin = GPIO_PIN_14,
         .alternate = GPIO_AF_7,
-        .clock = RCU_GPIOB,
+        .clock = RCU_GPIOG,
     },
     .rx = {
-        .port = GPIOB,
-        .pin = GPIO_PIN_11,
+        .port = GPIOG,
+        .pin = GPIO_PIN_9,
         .alternate = GPIO_AF_7,
-        .clock = RCU_GPIOB,
+        .clock = RCU_GPIOG,
     },
     .enable_rx = 1U,
 };

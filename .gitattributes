@@ -1,8 +1,3 @@
-*.zip  binary
-*.hex  binary
-*.bin  binary
-*.elf   binary
-
 # 默认文本文件统一使用 LF
 * text=auto eol=lf
 
