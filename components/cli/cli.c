@@ -18,6 +18,20 @@ static size_t cli_input_length;
 static uint8_t cli_started;
 static uint8_t cli_last_was_cr;
 
+static void cli_lock(void)
+{
+    if(cli_port.lock != 0) {
+        cli_port.lock();
+    }
+}
+
+static void cli_unlock(void)
+{
+    if(cli_port.unlock != 0) {
+        cli_port.unlock();
+    }
+}
+
 static void cli_write(const char *data)
 {
     if((cli_port.write == 0) || (data == 0)) {
@@ -59,6 +73,7 @@ static void cli_handle_byte(char data)
 
     if((data == '\r') || (data == '\n')) {
         cli_last_was_cr = (data == '\r') ? 1U : 0U;
+        cli_lock();
         if(cli_input_length != 0U) {
             cli_write("\r\n");
             cli_input_buffer[cli_input_length] = '\0';
@@ -67,6 +82,7 @@ static void cli_handle_byte(char data)
             cli_input_buffer[0] = '\0';
         }
         cli_write_prompt();
+        cli_unlock();
         return;
     }
 
@@ -99,12 +115,23 @@ static void cli_task(void *argument)
 {
     (void)argument;
 
+    cli_lock();
     cli_write("\r\nFreeRTOS CLI ready. Type 'help'.");
     cli_write_prompt();
+    cli_unlock();
 
     while(1) {
-        cli_poll();
-        vTaskDelay(pdMS_TO_TICKS(CLI_POLL_PERIOD_MS));
+        if(cli_port.wait_byte != 0) {
+            char data;
+
+            if(cli_port.wait_byte(&data) != 0) {
+                cli_handle_byte(data);
+                cli_poll();
+            }
+        } else {
+            cli_poll();
+            vTaskDelay(pdMS_TO_TICKS(CLI_POLL_PERIOD_MS));
+        }
     }
 }
 

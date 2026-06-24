@@ -34,6 +34,7 @@ OF SUCH DAMAGE.
 
 #include "gd32h7xx_it.h"
 
+#include "board_uart.h"
 #include "FreeRTOS.h"
 #include "task.h"
 
@@ -165,4 +166,19 @@ void SysTick_Handler(void)
     if(xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED) {
         xPortSysTickHandler();
     }
+}
+
+void USART2_IRQHandler(void)
+{
+    board_uart_irq_handler();
+}
+
+void USART5_IRQHandler(void)
+{
+    board_uart_irq_handler();
+}
+
+void DMA1_Channel7_IRQHandler(void)
+{
+    board_uart_dma_irq_handler();
 }

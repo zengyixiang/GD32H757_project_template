@@ -1,6 +1,5 @@
 add_library(components_lib STATIC)
 target_sources(components_lib PRIVATE
-    ${CMAKE_CURRENT_SOURCE_DIR}/ringbuffer/ringbuffer.c
     ${CMAKE_CURRENT_SOURCE_DIR}/protocol/protocol.c
     ${CMAKE_CURRENT_SOURCE_DIR}/shell/shell.c
     ${CMAKE_CURRENT_SOURCE_DIR}/cli/cli.c
@@ -11,7 +10,6 @@ target_sources(components_lib PRIVATE
 )
 target_include_directories(components_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/common
-    ${CMAKE_CURRENT_SOURCE_DIR}/ringbuffer
     ${CMAKE_CURRENT_SOURCE_DIR}/protocol
     ${CMAKE_CURRENT_SOURCE_DIR}/shell
     ${CMAKE_CURRENT_SOURCE_DIR}/cli

@@ -21,11 +21,19 @@ static const bsp_uart_config_t board_debug_uart_config = {
         .clock = RCU_GPIOG,
     },
     .enable_rx = 1U,
+    .enable_tx_dma = 1U,
+    .tx_dma_periph = DMA1,
+    .tx_dma_channel = DMA_CH7,
+    .tx_dma_request = DMA_REQUEST_USART5_TX,
+    .tx_dma_irq = DMA1_Channel7_IRQn,
+    .tx_dma_pre_priority = 6U,
+    .tx_dma_sub_priority = 0U,
 };
 
 void board_uart_init(void)
 {
     bsp_uart_init(&board_debug_uart, &board_debug_uart_config);
+    bsp_uart_enable_rx_interrupt(&board_debug_uart, USART5_IRQn, 6U, 0U);
 }
 
 void board_uart_write(const char *text)
@@ -41,4 +49,29 @@ void board_uart_write_buffer(const char *data, int size)
 int board_uart_read_byte(char *data)
 {
     return bsp_uart_read_byte(&board_debug_uart, data);
+}
+
+int board_uart_wait_byte(char *data)
+{
+    return bsp_uart_read_byte_timeout(&board_debug_uart, data, portMAX_DELAY);
+}
+
+void board_uart_lock_tx(void)
+{
+    bsp_uart_lock_tx(&board_debug_uart);
+}
+
+void board_uart_unlock_tx(void)
+{
+    bsp_uart_unlock_tx(&board_debug_uart);
+}
+
+void board_uart_irq_handler(void)
+{
+    bsp_uart_irq_handler(&board_debug_uart);
+}
+
+void board_uart_dma_irq_handler(void)
+{
+    bsp_uart_dma_irq_handler(&board_debug_uart);
 }

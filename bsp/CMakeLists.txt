@@ -18,4 +18,5 @@ target_include_directories(bsp_lib PUBLIC
 )
 target_link_libraries(bsp_lib PUBLIC
     drivers_lib
+    freertos_kernel_stub
 )

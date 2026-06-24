@@ -74,7 +74,7 @@
 #define configENABLE_FPU                  1
 #define configUSE_TASK_FPU_SUPPORT        2
 
-#define configUSE_STATS_FORMATTING_FUNCTIONS	1
+#define configUSE_STATS_FORMATTING_FUNCTIONS	0
 #define configSTATS_BUFFER_MAX_LENGTH           1024
 #define configCOMMAND_INT_MAX_OUTPUT_SIZE       2048
 extern void py_task_change(void * cur_TCB);
