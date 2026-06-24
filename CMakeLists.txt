@@ -15,6 +15,40 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 project(${CMAKE_PROJECT_NAME} LANGUAGES C ASM)
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
+set(APP_GIT_COMMIT "unknown")
+set(APP_GIT_BRANCH "unknown")
+set(APP_GIT_DIRTY "unknown")
+
+find_package(Git QUIET)
+if(GIT_FOUND)
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --short=12 HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE APP_GIT_COMMIT
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} rev-parse --abbrev-ref HEAD
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE APP_GIT_BRANCH
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    execute_process(
+        COMMAND ${GIT_EXECUTABLE} status --porcelain
+        WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+        OUTPUT_VARIABLE APP_GIT_STATUS
+        OUTPUT_STRIP_TRAILING_WHITESPACE
+        ERROR_QUIET
+    )
+    if(APP_GIT_STATUS STREQUAL "")
+        set(APP_GIT_DIRTY "clean")
+    else()
+        set(APP_GIT_DIRTY "dirty")
+    endif()
+endif()
+
 add_executable(${CMAKE_PROJECT_NAME})
 
 include(cmake/common_flags.cmake)
@@ -28,6 +62,13 @@ add_subdirectory(components)
 add_subdirectory(board)
 add_subdirectory(services)
 add_subdirectory(app)
+
+target_compile_definitions(app_lib PRIVATE
+    APP_GIT_COMMIT=\"${APP_GIT_COMMIT}\"
+    APP_GIT_BRANCH=\"${APP_GIT_BRANCH}\"
+    APP_GIT_DIRTY=\"${APP_GIT_DIRTY}\"
+    APP_BUILD_TYPE=\"${CMAKE_BUILD_TYPE}\"
+)
 
 target_link_libraries(${CMAKE_PROJECT_NAME} PRIVATE
     app_lib

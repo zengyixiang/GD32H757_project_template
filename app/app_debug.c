@@ -3,11 +3,14 @@
 
 #include "app_debug.h"
 
+#include "app_version.h"
+#include "board.h"
 #include "board_uart.h"
 #include "common.h"
 #include "FreeRTOS.h"
 #include "FreeRTOS_CLI.h"
 #include "log.h"
+#include "project_config.h"
 #include "task.h"
 
 #include <stdarg.h>
@@ -19,6 +22,22 @@
 #define APP_DEBUG_TASKS_MAX          24U
 #define APP_DEBUG_TASKS_SEPARATOR    "+-----------------+-------+------+--------------+-----+\r\n"
 
+#ifndef APP_GIT_COMMIT
+#define APP_GIT_COMMIT "unknown"
+#endif
+
+#ifndef APP_GIT_BRANCH
+#define APP_GIT_BRANCH "unknown"
+#endif
+
+#ifndef APP_GIT_DIRTY
+#define APP_GIT_DIRTY "unknown"
+#endif
+
+#ifndef APP_BUILD_TYPE
+#define APP_BUILD_TYPE "unknown"
+#endif
+
 static void app_debug_write(const char *data, size_t size)
 {
     board_uart_write_buffer(data, (int)size);
@@ -26,7 +45,9 @@ static void app_debug_write(const char *data, size_t size)
 
 #if APP_DEBUG_DIAGNOSTICS_ENABLE
 static CLI_Definition_List_Item_t app_debug_tasks_command_item;
+static CLI_Definition_List_Item_t app_debug_info_command_item;
 static uint8_t app_debug_tasks_command_registered;
+static uint8_t app_debug_info_command_registered;
 static TaskStatus_t app_debug_task_status[APP_DEBUG_TASKS_MAX];
 
 static char app_debug_task_state_to_char(eTaskState state)
@@ -158,15 +179,59 @@ static const CLI_Command_Definition_t app_debug_tasks_command_definition = {
     0
 };
 
+static BaseType_t app_debug_info_command(char *pcWriteBuffer,
+                                         size_t xWriteBufferLen,
+                                         const char *pcCommandString)
+{
+    size_t used = 0U;
+    board_hw_version_t hw_version = board_hw_version_get();
+    const char *hw_state = (board_hw_version_is_valid() != 0U) ? "valid" : "unknown";
+
+    unused(pcCommandString);
+
+    (void)app_debug_append(pcWriteBuffer,
+                           xWriteBufferLen,
+                           &used,
+                           "Board information:\r\n"
+                           "  firmware : 0x%08lX\r\n"
+                           "  board    : %s\r\n"
+                           "  hardware : %u (%s)\r\n"
+                           "  build    : %s %s\r\n"
+                           "  type     : %s\r\n"
+                           "  git      : %s %s (%s)\r\n",
+                           (unsigned long)FIRMWARE_VERSION,
+                           PROJECT_BOARD_NAME,
+                           (unsigned int)hw_version,
+                           hw_state,
+                           __DATE__,
+                           __TIME__,
+                           APP_BUILD_TYPE,
+                           APP_GIT_BRANCH,
+                           APP_GIT_COMMIT,
+                           APP_GIT_DIRTY);
+
+    return pdFALSE;
+}
+
+static const CLI_Command_Definition_t app_debug_info_command_definition = {
+    "info",
+    "\r\ninfo:\r\n Shows firmware, board, hardware, build and git information\r\n\r\n",
+    app_debug_info_command,
+    0
+};
+
 static void app_debug_register_cli_commands(void)
 {
-    if(app_debug_tasks_command_registered != 0U) {
-        return;
+    if((app_debug_tasks_command_registered == 0U) &&
+       (FreeRTOS_CLIRegisterCommandStatic(&app_debug_tasks_command_definition,
+                                          &app_debug_tasks_command_item) == pdPASS)) {
+        app_debug_tasks_command_registered = 1U;
     }
 
-    if(FreeRTOS_CLIRegisterCommandStatic(&app_debug_tasks_command_definition,
-                                         &app_debug_tasks_command_item) == pdPASS) {
-        app_debug_tasks_command_registered = 1U;
+    if((app_debug_info_command_registered == 0U) &&
+       (FreeRTOS_CLIRegisterCommandStatic(&app_debug_info_command_definition,
+                                          &app_debug_info_command_item) == pdPASS)) {
+        app_debug_info_command_registered = 1U;
     }
 }
 #endif
