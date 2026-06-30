@@ -5,26 +5,26 @@
 static bsp_uart_t board_debug_uart;
 
 static const bsp_uart_config_t board_debug_uart_config = {
-    .usart_periph = USART5,
-    .clock = RCU_USART5,
+    .usart_periph = USART0,
+    .clock = RCU_USART0,
     .baudrate = 115200U,
     .tx = {
-        .port = GPIOG,
-        .pin = GPIO_PIN_14,
-        .alternate = GPIO_AF_7,
-        .clock = RCU_GPIOG,
-    },
-    .rx = {
-        .port = GPIOG,
+        .port = GPIOA,
         .pin = GPIO_PIN_9,
         .alternate = GPIO_AF_7,
-        .clock = RCU_GPIOG,
+        .clock = RCU_GPIOA,
+    },
+    .rx = {
+        .port = GPIOA,
+        .pin = GPIO_PIN_10,
+        .alternate = GPIO_AF_7,
+        .clock = RCU_GPIOA,
     },
     .enable_rx = 1U,
     .enable_tx_dma = 1U,
     .tx_dma_periph = DMA1,
     .tx_dma_channel = DMA_CH7,
-    .tx_dma_request = DMA_REQUEST_USART5_TX,
+    .tx_dma_request = DMA_REQUEST_USART0_TX,
     .tx_dma_irq = DMA1_Channel7_IRQn,
     .tx_dma_pre_priority = 6U,
     .tx_dma_sub_priority = 0U,
@@ -33,7 +33,7 @@ static const bsp_uart_config_t board_debug_uart_config = {
 void board_uart_init(void)
 {
     bsp_uart_init(&board_debug_uart, &board_debug_uart_config);
-    bsp_uart_enable_rx_interrupt(&board_debug_uart, USART5_IRQn, 6U, 0U);
+    bsp_uart_enable_rx_interrupt(&board_debug_uart, USART0_IRQn, 6U, 0U);
 }
 
 void board_uart_write(const char *text)

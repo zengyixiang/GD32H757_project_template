@@ -2,19 +2,20 @@
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Jlink Debug",
+            "name": "OpenOCD: Debug",
             "cwd": "${workspaceFolder}",
-            "executable": "./build/Debug/C8_GCC.elf",
+            "executable": "${workspaceFolder}/build/Debug/C8_GCC.elf",
             "request": "launch",
             "type": "cortex-debug",
-            "runToEntryPoint": "main",
             "servertype": "openocd",
-            "interface": "swd", 
-            "device": "gd32h7xx", 
+            "interface": "swd",
+            "device": "gd32h7xx",
             "configFiles": [
                 "${workspaceFolder}/scripts/jlink-swd.cfg",
                 "${workspaceFolder}/scripts/flash_openocd.cfg"
             ],
+            "runToEntryPoint": "main",
+            "preLaunchTask": "CMake: Build Debug",
             "showDevDebugOutput": "raw",
             "preLaunchCommands": [
                 "monitor reset halt"

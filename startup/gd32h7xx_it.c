@@ -168,12 +168,12 @@ void SysTick_Handler(void)
     }
 }
 
-void USART2_IRQHandler(void)
+void USART0_IRQHandler(void)
 {
     board_uart_irq_handler();
 }
 
-void USART5_IRQHandler(void)
+void USART2_IRQHandler(void)
 {
     board_uart_irq_handler();
 }

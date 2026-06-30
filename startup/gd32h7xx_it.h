@@ -58,10 +58,10 @@ void PendSV_Handler(void);
 void FPU_IRQHandler(void);
 /* this function handles SysTick exception */
 void SysTick_Handler(void);
+/* this function handles USART0 interrupt */
+void USART0_IRQHandler(void);
 /* this function handles USART2 interrupt */
 void USART2_IRQHandler(void);
-/* this function handles USART5 interrupt */
-void USART5_IRQHandler(void);
 /* this function handles DMA1 channel 7 interrupt */
 void DMA1_Channel7_IRQHandler(void);
 

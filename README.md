@@ -76,7 +76,7 @@ drivers
 | `services/` | 业务服务层 | 通信服务、传感器服务、显示服务、升级服务、应用事件 |
 | `app/` | 应用入口 | `main()`、应用初始化、任务创建、版本、配置 |
 | `config/` | 配置头文件 | `FreeRTOSConfig.h`、`lv_conf.h`、`ffconf.h`、`lwipopts.h`、项目配置 |
-| `scripts/` | 构建/烧录/调试脚本 | OpenOCD、J-Link、GDB、PowerShell 构建脚本 |
+| `scripts/` | 构建/烧录/调试脚本 | OpenOCD、J-Link 备用脚本、GDB、PowerShell 构建脚本 |
 | `tools/` | 辅助工具 | 资源转换、bin 转数组等脚本 |
 | `docs/` | 文档 | 架构、构建、调试说明、文档图片和示例 |
 | `build/` | 构建输出 | CMake 生成文件和 `.elf/.hex/.bin`，不提交 |
@@ -89,19 +89,18 @@ drivers
 | `CMakePresets.json` | Debug/Release preset，记录 generator、build 目录、toolchain 文件 |
 | `cmake/arm-none-eabi-gcc.cmake` | ARM GCC 交叉编译工具链 |
 | `cmake/common_flags.cmake` | Debug/Release 公共编译定义 |
-| `cmake/flash_jlink.cmake` | 烧录脚本路径变量和 `flash_openocd` target |
 
 `CMakePresets.json` 是 CMake 官方推荐的现代配置方式之一。很多老项目没有使用，是因为创建时间较早、已有 IDE 脚本或团队习惯不同。
 
 `cmake/common_flags.cmake` 当前被顶层 `CMakeLists.txt` 通过 `include(cmake/common_flags.cmake)` 引入，用来按构建类型自动添加公共编译宏：Debug 配置定义 `DEBUG`，Release 配置定义 `NDEBUG`。如果以后有全工程通用的 warning 选项、优化开关或诊断宏，也可以集中放在这里。
 
-`cmake/flash_jlink.cmake` 当前也被顶层 `CMakeLists.txt` 引入，它定义了 `gd32_add_flash_targets()` 函数。顶层最后调用 `gd32_add_flash_targets(${CMAKE_PROJECT_NAME})` 后，CMake 会生成一个 `flash_openocd` target。固件构建完成后，可以这样烧录：
+烧录和调试不在 CMake 中定义 target，统一放在 VS Code 任务和 `scripts/` 下的 OpenOCD 配置里。Debug 固件构建完成后，可以这样烧录：
 
 ```powershell
-cmake --build --preset Debug --target flash_openocd
+openocd -f scripts/jlink-swd.cfg -f scripts/flash_openocd.cfg -c "program {build/Debug/C8_GCC.elf} verify reset exit"
 ```
 
-这个 target 内部会调用 `openocd`，并使用 `scripts/jlink-swd.cfg` 和 `scripts/flash_openocd.cfg`。
+VS Code 中对应任务为 `OpenOCD: Flash Debug`，它会先执行 Debug 构建，再通过 `scripts/jlink-swd.cfg` 和 `scripts/flash_openocd.cfg` 下载 `build/Debug/C8_GCC.elf` 并复位运行。Release 对应 `OpenOCD: Flash Release`。
 
 原来的 `cmake/gd32h757.cmake` 已删除。它里面真正被使用的只有 `GD32H7XX` 和 `USE_STDPERIPH_DRIVER` 两个编译宏，现在已经移动到 `drivers/CMakeLists.txt`，其余芯片名/内核/FPU 变量没有被使用，保留文件反而会误导。
 
@@ -122,7 +121,7 @@ cmake --build --preset Debug --target flash_openocd
 | `gd32h757_eval` | `board_gd32h757_eval` | 默认评估板 |
 | `my_product_v1` | `board_my_product_v1` | 自定义产品板示例 |
 
-两块板可以有不同硬件映射。当前调试 UART 按旧工程配置使用 `USART2`，TX 为 `PB10`、RX 为 `PB11`、复用功能为 `GPIO_AF_7`、波特率 `115200`；默认板用 `I2C0/I2C1` 连接 EEPROM/传感器，`my_product_v1` 用 `I2C2/I2C3`。
+两块板可以有不同硬件映射。默认板调试 UART 使用 `USART0`，TX 为 `PA9`、RX 为 `PA10`、复用功能为 `GPIO_AF_7`、波特率 `115200`；`my_product_v1` 调试 UART 使用 `USART2` 的 `PB10/PB11`。默认板用 `I2C0/I2C1` 连接 EEPROM/传感器，`my_product_v1` 用 `I2C2/I2C3`。
 
 ### 硬件版本识别
 

@@ -2,38 +2,180 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "OpenOCD: Flash Debug",
-      "type": "shell",
-      "command": "openocd",
+      "label": "CMake: Configure Debug",
+      "type": "process",
+      "command": "cmake",
       "args": [
-        "-f", "${workspaceFolder}/scripts/jlink-swd.cfg",
-        "-f", "${workspaceFolder}/scripts/flash_openocd.cfg",
-        "-c", "program {${workspaceFolder}/build/Debug/C8_GCC.elf} verify reset exit"
+        "--preset",
+        "Debug"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: Build Debug",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "Debug"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "dependsOn": [
+        "CMake: Configure Debug"
+      ],
+      "dependsOrder": "sequence",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "CMake: Clean Debug",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "Debug",
+        "--target",
+        "clean"
+      ],
+      "dependsOn": [
+        "CMake: Configure Debug"
+      ],
+      "dependsOrder": "sequence",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: Configure Release",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--preset",
+        "Release"
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "CMake: Build Release",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "Release"
       ],
       "group": {
         "kind": "build",
         "isDefault": false
       },
+      "dependsOn": [
+        "CMake: Configure Release"
+      ],
+      "dependsOrder": "sequence",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
       "presentation": {
         "reveal": "always"
-      }
+      },
+      "problemMatcher": "$gcc"
+    },
+    {
+      "label": "CMake: Clean Release",
+      "type": "process",
+      "command": "cmake",
+      "args": [
+        "--build",
+        "--preset",
+        "Release",
+        "--target",
+        "clean"
+      ],
+      "dependsOn": [
+        "CMake: Configure Release"
+      ],
+      "dependsOrder": "sequence",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
+    },
+    {
+      "label": "OpenOCD: Flash Debug",
+      "type": "process",
+      "command": "openocd",
+      "args": [
+        "-f",
+        "${workspaceFolder}/scripts/jlink-swd.cfg",
+        "-f",
+        "${workspaceFolder}/scripts/flash_openocd.cfg",
+        "-c",
+        "program {${workspaceFolder}/build/Debug/C8_GCC.elf} verify reset exit"
+      ],
+      "dependsOn": [
+        "CMake: Build Debug"
+      ],
+      "dependsOrder": "sequence",
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "presentation": {
+        "reveal": "always"
+      },
+      "problemMatcher": []
     },
     {
       "label": "OpenOCD: Flash Release",
-      "type": "shell",
+      "type": "process",
       "command": "openocd",
       "args": [
-        "-f", "${workspaceFolder}/scripts/jlink-swd.cfg",
-        "-f", "${workspaceFolder}/scripts/flash_openocd.cfg",
-        "-c", "program {${workspaceFolder}/build/Release/C8_GCC.elf} verify reset exit"
+        "-f",
+        "${workspaceFolder}/scripts/jlink-swd.cfg",
+        "-f",
+        "${workspaceFolder}/scripts/flash_openocd.cfg",
+        "-c",
+        "program {${workspaceFolder}/build/Release/C8_GCC.elf} verify reset exit"
       ],
-      "group": {
-        "kind": "build",
-        "isDefault": false
+      "dependsOn": [
+        "CMake: Build Release"
+      ],
+      "dependsOrder": "sequence",
+      "options": {
+        "cwd": "${workspaceFolder}"
       },
       "presentation": {
         "reveal": "always"
-      }
+      },
+      "problemMatcher": []
     }
   ]
 }
