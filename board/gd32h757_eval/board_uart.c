@@ -3,6 +3,7 @@
 #include "bsp_uart.h"
 
 static bsp_uart_t board_debug_uart;
+static uint8_t board_debug_uart_initialized;
 
 static const bsp_uart_config_t board_debug_uart_config = {
     .usart_periph = USART0,
@@ -34,6 +35,7 @@ void board_uart_init(void)
 {
     bsp_uart_init(&board_debug_uart, &board_debug_uart_config);
     bsp_uart_enable_rx_interrupt(&board_debug_uart, USART0_IRQn, 6U, 0U);
+    board_debug_uart_initialized = 1U;
 }
 
 void board_uart_write(const char *text)
@@ -44,6 +46,16 @@ void board_uart_write(const char *text)
 void board_uart_write_buffer(const char *data, int size)
 {
     bsp_uart_write_buffer(&board_debug_uart, data, size);
+}
+
+void board_uart_panic_write_buffer(const char *data, int size)
+{
+    if(board_debug_uart_initialized == 0U) {
+        bsp_uart_panic_init(&board_debug_uart, &board_debug_uart_config);
+        board_debug_uart_initialized = 1U;
+    }
+
+    bsp_uart_panic_write_buffer(&board_debug_uart, data, size);
 }
 
 int board_uart_read_byte(char *data)

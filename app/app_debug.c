@@ -11,6 +11,7 @@
 #include "FreeRTOS_CLI.h"
 #include "gd32h7xx.h"
 #include "log.h"
+#include "panic_fault.h"
 #include "project_config.h"
 #include "task.h"
 
@@ -50,13 +51,30 @@ static CLI_Definition_List_Item_t app_debug_info_command_item;
 static CLI_Definition_List_Item_t app_debug_heap_command_item;
 static CLI_Definition_List_Item_t app_debug_uptime_command_item;
 static CLI_Definition_List_Item_t app_debug_reset_command_item;
+static CLI_Definition_List_Item_t app_debug_fault_command_item;
 static uint8_t app_debug_tasks_command_registered;
 static uint8_t app_debug_info_command_registered;
 static uint8_t app_debug_heap_command_registered;
 static uint8_t app_debug_uptime_command_registered;
 static uint8_t app_debug_reset_command_registered;
+static uint8_t app_debug_fault_command_registered;
 static uint8_t app_debug_reset_pending;
 static TaskStatus_t app_debug_task_status[APP_DEBUG_TASKS_MAX];
+
+typedef enum {
+    APP_DEBUG_FAULT_NONE = 0,
+    APP_DEBUG_FAULT_HARD,
+    APP_DEBUG_FAULT_MEM,
+    APP_DEBUG_FAULT_BUS,
+    APP_DEBUG_FAULT_USAGE,
+    APP_DEBUG_FAULT_DIV0,
+    APP_DEBUG_FAULT_UNALIGN,
+    APP_DEBUG_FAULT_NMI,
+    APP_DEBUG_FAULT_DEBUGMON,
+    APP_DEBUG_FAULT_FPU,
+} app_debug_fault_kind_t;
+
+static app_debug_fault_kind_t app_debug_fault_pending = APP_DEBUG_FAULT_NONE;
 
 static char app_debug_task_state_to_char(eTaskState state)
 {
@@ -287,6 +305,169 @@ static const CLI_Command_Definition_t app_debug_reset_command_definition = {
     0
 };
 
+static BaseType_t app_debug_parameter_equals(const char *parameter,
+                                             BaseType_t parameter_length,
+                                             const char *expected)
+{
+    size_t i;
+    size_t length;
+
+    if((parameter == NULL) || (expected == NULL) || (parameter_length < 0)) {
+        return pdFALSE;
+    }
+
+    length = (size_t)parameter_length;
+    for(i = 0U; i < length; i++) {
+        if((expected[i] == '\0') || (parameter[i] != expected[i])) {
+            return pdFALSE;
+        }
+    }
+
+    return (expected[length] == '\0') ? pdTRUE : pdFALSE;
+}
+
+static app_debug_fault_kind_t app_debug_fault_kind_from_parameter(const char *parameter,
+                                                                 BaseType_t parameter_length)
+{
+    if(app_debug_parameter_equals(parameter, parameter_length, "hard") == pdTRUE) {
+        return APP_DEBUG_FAULT_HARD;
+    }
+    if(app_debug_parameter_equals(parameter, parameter_length, "mem") == pdTRUE) {
+        return APP_DEBUG_FAULT_MEM;
+    }
+    if(app_debug_parameter_equals(parameter, parameter_length, "bus") == pdTRUE) {
+        return APP_DEBUG_FAULT_BUS;
+    }
+    if(app_debug_parameter_equals(parameter, parameter_length, "usage") == pdTRUE) {
+        return APP_DEBUG_FAULT_USAGE;
+    }
+    if(app_debug_parameter_equals(parameter, parameter_length, "div0") == pdTRUE) {
+        return APP_DEBUG_FAULT_DIV0;
+    }
+    if(app_debug_parameter_equals(parameter, parameter_length, "unalign") == pdTRUE) {
+        return APP_DEBUG_FAULT_UNALIGN;
+    }
+    if(app_debug_parameter_equals(parameter, parameter_length, "nmi") == pdTRUE) {
+        return APP_DEBUG_FAULT_NMI;
+    }
+    if(app_debug_parameter_equals(parameter, parameter_length, "debugmon") == pdTRUE) {
+        return APP_DEBUG_FAULT_DEBUGMON;
+    }
+    if(app_debug_parameter_equals(parameter, parameter_length, "fpu") == pdTRUE) {
+        return APP_DEBUG_FAULT_FPU;
+    }
+
+    return APP_DEBUG_FAULT_NONE;
+}
+
+static const char *app_debug_fault_kind_name(app_debug_fault_kind_t kind)
+{
+    switch(kind) {
+    case APP_DEBUG_FAULT_HARD:
+        return "HardFault";
+    case APP_DEBUG_FAULT_MEM:
+        return "MemManage";
+    case APP_DEBUG_FAULT_BUS:
+        return "BusFault";
+    case APP_DEBUG_FAULT_USAGE:
+        return "UsageFault";
+    case APP_DEBUG_FAULT_DIV0:
+        return "UsageFault DIVBYZERO";
+    case APP_DEBUG_FAULT_UNALIGN:
+        return "UsageFault UNALIGNED";
+    case APP_DEBUG_FAULT_NMI:
+        return "NMI";
+    case APP_DEBUG_FAULT_DEBUGMON:
+        return "DebugMon";
+    case APP_DEBUG_FAULT_FPU:
+        return "FPU IRQ";
+    case APP_DEBUG_FAULT_NONE:
+    default:
+        return "unknown";
+    }
+}
+
+static void app_debug_fault_trigger(app_debug_fault_kind_t kind)
+{
+    switch(kind) {
+    case APP_DEBUG_FAULT_HARD:
+        panic_fault_trigger_hard();
+        break;
+    case APP_DEBUG_FAULT_MEM:
+        panic_fault_trigger_mem();
+        break;
+    case APP_DEBUG_FAULT_BUS:
+        panic_fault_trigger_bus();
+        break;
+    case APP_DEBUG_FAULT_USAGE:
+        panic_fault_trigger_usage();
+        break;
+    case APP_DEBUG_FAULT_DIV0:
+        panic_fault_trigger_div0();
+        break;
+    case APP_DEBUG_FAULT_UNALIGN:
+        panic_fault_trigger_unalign();
+        break;
+    case APP_DEBUG_FAULT_NMI:
+        panic_fault_trigger_nmi();
+        break;
+    case APP_DEBUG_FAULT_DEBUGMON:
+        panic_fault_trigger_debugmon();
+        break;
+    case APP_DEBUG_FAULT_FPU:
+        panic_fault_trigger_fpu();
+        break;
+    case APP_DEBUG_FAULT_NONE:
+    default:
+        break;
+    }
+
+    for(;;) {
+    }
+}
+
+static BaseType_t app_debug_fault_command(char *pcWriteBuffer,
+                                          size_t xWriteBufferLen,
+                                          const char *pcCommandString)
+{
+    size_t used = 0U;
+    BaseType_t parameter_length = 0;
+    const char *parameter;
+    app_debug_fault_kind_t kind;
+
+    if(app_debug_fault_pending != APP_DEBUG_FAULT_NONE) {
+        kind = app_debug_fault_pending;
+        app_debug_fault_pending = APP_DEBUG_FAULT_NONE;
+        vTaskDelay(pdMS_TO_TICKS(20U));
+        app_debug_fault_trigger(kind);
+    }
+
+    parameter = FreeRTOS_CLIGetParameter(pcCommandString, 1U, &parameter_length);
+    kind = app_debug_fault_kind_from_parameter(parameter, parameter_length);
+    if(kind == APP_DEBUG_FAULT_NONE) {
+        (void)app_debug_append(pcWriteBuffer,
+                               xWriteBufferLen,
+                               &used,
+                               "Usage: fault <hard|mem|bus|usage|div0|unalign|nmi|debugmon|fpu>\r\n");
+        return pdFALSE;
+    }
+
+    app_debug_fault_pending = kind;
+    (void)app_debug_append(pcWriteBuffer,
+                           xWriteBufferLen,
+                           &used,
+                           "Triggering %s...\r\n",
+                           app_debug_fault_kind_name(kind));
+    return pdTRUE;
+}
+
+static const CLI_Command_Definition_t app_debug_fault_command_definition = {
+    "fault",
+    "\r\nfault <type>:\r\n Triggers diagnostic faults: hard, mem, bus, usage, div0, unalign, nmi, debugmon, fpu\r\n\r\n",
+    app_debug_fault_command,
+    1
+};
+
 static BaseType_t app_debug_info_command(char *pcWriteBuffer,
                                          size_t xWriteBufferLen,
                                          const char *pcCommandString)
@@ -358,6 +539,12 @@ static void app_debug_register_cli_commands(void)
        (FreeRTOS_CLIRegisterCommandStatic(&app_debug_reset_command_definition,
                                           &app_debug_reset_command_item) == pdPASS)) {
         app_debug_reset_command_registered = 1U;
+    }
+
+    if((app_debug_fault_command_registered == 0U) &&
+       (FreeRTOS_CLIRegisterCommandStatic(&app_debug_fault_command_definition,
+                                          &app_debug_fault_command_item) == pdPASS)) {
+        app_debug_fault_command_registered = 1U;
     }
 }
 #endif

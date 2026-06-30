@@ -190,6 +190,31 @@ void bsp_uart_init(bsp_uart_t *uart, const bsp_uart_config_t *config)
     }
 }
 
+void bsp_uart_panic_init(bsp_uart_t *uart, const bsp_uart_config_t *config)
+{
+    if((uart == 0) || (config == 0)) {
+        return;
+    }
+
+    uart->config = *config;
+    bsp_uart_pin_init(&uart->config.tx);
+    if(uart->config.enable_rx != 0U) {
+        bsp_uart_pin_init(&uart->config.rx);
+    }
+
+    rcu_periph_clock_enable(uart->config.clock);
+    usart_deinit(uart->config.usart_periph);
+    usart_baudrate_set(uart->config.usart_periph, uart->config.baudrate);
+    usart_stop_bit_set(uart->config.usart_periph, USART_STB_1BIT);
+    usart_word_length_set(uart->config.usart_periph, USART_WL_8BIT);
+    usart_parity_config(uart->config.usart_periph, USART_PM_NONE);
+    usart_transmit_config(uart->config.usart_periph, USART_TRANSMIT_ENABLE);
+    if(uart->config.enable_rx != 0U) {
+        usart_receive_config(uart->config.usart_periph, USART_RECEIVE_ENABLE);
+    }
+    usart_enable(uart->config.usart_periph);
+}
+
 void bsp_uart_write(bsp_uart_t *uart, const char *text)
 {
     int size = 0;
@@ -233,6 +258,15 @@ void bsp_uart_write_buffer(bsp_uart_t *uart, const char *data, int size)
     if(locked == pdTRUE) {
         (void)xSemaphoreGiveRecursive(uart->tx_mutex);
     }
+}
+
+void bsp_uart_panic_write_buffer(const bsp_uart_t *uart, const char *data, int size)
+{
+    if((uart == 0) || (data == 0) || (size <= 0)) {
+        return;
+    }
+
+    bsp_uart_write_buffer_polling(uart, data, (uint32_t)size);
 }
 
 int bsp_uart_read_byte(const bsp_uart_t *uart, char *data)

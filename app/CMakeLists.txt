@@ -15,6 +15,7 @@ target_sources(app_lib PRIVATE
 target_include_directories(app_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
     ${CMAKE_SOURCE_DIR}/config
+    ${CMAKE_SOURCE_DIR}/startup
 )
 target_link_libraries(app_lib PUBLIC
     services_lib

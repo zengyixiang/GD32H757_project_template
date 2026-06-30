@@ -47,8 +47,10 @@ typedef struct {
 } bsp_uart_t;
 
 void bsp_uart_init(bsp_uart_t *uart, const bsp_uart_config_t *config);
+void bsp_uart_panic_init(bsp_uart_t *uart, const bsp_uart_config_t *config);
 void bsp_uart_write(bsp_uart_t *uart, const char *text);
 void bsp_uart_write_buffer(bsp_uart_t *uart, const char *data, int size);
+void bsp_uart_panic_write_buffer(const bsp_uart_t *uart, const char *data, int size);
 int bsp_uart_read_byte(const bsp_uart_t *uart, char *data);
 int bsp_uart_read_byte_timeout(const bsp_uart_t *uart, char *data, TickType_t ticks_to_wait);
 void bsp_uart_lock_tx(const bsp_uart_t *uart);

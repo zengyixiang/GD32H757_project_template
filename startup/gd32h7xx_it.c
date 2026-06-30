@@ -36,11 +36,37 @@ OF SUCH DAMAGE.
 
 #include "board_uart.h"
 #include "FreeRTOS.h"
+#include "panic_fault.h"
 #include "task.h"
 
 void vPortSVCHandler(void);
 void xPortPendSVHandler(void);
 void xPortSysTickHandler(void);
+
+#define DEFINE_PANIC_EXCEPTION_HANDLER(handler_name, c_handler_name, exception_name)             \
+    static void c_handler_name(const uint32_t *stack_frame,                                      \
+                               uint32_t exc_return,                                             \
+                               uint32_t msp,                                                    \
+                               uint32_t psp) __attribute__((used, noinline, noreturn));          \
+    static void c_handler_name(const uint32_t *stack_frame,                                      \
+                               uint32_t exc_return,                                             \
+                               uint32_t msp,                                                    \
+                               uint32_t psp)                                                     \
+    {                                                                                            \
+        panic_fault_dump(exception_name, stack_frame, exc_return, msp, psp);                     \
+    }                                                                                            \
+    __attribute__((naked)) void handler_name(void)                                               \
+    {                                                                                            \
+        __asm volatile (                                                                         \
+            "tst lr, #4\n"                                                                       \
+            "ite eq\n"                                                                           \
+            "mrseq r0, msp\n"                                                                    \
+            "mrsne r0, psp\n"                                                                    \
+            "mov r1, lr\n"                                                                       \
+            "mrs r2, msp\n"                                                                      \
+            "mrs r3, psp\n"                                                                      \
+            "b " #c_handler_name "\n");                                                         \
+    }
 
 /*!
     \brief      this function handles NMI exception
@@ -48,12 +74,7 @@ void xPortSysTickHandler(void);
     \param[out] none
     \retval     none
 */
-void NMI_Handler(void)
-{
-    /* if NMI exception occurs, go to infinite loop */
-    while(1) {
-    }
-}
+DEFINE_PANIC_EXCEPTION_HANDLER(NMI_Handler, panic_nmi_handler, "NMI")
 
 /*!
     \brief      this function handles HardFault exception
@@ -61,12 +82,7 @@ void NMI_Handler(void)
     \param[out] none
     \retval     none
 */
-void HardFault_Handler(void)
-{
-    /* if Hard Fault exception occurs, go to infinite loop */
-    while(1) {
-    }
-}
+DEFINE_PANIC_EXCEPTION_HANDLER(HardFault_Handler, panic_hardfault_handler, "HardFault")
 
 /*!
     \brief      this function handles MemManage exception
@@ -74,12 +90,7 @@ void HardFault_Handler(void)
     \param[out] none
     \retval     none
 */
-void MemManage_Handler(void)
-{
-    /* if Memory Manage exception occurs, go to infinite loop */
-    while(1) {
-    }
-}
+DEFINE_PANIC_EXCEPTION_HANDLER(MemManage_Handler, panic_memmanage_handler, "MemManage")
 
 /*!
     \brief      this function handles BusFault exception
@@ -87,12 +98,7 @@ void MemManage_Handler(void)
     \param[out] none
     \retval     none
 */
-void BusFault_Handler(void)
-{
-    /* if Bus Fault exception occurs, go to infinite loop */
-    while(1) {
-    }
-}
+DEFINE_PANIC_EXCEPTION_HANDLER(BusFault_Handler, panic_busfault_handler, "BusFault")
 
 /*!
     \brief      this function handles UsageFault exception
@@ -100,12 +106,7 @@ void BusFault_Handler(void)
     \param[out] none
     \retval     none
 */
-void UsageFault_Handler(void)
-{
-    /* if Usage Fault exception occurs, go to infinite loop */
-    while(1) {
-    }
-}
+DEFINE_PANIC_EXCEPTION_HANDLER(UsageFault_Handler, panic_usagefault_handler, "UsageFault")
 
 /*!
     \brief      this function handles DebugMon exception
@@ -113,12 +114,7 @@ void UsageFault_Handler(void)
     \param[out] none
     \retval     none
 */
-void DebugMon_Handler(void)
-{
-    /* if DebugMon exception occurs, go to infinite loop */
-    while(1) {
-    }
-}
+DEFINE_PANIC_EXCEPTION_HANDLER(DebugMon_Handler, panic_debugmon_handler, "DebugMon")
 
 /*!
     \brief      this function handles SVC exception
@@ -148,12 +144,7 @@ __attribute__((naked)) void PendSV_Handler(void)
     \param[out] none
     \retval     none
 */
-void FPU_IRQHandler(void)
-{
-    /* if FPU exception occurs, go to infinite loop */
-    while(1) {
-    }
-}
+DEFINE_PANIC_EXCEPTION_HANDLER(FPU_IRQHandler, panic_fpu_handler, "FPU")
 
 /*!
     \brief      this function handles SysTick exception

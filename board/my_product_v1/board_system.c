@@ -12,11 +12,13 @@ static uint32_t board_system_dtcm_ob_from_size(uint32_t size_kb);
 static void board_system_cache_enable(void);
 static void board_system_interrupt_priority_init(void);
 static void board_system_mpu_init(void);
+static void board_system_fault_trap_init(void);
 
 void board_system_init(void)
 {
     board_system_tcm_shared_ram_init();
     board_system_mpu_init();
+    board_system_fault_trap_init();
     board_system_cache_enable();
     board_system_interrupt_priority_init();
 }
@@ -89,6 +91,16 @@ static void board_system_cache_enable(void)
 static void board_system_interrupt_priority_init(void)
 {
     nvic_priority_group_set(NVIC_PRIGROUP_PRE4_SUB0);
+}
+
+static void board_system_fault_trap_init(void)
+{
+    SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk |
+                  SCB_SHCSR_BUSFAULTENA_Msk |
+                  SCB_SHCSR_USGFAULTENA_Msk;
+    SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk | SCB_CCR_UNALIGN_TRP_Msk;
+    __DSB();
+    __ISB();
 }
 
 static void board_system_mpu_init(void)
