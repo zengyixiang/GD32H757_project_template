@@ -95,10 +95,12 @@ static void board_system_interrupt_priority_init(void)
 
 static void board_system_fault_trap_init(void)
 {
-    SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk |
-                  SCB_SHCSR_BUSFAULTENA_Msk |
-                  SCB_SHCSR_USGFAULTENA_Msk;
-    SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk | SCB_CCR_UNALIGN_TRP_Msk;
+    // 如果不启用这些 Fault，很多错误会直接升级成 HardFault，不好区分具体原因
+    SCB->SHCSR |= SCB_SHCSR_MEMFAULTENA_Msk |   // 启用 MemManage Fault，比如 MPU 权限错误、非法内存区域访问
+                  SCB_SHCSR_BUSFAULTENA_Msk |   // 启用 BusFault，比如访问外设/内存总线失败。
+                  SCB_SHCSR_USGFAULTENA_Msk;    // 启用 UsageFault，比如非法指令、未定义状态、除零等。
+    // SCB->CCR |= SCB_CCR_DIV_0_TRP_Msk;  // 启用 整数除以 0 触发异常，会触发 UsageFault。
+    // SCB->CCR |= SCB_CCR_UNALIGN_TRP_Msk; // 启用非对齐访问陷阱，会触发 UsageFault，这个暂时不开不然USB无法使用因为官方的库就是非对其访问
     __DSB();
     __ISB();
 }
