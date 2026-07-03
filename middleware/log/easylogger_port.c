@@ -16,6 +16,7 @@
 
 static log_output_fn_t log_output;
 static SemaphoreHandle_t log_output_lock;
+static SemaphoreHandle_t log_flush_lock;
 static TaskHandle_t log_output_task_handle;
 static char log_async_line_buf[ELOG_LINE_BUF_SIZE];
 
@@ -59,6 +60,11 @@ int log_port_start_async_task(void)
 void log_port_flush_async_output(void)
 {
     size_t size;
+    BaseType_t locked = pdFALSE;
+
+    if((log_flush_lock != NULL) && (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)) {
+        locked = xSemaphoreTake(log_flush_lock, portMAX_DELAY);
+    }
 
     do {
         size = elog_async_get_line_log(log_async_line_buf, sizeof(log_async_line_buf));
@@ -66,12 +72,19 @@ void log_port_flush_async_output(void)
             elog_port_output(log_async_line_buf, size);
         }
     } while(size > 0U);
+
+    if(locked == pdTRUE) {
+        (void)xSemaphoreGive(log_flush_lock);
+    }
 }
 
 ElogErrCode elog_port_init(void)
 {
     if(log_output_lock == NULL) {
         log_output_lock = xSemaphoreCreateMutex();
+    }
+    if(log_flush_lock == NULL) {
+        log_flush_lock = xSemaphoreCreateMutex();
     }
 
     return ELOG_NO_ERR;
@@ -84,6 +97,10 @@ ElogErrCode elog_port_deinit(void)
     if(log_output_lock != NULL) {
         vSemaphoreDelete(log_output_lock);
         log_output_lock = NULL;
+    }
+    if(log_flush_lock != NULL) {
+        vSemaphoreDelete(log_flush_lock);
+        log_flush_lock = NULL;
     }
 
     return ELOG_NO_ERR;

@@ -35,22 +35,10 @@ static void app_cli_write(const char *data, size_t size)
     board_uart_write_buffer(data, (int)size);
 }
 
-static void app_cli_lock(void)
-{
-    board_uart_lock_tx();
-}
-
-static void app_cli_unlock(void)
-{
-    board_uart_unlock_tx();
-}
-
 static const cli_port_t app_cli_port = {
     .read_byte = app_cli_read_byte,
     .wait_byte = app_cli_wait_byte,
-    .write = app_cli_write,
-    .lock = app_cli_lock,
-    .unlock = app_cli_unlock,
+    .write = app_cli_write
 };
 
 void app_init(void)

@@ -13,6 +13,7 @@ typedef void (*log_output_fn_t)(const char *data, size_t size);
 
 void log_set_output(log_output_fn_t output);
 int log_init(void);
+void log_flush(void);
 
 #ifdef __cplusplus
 }
