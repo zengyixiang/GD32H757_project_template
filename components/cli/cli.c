@@ -103,17 +103,14 @@ static void cli_task(void *argument)
     cli_write_prompt();
 
     while(1) {
-        if(cli_port.wait_byte != 0) {
-            char data;
+        char data;
 
-            if(cli_port.wait_byte(&data) != 0) {
-                cli_handle_byte(data);
-                cli_poll();
-            }
-        } else {
-            cli_poll();
+        if((cli_port.read_byte == 0) || (cli_port.read_byte(&data) == 0)) {
             vTaskDelay(pdMS_TO_TICKS(CLI_POLL_PERIOD_MS));
+            continue;
         }
+
+        cli_handle_byte(data);
     }
 }
 
@@ -128,19 +125,6 @@ void cli_init(const cli_port_t *port)
     cli_input_length = 0U;
     cli_last_was_cr = 0U;
     cli_input_buffer[0] = '\0';
-}
-
-void cli_poll(void)
-{
-    char data;
-
-    if(cli_port.read_byte == 0) {
-        return;
-    }
-
-    while(cli_port.read_byte(&data) != 0) {
-        cli_handle_byte(data);
-    }
 }
 
 int cli_start(void)

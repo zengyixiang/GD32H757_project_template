@@ -22,11 +22,6 @@
 
 static int app_cli_read_byte(char *data)
 {
-    return board_uart_read_byte(data);
-}
-
-static int app_cli_wait_byte(char *data)
-{
     return board_uart_wait_byte(data);
 }
 
@@ -37,7 +32,6 @@ static void app_cli_write(const char *data, size_t size)
 
 static const cli_port_t app_cli_port = {
     .read_byte = app_cli_read_byte,
-    .wait_byte = app_cli_wait_byte,
     .write = app_cli_write
 };
 

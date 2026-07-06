@@ -23,6 +23,12 @@ static char log_async_line_buf[ELOG_LINE_BUF_SIZE];
 void log_port_flush_async_output(void);
 void elog_port_output(const char *log, size_t size);
 
+static BaseType_t log_port_can_flush(void)
+{
+    return ((xTaskGetSchedulerState() == taskSCHEDULER_RUNNING) &&
+            (xPortIsInsideInterrupt() == pdFALSE)) ? pdTRUE : pdFALSE;
+}
+
 static void log_output_task(void *argument)
 {
     (void)argument;
@@ -62,8 +68,15 @@ void log_port_flush_async_output(void)
     size_t size;
     BaseType_t locked = pdFALSE;
 
-    if((log_flush_lock != NULL) && (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)) {
+    if(log_port_can_flush() != pdTRUE) {
+        return;
+    }
+
+    if(log_flush_lock != NULL) {
         locked = xSemaphoreTake(log_flush_lock, portMAX_DELAY);
+        if(locked != pdTRUE) {
+            return;
+        }
     }
 
     do {
