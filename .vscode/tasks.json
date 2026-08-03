@@ -131,6 +131,7 @@
     },
     {
       "label": "OpenOCD: Flash Debug",
+      "detail": "reset halt 后设置 DBG_CTL4.FWDGT_HOLD，冻结硬件看门狗，避免长时间擦写期间目标复位。",
       "type": "process",
       "command": "openocd",
       "args": [
@@ -139,7 +140,7 @@
         "-f",
         "${workspaceFolder}/scripts/flash_openocd.cfg",
         "-c",
-        "program {${workspaceFolder}/build/Debug/C8_GCC.elf} verify reset exit"
+        "init; reset halt; mww 0xE00E1054 0x00040000; flash write_image erase {${workspaceFolder}/build/Debug/C8_GCC.elf}; verify_image {${workspaceFolder}/build/Debug/C8_GCC.elf}; reset run; shutdown"
       ],
       "dependsOn": [
         "CMake: Build Debug"
@@ -155,6 +156,7 @@
     },
     {
       "label": "OpenOCD: Flash Release",
+      "detail": "reset halt 后设置 DBG_CTL4.FWDGT_HOLD，冻结硬件看门狗，避免长时间擦写期间目标复位。",
       "type": "process",
       "command": "openocd",
       "args": [
@@ -163,7 +165,7 @@
         "-f",
         "${workspaceFolder}/scripts/flash_openocd.cfg",
         "-c",
-        "program {${workspaceFolder}/build/Release/C8_GCC.elf} verify reset exit"
+        "init; reset halt; mww 0xE00E1054 0x00040000; flash write_image erase {${workspaceFolder}/build/Release/C8_GCC.elf}; verify_image {${workspaceFolder}/build/Release/C8_GCC.elf}; reset run; shutdown"
       ],
       "dependsOn": [
         "CMake: Build Release"
