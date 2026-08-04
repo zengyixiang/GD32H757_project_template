@@ -18,6 +18,7 @@ target_include_directories(components_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/devices/eeprom/at24c02
     ${CMAKE_CURRENT_SOURCE_DIR}/devices/sensors/gxht30
 )
-target_link_libraries(components_lib PUBLIC
-    middleware_lib
+target_link_libraries(components_lib PRIVATE
+    freertos_cli
+    freertos_kernel_stub
 )
