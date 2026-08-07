@@ -13,6 +13,7 @@ target_include_directories(bsp_lib PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}/spi
     ${CMAKE_CURRENT_SOURCE_DIR}/i2c
     ${CMAKE_CURRENT_SOURCE_DIR}/adc
+    ${CMAKE_CURRENT_SOURCE_DIR}/gpio
     ${CMAKE_CURRENT_SOURCE_DIR}/timer
     ${CMAKE_CURRENT_SOURCE_DIR}/usb
 )

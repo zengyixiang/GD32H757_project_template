@@ -2,6 +2,7 @@
 
 #include "board_clock.h"
 #include "board_pin.h"
+#include "board_power.h"
 #include "board_sdram.h"
 #include "board_system.h"
 
@@ -9,6 +10,7 @@ void board_hw_version_init(void);
 
 void board_early_init(void)
 {
+    board_power_early_init();
     board_system_init();
 }
 
@@ -16,6 +18,7 @@ void board_init(void)
 {
     board_clock_init();
     board_pin_init();
+    board_power_init();
     board_sdram_init();
     board_hw_version_init();
     board_led_init();
